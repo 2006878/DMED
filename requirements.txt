@@ -5,6 +5,7 @@ cachetools==5.5.1
 certifi==2025.1.31
 charset-normalizer==3.4.1
 click==8.1.8
+dotenv==0.9.9
 et-xmlfile==2.0.0
 gitdb==4.0.12
 GitPython==3.1.44
@@ -26,6 +27,7 @@ pyarrow==19.0.0
 pydeck==0.9.1
 pygments==2.19.1
 python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
 pytz==2025.1
 referencing==0.36.2
 requests==2.32.3

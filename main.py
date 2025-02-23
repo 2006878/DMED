@@ -1,7 +1,18 @@
 import streamlit as st
 import pandas as pd
 import json
+import dotenv
 import io
+import smtplib
+import email.message
+import os
+
+
+# Carregar variáveis de ambiente e colocar os valores nas devidas variáveis
+dotenv.load_dotenv()
+senha_email = os.getenv("SENHA_EMAIL")
+email_origem = os.getenv("EMAIL_ORIGEM")
+email_destino = os.getenv("EMAIL_DESTINO")
 
 # Configurações da página Streamlit
 st.set_page_config(page_title="Dados DMED", layout="wide")
@@ -143,8 +154,44 @@ if uploaded_file is not None:
                 })
 
         # Lógica para envio de e-mail
+        # Contador para testes de email
+        contador = 0
+
         for cpf_titular, grupo in grupos_familiares.items():
-            print(f"Enviando e-mail para {grupo['Nome']} ({cpf_titular}) com os dados dos dependentes")
+            try:
+                if contador < 1:
+                    corpo_email = f"""
+                    <h1>Olá, {grupo['Nome']}!</h1>
+                    <p>Segue abaixo a relação dos dependentes vinculados ao seu CPF:</p>
+                    <p>Titular: {grupo['Nome']} - CPF: {grupo['CPF']} - Total: {grupo['Total']}</p>
+                    """
+                    for dependente in grupo["Dependentes"]:
+                        corpo_email += f"""
+                        <p>Dependente: {dependente['Nome']} - Relação: {dependente['Relação']} - CPF: {dependente['CPF']} - Total: {dependente['Total']}</p>
+                        """
+                    corpo_email += """
+                    <p>Atenciosamente,</p>
+                    <p>Equipe de Saúde</p>
+                    """
+
+                    msg = email.message.Message()
+                    msg["Subject"] = "Relação de Despesas de Saúde"
+                    msg["From"] = email_origem
+                    msg["To"] = email_destino
+                    password = senha_email
+                    msg.add_header("Content-Type", "text/html; charset=utf-8")
+                    msg.set_payload(corpo_email.encode("utf-8"), "utf-8")
+
+                    envia = smtplib.SMTP("smtp.gmail.com", 587)
+                    envia.starttls()
+                    envia.login(msg["From"], password)
+                    envia.sendmail(msg["From"], msg["To"], msg.as_string())
+
+                    contador += 1
+
+            except Exception as e:
+                st.error(f"Erro ao eniar o e-mail: {e}")
+                print(f"Erro ao eniar o e-mail: {e}")
 
         # Converter para JSON
         json_resultado = json.dumps(grupos_familiares, ensure_ascii=False, indent=4)
