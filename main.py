@@ -7,21 +7,24 @@ st.set_page_config(page_title="Dados DMED", layout="wide")
 st.title("Tratamento de dados de saúde - DMED")
 
 # Widget de upload de arquivo   
-uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx"])
+# uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx"])
 
 # Definir o arquivo para upload
-# uploaded_file = "IRF.xlsx"
+uploaded_file = "./anexos/IRF.xlsx"
 
 if uploaded_file is not None:
     try:
         # Definir as colunas desejadas
-        colunas_desejadas = ["Nome", "Mat.", "CPF", "Par.", "Total 2024"]
+        # colunas_desejadas = ["Nome", "Mat.", "CPF", "Par.", "Total 2024"]
 
         # Ler o arquivo ignorando as duas primeiras linhas
         df = pd.read_excel(uploaded_file, engine="openpyxl", skiprows=2, sheet_name="Mensalidade")
 
-        # Filtrar apenas as colunas desejadas
-        df_filtrado = df[colunas_desejadas]
+        df["Deslig."] = pd.to_datetime(df["Deslig."], errors="coerce")
+
+        # Filtrar apenas as linhas onde "Deslig." é o ano anterior ao atual ou está vazio (NaT)
+        ano_anterior = pd.Timestamp.now().year - 1
+        df_filtrado = df[(df["Deslig."].dt.year == ano_anterior) | (df["Deslig."].isna())]
 
         # Converter a coluna "Total 2024" para numérico (caso tenha valores não numéricos)
         df_filtrado.loc[:, "Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce")
@@ -97,13 +100,13 @@ if uploaded_file is not None:
                     dependente["Total 2024"] = valor_por_pessoa
         
         st.write("### Grupos Familiares")
-        st.write(lista_grupos_familiares)
-        # st.write(df_filtrado)
+        # st.write(lista_grupos_familiares)
+        st.write(df_filtrado)
 
         # Exibir informações gerais sobre os dados
-        st.write("### Informações do Arquivo")
-        st.write(f"Linhas: {df.shape[0]}")
-        st.write(f"Colunas: {df.shape[1]}")
+        st.write("### Informações gerais dos dados")
+        st.write(f"Quantidade de registros filtrados: {df_filtrado.shape[0]}")
+        st.write(f"Quantidade de registros do arquivo original: {df.shape[0]}")
         
     except Exception as e:
         st.error(f"Erro ao processar o arquivo: {e}")
