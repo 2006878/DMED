@@ -20,6 +20,17 @@ st.set_page_config(page_title="Dados DMED")
 
 st.title("Tratamento de dados - DMED")
 
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Widget de upload de arquivo   
 uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx"])
 
