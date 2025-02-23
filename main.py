@@ -15,9 +15,10 @@ email_origem = os.getenv("EMAIL_ORIGEM")
 email_destino = os.getenv("EMAIL_DESTINO")
 
 # Configurações da página Streamlit
-st.set_page_config(page_title="Dados DMED", layout="wide")
+# st.set_page_config(page_title="Dados DMED", layout="wide")
+st.set_page_config(page_title="Dados DMED")
 
-st.title("Tratamento de dados de saúde - DMED")
+st.title("Tratamento de dados - DMED")
 
 # Widget de upload de arquivo   
 uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx"])
@@ -153,45 +154,48 @@ if uploaded_file is not None:
                     "Total": row["Total"]
                 })
 
-        # Lógica para envio de e-mail
-        # Contador para testes de email
-        contador = 0
+        def enviar_emails():
+            # Contador para testes de email
+            contador = 0
 
-        for cpf_titular, grupo in grupos_familiares.items():
-            try:
-                if contador < 1:
-                    corpo_email = f"""
-                    <h1>Olá, {grupo['Nome']}!</h1>
-                    <p>Segue abaixo a relação dos dependentes vinculados ao seu CPF:</p>
-                    <p>Titular: {grupo['Nome']} - CPF: {grupo['CPF']} - Total: {grupo['Total']}</p>
-                    """
-                    for dependente in grupo["Dependentes"]:
-                        corpo_email += f"""
-                        <p>Dependente: {dependente['Nome']} - Relação: {dependente['Relação']} - CPF: {dependente['CPF']} - Total: {dependente['Total']}</p>
+            for cpf_titular, grupo in grupos_familiares.items():
+                try:
+                    if contador < 1:
+                        corpo_email = f"""
+                        <h1>Olá, {grupo['Nome']}!</h1>
+                        <p>Segue abaixo a relação dos dependentes vinculados ao seu CPF:</p>
+                        <p>Titular: {grupo['Nome']} - CPF: {grupo['CPF']} - Total: {grupo['Total']}</p>
                         """
-                    corpo_email += """
-                    <p>Atenciosamente,</p>
-                    <p>Equipe de Saúde</p>
-                    """
+                        for dependente in grupo["Dependentes"]:
+                            corpo_email += f"""
+                            <p>Dependente: {dependente['Nome']} - Relação: {dependente['Relação']} - CPF: {dependente['CPF']} - Total: {dependente['Total']}</p>
+                            """
+                        corpo_email += """
+                        <p>Atenciosamente,</p>
+                        <p>Equipe de Saúde</p>
+                        """
 
-                    msg = email.message.Message()
-                    msg["Subject"] = "Relação de Despesas de Saúde"
-                    msg["From"] = email_origem
-                    msg["To"] = email_destino
-                    password = senha_email
-                    msg.add_header("Content-Type", "text/html; charset=utf-8")
-                    msg.set_payload(corpo_email.encode("utf-8"), "utf-8")
+                        msg = email.message.Message()
+                        msg["Subject"] = "Relação de Despesas de Saúde"
+                        msg["From"] = email_origem
+                        msg["To"] = email_destino
+                        password = senha_email
+                        msg.add_header("Content-Type", "text/html; charset=utf-8")
+                        msg.set_payload(corpo_email.encode("utf-8"), "utf-8")
 
-                    envia = smtplib.SMTP("smtp.gmail.com", 587)
-                    envia.starttls()
-                    envia.login(msg["From"], password)
-                    envia.sendmail(msg["From"], msg["To"], msg.as_string())
+                        envia = smtplib.SMTP("smtp.gmail.com", 587)
+                        envia.starttls()
+                        envia.login(msg["From"], password)
+                        envia.sendmail(msg["From"], msg["To"], msg.as_string())
 
-                    contador += 1
+                        contador += 1
+                        st.success("E-mail enviado com sucesso!")
+                        print("E-mail enviado com sucesso!")
 
-            except Exception as e:
-                st.error(f"Erro ao eniar o e-mail: {e}")
-                print(f"Erro ao eniar o e-mail: {e}")
+                except Exception as e:
+                    st.error(f"Erro ao eniar o e-mail: {e}")
+                    print(f"Erro ao eniar o e-mail: {e}")
+    
 
         # Converter para JSON
         json_resultado = json.dumps(grupos_familiares, ensure_ascii=False, indent=4)
@@ -214,17 +218,42 @@ if uploaded_file is not None:
         df_filtrado[colunas_exibicao].to_excel(output, index=False, engine='openpyxl')  # Não inclui o índice
         output.seek(0)  # Voltar ao início do arquivo para leitura
 
-        # Exibir botão de download
-        st.download_button(
-            label="Download XLSX",
-            data=output,
-            file_name="dados_filtrados.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        # Criar colunas para os botões
+        col1, col2 = st.columns(2)
+
+        # Botão de download na primeira coluna
+        with col1:
+            st.download_button(
+                label="📂 Download XLSX",
+                data=output,
+                file_name="dados_filtrados.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                help="Baixar o arquivo processado"
+            )
+
+            # Botão de envio de e-mail na segunda coluna
+            with col2:
+                # st.markdown(
+                #     """
+                #     <style>
+                #     .stButton>button {
+                #         background-color: white ;
+                #         color: black;
+                #         font-weight: bold;
+                #         border-radius: 8px;
+                #         padding: 10px 20px;
+                #     }
+                #     </style>
+                #     """,
+                #     unsafe_allow_html=True
+                # )
+                
+                if st.button("📧 Enviar e-mail"):
+                    enviar_emails()
 
         # Exibir JSON no Streamlit
-        st.write("### Estrutura JSON dos Grupos Familiares")
-        st.json(json_resultado)
+        # st.write("### Estrutura JSON dos Grupos Familiares")
+        # st.json(json_resultado)
 
         # Exibir informações gerais sobre os dados
         st.write("### Informações gerais dos dados")
