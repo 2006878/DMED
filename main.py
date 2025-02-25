@@ -7,19 +7,20 @@ import smtplib
 import email.message
 import os
 
-
 # Carregar variáveis de ambiente e colocar os valores nas devidas variáveis
-# dotenv.load_dotenv()
-# senha_email = os.getenv("SENHA_EMAIL")
-# email_origem = os.getenv("EMAIL_ORIGEM")
-# email_destino = os.getenv("EMAIL_DESTINO")
+dotenv.load_dotenv()
+senha_email = os.getenv("SENHA_EMAIL")
+email_origem = os.getenv("EMAIL_ORIGEM")
+email_destino = os.getenv("EMAIL_DESTINO")
 
 # Configurações da página Streamlit
 # st.set_page_config(page_title="Dados DMED", layout="wide")
 st.set_page_config(page_title="Dados DMED")
 
+# Exibe o título da página
 st.title("Tratamento de dados - DMED")
 
+# Insere estilo customizado para esconder certos elementos da interface do Streamlit
 st.markdown(
     """
     <style>
@@ -35,7 +36,7 @@ st.markdown(
 uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx"])
 
 # Definir o arquivo para upload
-# uploaded_file = "./anexos/IRF.xlsx"
+uploaded_file = "./anexos/IRF.xlsx"
 
 if uploaded_file is not None:
     try:
@@ -59,8 +60,9 @@ if uploaded_file is not None:
         df_filtrado["Relação"] = None  # Tipo de relação com o titular
         df_filtrado["Total"] = 0.0  # Valor ajustado
 
-        cpf_titular_atual = None  # Variável para armazenar o CPF do titular atual
-
+        # Variável para armazenar o CPF do titular atual
+        cpf_titular_atual = None  
+        
         # Dicionário de relacionamento
         relacao_mapeamento = {
             "T.": "Titular",
@@ -69,7 +71,7 @@ if uploaded_file is not None:
             "Comp.": "Agregado(a)/outros",
             "mãe": "Mãe", "Pai": "Pai"
         }
-
+        
         # Definir titular e dependentes
         for idx, row in df_filtrado.iterrows():
             par = row["Par."]
@@ -84,10 +86,12 @@ if uploaded_file is not None:
         # Função para calcular os meses ativos, considerando o desligamento, se houver
         def calcular_meses_ativos(admissao, desligamento=None):
             if pd.isna(admissao):
-                return 0  # Se não houver data de admissão, não há meses
-            if pd.isna(desligamento):  # Se não houver desligamento, calcular até dezembro de 2024
+              # Se não houver data de admissão, não há meses
+                return 0 
+                # Se não houver desligamento, calcular até dezembro de 2024
+                if pd.isna(desligamento):  
                 return 12 if admissao.year < 2024 else 13 - admissao.month
-            # Se houver desligamento, calcular até a data de desligamento
+         # Se houver desligamento, calcular até a data de desligamento
             if desligamento.year == 2024 and admissao.year == 2024:
                 return (desligamento.month - admissao.month)
             if desligamento.year == 2024 and admissao.year < 2024:
@@ -97,30 +101,41 @@ if uploaded_file is not None:
         df_filtrado["Meses Ativos"] = df_filtrado.apply(
             lambda row: calcular_meses_ativos(row["Adm."], row["Deslig."]), axis=1
         )
-
+        
         # Ajuste do cálculo dos meses e dos pesos
         for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
-            if pd.notna(cpf_titular):  # Garantir que há um titular válido
-                # Recuperar o total 2024 do titular
+        # Garantir que há um titular válido
+            if pd.notna(cpf_titular):  
+        # Recuperar o total 2024 do titular
                 total_titular = grupo[grupo["Relação"] == "Titular"]["Total 2024"].sum()
+    
+        #Exemplo para garantir que há total para o titular     
+                if total_titular 0>:
+        #Filtrar os dependentes, os registros onde a relação não é 'Titular'    
+                    dependentes = grupo.loc[grupo["Relação"] != "Titular"]
+        #Exemplo de processamento adicional para os dependentes
+                    for i, dependente in dependentes.iterrows():
+        #Exemplo de cálculo
+                    valor_dependente = dependente["Total 2024"] * total_titular / grupo["Total 2024"].sum()
+                    print(f"Dependente {dependente['Nome']} recebeu {valor_dependente:.2f}")
 
-                dependentes = grupo[grupo["Relação"] != "Titular"].copy()
+#Filtar dependentes de um determinado grupo     
+            dependentes = grupo[grupo["Relação"] != "Titular"].copy()
 
 
-                # Calcular os meses totais do grupo (titular + dependentes)
-                # meses_totais = grupo["Meses Ativos"] + dependentes["Meses Ativos"].sum()
-                meses_totais = grupo["Meses Ativos"].sum()
-                
-                dependentes["Peso"] = dependentes["Meses Ativos"] / meses_totais
+    # Calcular os meses totais do grupo (titular + dependentes)    
+    meses_totais = grupo["Meses Ativos"] + dependentes["Meses Ativos"].sum(meses_totais = grupo["Meses Ativos"].sum()
+    # Calcular peso 
+    dependentes["Peso"] = dependentes["Meses Ativos"] / meses_totais
 
                 # Se houver dependentes, calculamos a quantidade de meses deles considerando o desligamento
                 if not dependentes.empty:
 
-                    # Calcular os pesos para o grupo (titular e dependentes)
+                 # Calcular os pesos para o grupo (titular e dependentes)
                     grupo["Peso"] = grupo["Meses Ativos"] / meses_totais
                     dependentes.loc[:, "Peso"] = dependentes["Meses Ativos"] / meses_totais
 
-                    # Atribuir os pesos aos dependentes
+                # Atribuir os pesos aos dependentes
                     df_filtrado.loc[dependentes.index, "Peso"] = dependentes["Peso"]
 
                 # Atribuir o peso do titular ao grupo
@@ -145,7 +160,7 @@ if uploaded_file is not None:
         for _, row in df_filtrado.iterrows():
             cpf_titular = row["Titular_CPF"]
             
-            # Se o titular ainda não foi registrado, adiciona
+         # Se o titular ainda não foi registrado, adiciona
             if cpf_titular not in grupos_familiares:
                 grupos_familiares[cpf_titular] = {
                     "Nome": row["Nome"],
@@ -155,7 +170,7 @@ if uploaded_file is not None:
                     "Dependentes": []
                 }
             
-            # Se não for titular, adiciona como dependente
+         # Se não for titular, adiciona como dependente
             if row["Relação"] != "Titular":
                 grupos_familiares[cpf_titular]["Dependentes"].append({
                     "Nome": row["Nome"],
@@ -186,13 +201,13 @@ if uploaded_file is not None:
         #                 <p>Equipe de Saúde</p>
         #                 """
 
-        #                 msg = email.message.Message()
-        #                 msg["Subject"] = "Relação de Despesas de Saúde"
-        #                 msg["From"] = email_origem
-        #                 msg["To"] = email_destino
-        #                 password = senha_email
-        #                 msg.add_header("Content-Type", "text/html; charset=utf-8")
-        #                 msg.set_payload(corpo_email.encode("utf-8"), "utf-8")
+    msg = email.message.Message()
+    msg["Subject"] = "Relação de Despesas de Saúde"
+    msg["From"] = email_origem
+    msg["To"] = email_destino
+    password = senha_email
+    msg.add_header("Content-Type", "text/html; charset=utf-8")
+    msg.set_payload(corpo_email.encode("utf-8"), "utf-8")
 
         #                 envia = smtplib.SMTP("smtp.gmail.com", 587)
         #                 envia.starttls()
@@ -206,14 +221,38 @@ if uploaded_file is not None:
         #         except Exception as e:
         #             st.error(f"Erro ao eniar o e-mail: {e}")
         #             print(f"Erro ao eniar o e-mail: {e}")
-    
+   
+
+#Exemplo de melhoria do código 
+def enviar_emails():
+    """Envia e-mails para todos os grupos familiares."""
+#Verifica se a variavel Teste está definida como 'True'
+    is_teste=os.getenv('Teste', 'false').lower()=='true'
+#Criação do corpo do email 
+    for cpf_titular, grupo in grupos_familiares.items():
+        corpo_email = f"""
+        <h1>Olá, {grupo['Nome']}!</h1>
+        <p>Segue abaixo a relação dos dependentes vinculados ao CPF:</p>
+        <p>Titular: {grupo['Nome']} - CPF: {grupo['CPF']} - Total: {grupo['Total']}</p>
+        """
+#Adicona os dependentes ao email, corpo do email 
+        for dependente in grupo["Dependentes"]:
+            corpo_email += f"""
+            <p>Dependente: {dependente['Nome']} - Relação: {dependente['Relação']} - CPF: {dependente['CPF']} - Total: {dependente['Total']}</p>
+            """
+        corpo_email += """
+        <p>Atenciosamente,</p>
+        <p>Equipe de Saúde</p>
+        """
+
+        
 
         # Converter para JSON
         json_resultado = json.dumps(grupos_familiares, ensure_ascii=False, indent=4)
 
         # Se precisar salvar como arquivo:
-        # with open("grupos_familiares.json", "w", encoding="utf-8") as f:
-        #     f.write(json_resultado)        
+        with open("grupos_familiares.json", "w", encoding="utf-8") as f:
+        json.dump(json resultado, f , ensure_ascii= False, indent=4)       
         
         st.write("### Dados Processados")
         # st.write(lista_grupos_familiares)
@@ -269,7 +308,7 @@ if uploaded_file is not None:
 
         # Exibir JSON no Streamlit
         # st.write("### Estrutura JSON dos Grupos Familiares")
-        # st.json(json_resultado)
+        st.json(json_resultado)
 
         # Exibir informações gerais sobre os dados
         st.write("### Informações gerais dos dados")
