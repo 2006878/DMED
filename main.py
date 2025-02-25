@@ -6,6 +6,8 @@ import io
 import smtplib
 import email.message
 import os
+import smtplib
+
 
 # Carregar variáveis de ambiente e colocar os valores nas devidas variáveis
 dotenv.load_dotenv()
