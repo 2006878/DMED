@@ -7,10 +7,10 @@ from io import BytesIO
 def gerar_pdf(grupo, caminho_pdf):
   """gera PDF para o grupo familiar."""
 
-# Cria o canvas para o PDF
+#Cria o canvas para o PDF
     c=canvas.Canvas(caminho_pdf, pagesize=letter)
 
-#Fonte
+#Tamanho Fonte
 c.setFont("Helvetica", 12)
 
 # Declara informações do titular
@@ -24,7 +24,7 @@ y_position = 710
 #Adicionando informações 
 for dependente in grupo["Dependentes"]:
         c.drawString(100, y_position, f"Dependente: {dependente['Nome']} - Relação: {dependente['Relação']} - CPF: {dependente['CPF']} - Total: {dependente['Total']}")
-        # Move a posição para o próximo dependente
+
  # Move a posição para o próximo dependente
 y_position -= 20 
 
