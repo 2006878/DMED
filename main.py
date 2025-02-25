@@ -125,6 +125,7 @@ if uploaded_file is not None:
 
     # Calcular os meses totais do grupo (titular + dependentes)    
     meses_totais = grupo["Meses Ativos"] + dependentes["Meses Ativos"].sum(meses_totais = grupo["Meses Ativos"].sum()
+                                                                           
     # Calcular peso 
     dependentes["Peso"] = dependentes["Meses Ativos"] / meses_totais
 
@@ -179,9 +180,8 @@ if uploaded_file is not None:
                     "Relação": row["Relação"],
                     "Total": row["Total"]
                 })
-
-        # def enviar_emails():
-        #     # Contador para testes de email
+     def enviar_emails():
+    #Contador para testes de email
         #     contador = 0
 
         #     for cpf_titular, grupo in grupos_familiares.items():
@@ -209,20 +209,21 @@ if uploaded_file is not None:
     msg.add_header("Content-Type", "text/html; charset=utf-8")
     msg.set_payload(corpo_email.encode("utf-8"), "utf-8")
 
-        #                 envia = smtplib.SMTP("smtp.gmail.com", 587)
-        #                 envia.starttls()
-        #                 envia.login(msg["From"], password)
-        #                 envia.sendmail(msg["From"], msg["To"], msg.as_string())
+        #  envia = smtplib.SMTP("smtp.gmail.com", 587)
+        #   envia.starttls()
+        #  envia.login(msg["From"], password)
+        #     envia.sendmail(msg["From"], msg["To"], msg.as_string())
 
-        #                 contador += 1
-        #                 st.success("E-mail enviado com sucesso!")
-        #                 print("E-mail enviado com sucesso!")
+        contador += 1
+        st.success("E-mail enviado com sucesso {grupo['Nome']}!")
+            print("E-mail enviado com sucess{grupo['Nome']}!")
 
-        #         except Exception as e:
-        #             st.error(f"Erro ao eniar o e-mail: {e}")
-        #             print(f"Erro ao eniar o e-mail: {e}")
+    except Exception as e:
+        #Caso tenha errado,exibe a mensagem
+        st.error(f"Erro ao enviar o e-mail: {e}")
+        print(f"Erro ao eniar o e-mail: {e}")
    
-
+#EXEMPLO DO SCRIPT ACIMA QUE PODEMOS UTILIZAR 
 #Exemplo de melhoria do código 
 def enviar_emails():
     """Envia e-mails para todos os grupos familiares."""
@@ -235,6 +236,7 @@ def enviar_emails():
         <p>Segue abaixo a relação dos dependentes vinculados ao CPF:</p>
         <p>Titular: {grupo['Nome']} - CPF: {grupo['CPF']} - Total: {grupo['Total']}</p>
         """
+        
 #Adicona os dependentes ao email, corpo do email 
         for dependente in grupo["Dependentes"]:
             corpo_email += f"""
@@ -254,8 +256,10 @@ def enviar_emails():
         with open("grupos_familiares.json", "w", encoding="utf-8") as f:
         json.dump(json resultado, f , ensure_ascii= False, indent=4)       
         
+        # Exibe título com o nome Dados Processados 
         st.write("### Dados Processados")
-        # st.write(lista_grupos_familiares)
+        # Lista com Dados Familiares
+        st.write(lista_grupos_familiares)
         # Colunas a serem exibidas
         colunas_exibicao = ["Nome", "CPF", "Mat.", "Titular_CPF", "Relação", "Total"]
         # Ordenar primeiro pela coluna "Titular_CPF" e depois pela coluna "Relação" (para colocar o titular antes dos dependentes)
@@ -266,7 +270,8 @@ def enviar_emails():
         # Crie um arquivo Excel em memória (sem incluir o índice)
         output = io.BytesIO()
         df_filtrado[colunas_exibicao].to_excel(output, index=False, engine='openpyxl')  # Não inclui o índice
-        output.seek(0)  # Voltar ao início do arquivo para leitura
+        #Voltar ao início do arquivo para leitura
+        output.seek(0) 
 
         # Criar colunas para os botões
         col1, col2 = st.columns(2)
