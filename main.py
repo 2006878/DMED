@@ -211,10 +211,11 @@ if uploaded_file is not None:
     msg.add_header("Content-Type", "text/html; charset=utf-8")
     msg.set_payload(corpo_email.encode("utf-8"), "utf-8")
 
-        #  envia = smtplib.SMTP("smtp.gmail.com", 587)
-        #   envia.starttls()
-        #  envia.login(msg["From"], password)
-        #     envia.sendmail(msg["From"], msg["To"], msg.as_string())
+    envia = smtplib.SMTP("smtp.gmail.com", 587)
+    envia.starttls()
+    envia.login(msg["From"], password)
+    envia.sendmail(msg["From"], msg["To"], msg.as_string())
+    envia.quit()
 
         contador += 1
         st.success("E-mail enviado com sucesso {grupo['Nome']}!")
