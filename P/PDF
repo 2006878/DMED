@@ -2,8 +2,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from io import BytesIO
 import smtplib
-import os 
-import pandas as pd 
+
 
 def gerar_pdf(grupo, caminho_pdf):
   """gera PDF para o grupo familiar."""
