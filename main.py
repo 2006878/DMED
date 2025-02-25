@@ -337,3 +337,9 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+git checkout -b gerar-pdf
+git add.
+git commit -m "Implementação da geração de PDF para o grupo familiar"
+    #Envia para o repositorio remoto
+    git push origin gerar-pdf
