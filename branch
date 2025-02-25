@@ -1,2 +1,11 @@
-git add
+import os
+import smtplib
+import email.message
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from io import BytesIO
 
+
+def gerar_pdf(grupo, caminho_pdf):
+"""gera PDF para o grupo familiar."""
+buffer=BytesIO()
