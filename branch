@@ -8,4 +8,5 @@ from io import BytesIO
 
 def gerar_pdf(grupo, caminho_pdf):
 """gera PDF para o grupo familiar."""
+# Para armezanar conteúdo em PDF 
 buffer=BytesIO()
