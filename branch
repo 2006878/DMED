@@ -1,6 +1,7 @@
-from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from io import BytesIO
+import smtplib
 
 def gerar_pdf(grupo, caminho_pdf):
   """gera PDF para o grupo familiar."""
@@ -10,7 +11,11 @@ buffer=BytesIO()
 # Criação do canvas do PDF
     c = canvas.Canvas(buffer, pagesize=letter)
     c.setFont("Helvetica", 12)
+
+#Salvar 
+c.save()
     
-# Salvar conteudo como PDF 
+# Salvar conteudo como arquivo PDF 
 with open(caminho_pdf, "wb") as f:
         f.write(buffer.getvalue())
+
