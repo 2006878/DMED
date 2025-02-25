@@ -5,7 +5,7 @@ import smtplib
 
 def gerar_pdf(grupo, caminho_pdf):
   """gera PDF para o grupo familiar."""
-# Para armezanar conteúdo em PDF 
+# Para armazenar conteúdo em PDF 
 buffer=BytesIO()
 
 # Criação do canvas do PDF
