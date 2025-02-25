@@ -12,7 +12,7 @@ buffer=BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     c.setFont("Helvetica", 12)
 
-#Salvar 
+#Salvar buffer 
 c.save()
     
 # Salvar conteudo como arquivo PDF 
