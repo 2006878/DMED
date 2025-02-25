@@ -1,21 +1,38 @@
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from io import BytesIO
 import smtplib
+pip install reportlab
+from io import BytesIO
 
 def gerar_pdf(grupo, caminho_pdf):
   """gera PDF para o grupo familiar."""
-# Para armazenar conteúdo em PDF 
-buffer=BytesIO()
 
-# Criação do canvas do PDF
-    c=canvas.Canvas(buffer, pagesize=letter)
-    c.setFont("Helvetica", 12)
+# Cria o canvas para o PDF
+    c=canvas.Canvas(caminho_pdf, pagesize=letter)
 
-#Salvar buffer 
+#Fonte
+c.setFont("Helvetica", 12)
+
+# Declara informações do titular
+    c.drawString(100, 750, f"Relatório para {grupo['Nome']}")
+    c.drawString(100, 730, f"Titular: {grupo['Nome']} - CPF: {grupo['CPF']} - Total: {grupo['Total']}")
+
+
+# Posição inicial para os dependentes
+y_position = 710 
+
+#Adicionando informações 
+for dependente in grupo["Dependentes"]:
+        c.drawString(100, y_position, f"Dependente: {dependente['Nome']} - Relação: {dependente['Relação']} - CPF: {dependente['CPF']} - Total: {dependente['Total']}")
+        # Move a posição para o próximo dependente
+ # Move a posição para o próximo dependente
+y_position -= 20 
+
 c.save()
     
 # Salvar conteudo como arquivo PDF 
 with open(caminho_pdf, "wb") as f:
-        f.write(buffer.getvalue())
+
+f.write(buffer.getvalue())
+gerar_pdf(grupo_exemplo,"relatorio_grupo_familiar.pdf")
 
