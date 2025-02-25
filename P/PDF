@@ -3,14 +3,13 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 import smtplib
 
-
 def gerar_pdf(grupo, caminho_pdf):
   """gera PDF para o grupo familiar."""
 # Para armezanar conteúdo em PDF 
 buffer=BytesIO()
 
 # Criação do canvas do PDF
-    c = canvas.Canvas(buffer, pagesize=letter)
+    c=canvas.Canvas(buffer, pagesize=letter)
     c.setFont("Helvetica", 12)
 
 #Salvar buffer 
