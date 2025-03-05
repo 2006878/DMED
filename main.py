@@ -19,18 +19,18 @@ st.markdown("""
 
 def format_cpf(cpf):
     if pd.isna(cpf):
-        return '24871771016'
-        # return ''
+        # return '24871771016' # Retorna um CPF fictício se o CPF for NaN
+        return ''
     return str(cpf).replace('.','').replace('-','').strip().replace(' ', '').zfill(11)
 
 def format_valor(valor_str):
     try:
         if pd.isna(valor_str):
-            return "000000000"
+            return ""
         valor = valor_str.replace("R$", "").replace(".", "").replace(",", ".").strip()
         return f"{int(float(valor)*100):09d}"
     except:
-        return "000000000"
+        return ""
 
 def normalize_name(name):
     import unicodedata
@@ -85,7 +85,7 @@ def create_dmed_content(df_filtrado):
                     valor_dep = format_valor(dep["Total"])
                     codigo_dep = get_dependent_code(dep["Relação"])
                     nome_dep = normalize_name(dep['Nome'])
-                    data_nasc = "20000101" # Default to 2000-01-01 if birth date is missing
+                    data_nasc = "" # Default if birth date is missing
                     
                     content.append(f"DTOP|{format_cpf(dep['CPF'])}|{data_nasc}|{nome_dep}|{codigo_dep}|{valor_dep}|")
     
