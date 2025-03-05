@@ -18,10 +18,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def format_cpf(cpf):
-    if pd.isna(cpf):
-        # return '24871771016' # Retorna um CPF fictício se o CPF for NaN
+    if pd.isna(cpf) or str(cpf).strip() == '' or str(cpf).strip() == '0':
         return ''
-    return str(cpf).replace('.','').replace('-','').strip().replace(' ', '').zfill(11)
+    return str(cpf).strip().replace(' ', '').replace('.', '').replace('-', '').zfill(11)
 
 def format_valor(valor_str):
     try:
@@ -55,13 +54,11 @@ def create_dmed_content(df_filtrado):
     # First sort by titular CPF
     for titular_cpf, grupo in sorted(df_filtrado.groupby("Titular_CPF")):
 
-        # Create a sorting key with properly formatted CPFs
-        df_filtrado['CPF_Sort'] = df_filtrado['Titular_CPF'].apply(lambda x: str(x).strip().replace(' ', '').zfill(11))
+        # Create sorting key and sort the dataframe
+        df_filtrado['CPF_Sort'] = df_filtrado['Titular_CPF'].apply(format_cpf)
+        df_filtrado = df_filtrado.sort_values(['CPF_Sort', 'Relação'], ascending=[True, False])
 
-        # Sort by the formatted CPF key
-        df_filtrado = df_filtrado.sort_values('CPF_Sort', ascending=True)
-
-        # Drop the temporary sorting column
+        # Remove temporary sorting column
         df_filtrado = df_filtrado.drop('CPF_Sort', axis=1)
 
         if pd.notna(titular_cpf):
@@ -116,7 +113,11 @@ def calculate_active_months(admission, termination=None):
         return (termination.month - admission.month)
     if termination.year == 2024 and admission.year < 2024:
         return termination.month
-
+    if termination.year > 2024 and admission.year == 2024:
+        return (12 - admission.month)
+    if termination.year > 2024 and admission.year < 2024:
+        return 12
+    
 uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx"])
 
 if uploaded_file is not None:
