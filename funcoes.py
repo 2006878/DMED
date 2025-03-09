@@ -186,6 +186,7 @@ def processa_mensalidades():
 
         df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado["CPF"].apply(format_cpf)
+        df_filtrado = df_filtrado[["Nome", "CPF", "Relação", "Titular_CPF", "Total"]]
         # Save the updated base file
         df_filtrado.to_csv(mensalidades_file, index=False)
         print(f"Arquivo '{mensalidades_file}' criado com sucesso em {datetime.now() - start} segundos")
@@ -197,25 +198,19 @@ def processa_mensalidades():
         return df_filtrado
 
 def processa_despesas():
+
     # Caminho da pasta de dados
     data_folder = os.path.join(os.getcwd(), 'despesas')
-
     # Arquivo base
     despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
-
+    
     # Verificar se o arquivo existe e não está vazio
     if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
-        print(f"O arquivo '{despesas_file}' está vazio ou não existe. Inicializando DataFrame vazio.")
-    else: 
-        # Remover o arquivo se ele existir
-        os.remove(despesas_file)
-        print(f"Arquivo '{despesas_file}' removido com sucesso.")
 
-    # Initialize empty DataFrame
-    df_despesas = pd.DataFrame()
-    print("DataFrame df_despesas inicializado.")
+        # Initialize empty DataFrame
+        df_despesas = pd.DataFrame()
+        print("DataFrame df_despesas inicializado.")
 
-    try:
         start = datetime.now()
         # Iterate through files in data folder 
         for filename in os.listdir(data_folder):
@@ -237,12 +232,12 @@ def processa_despesas():
         # Save the updated base file
         df_despesas.to_csv(despesas_file, index=False)
         print(f"Arquivo '{despesas_file}' atualizado com sucesso em {datetime.now() - start} segundos")
-        
+        return df_despesas
+    else: 
+        df_despesas = pd.read_csv(despesas_file)
+        print(f"Arquivo '{despesas_file}' foi lido com sucesso.")
         return df_despesas
     
-    except Exception as e:
-        print(f"Erro ao processar arquivo: {e}")
-
 def busca_dados_mensalidades(cpf_alvo):
     df_filtrado = processa_mensalidades()
     if not df_filtrado.empty:
