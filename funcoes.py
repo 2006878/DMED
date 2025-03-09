@@ -108,67 +108,90 @@ def calculate_active_months(admission, termination=None):
         return 12
     
 def processa_mensalidades():
-    # uploaded_file = st.file_uploader("Escolha um arquivo Excel", type=["xlsx"])
-    mensalidade_file = "mensalidades/IRF.xlsx"
+    # Caminho da pasta de dados
+    data_folder = os.path.join(os.getcwd(), 'mensalidades')
 
-    df_mensalidades = pd.read_excel(mensalidade_file, engine="openpyxl", skiprows=2, sheet_name="Mensalidade")
-    print("DataFrame df_mensalidades inicializado.")
+    # Arquivo base
+    mensalidades_file = os.path.join(os.getcwd(), 'mensalidades_file.csv')
 
-    # Filter data
-    ano_anterior = pd.Timestamp.now().year - 1
-    ano_atual = pd.Timestamp.now().year
-    df_mensalidades["Deslig."] = pd.to_datetime(df_mensalidades["Deslig."], errors="coerce")
-    df_filtrado = df_mensalidades[(df_mensalidades["Deslig."].dt.year == ano_anterior) | 
-                    (df_mensalidades["Deslig."].dt.year == ano_atual) | 
-                    (df_mensalidades["Deslig."].isna())].copy()
+    # Verificar se o arquivo existe e não está vazio
+    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+        # Initialize empty DataFrame
+        df_mensalidades = pd.DataFrame()
+        print("DataFrame df_mensalidades inicializado.")
+
+        start = datetime.now()
+        # Iterate through files in data folder 
+        for filename in os.listdir(data_folder):
+            file_path = os.path.join(data_folder, filename)
+            if os.path.isfile(file_path) and filename.endswith('.xlsx'):
+                df = pd.read_excel(file_path, engine="openpyxl")
+                df_mensalidades = pd.concat([df_mensalidades, df], ignore_index=True)
+        
+        # Filter data
+        ano_anterior = pd.Timestamp.now().year - 1
+        ano_atual = pd.Timestamp.now().year
+        df_mensalidades["Deslig."] = pd.to_datetime(df_mensalidades["Deslig."], errors="coerce")
+        df_mensalidades["Adm."] = pd.to_datetime(df_mensalidades["Adm."], errors="coerce")
+        df_filtrado = df_mensalidades[(df_mensalidades["Deslig."].dt.year == ano_anterior) | 
+                        (df_mensalidades["Deslig."].dt.year == ano_atual) | 
+                        (df_mensalidades["Deslig."].isna())].copy()
+        
+        # Data transformations
+        df_filtrado["Mat."] = df_filtrado["Mat."].astype(str)
+        df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
+        df_filtrado["Titular_CPF"] = None
+        df_filtrado["Relação"] = None
+        df_filtrado["Total"] = 0.0
+
+        # Relationship mapping
+        relacao_mapeamento = {
+            "T.": "Titular",
+            "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge",
+            "fil.": "Filho(a)", "fil": "Filho(a)", "Filh.": "Filho(a)",
+            "Comp.": "Agregado(a)/outros",
+            "mãe": "Mãe", "Pai": "Pai"
+        }
+
+        # Process relationships
+        cpf_titular_atual = None
+        for idx, row in df_filtrado.iterrows():
+            par = row["Par."]
+            if par == "T.":
+                cpf_titular_atual = row["CPF"]
+                df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
+                df_filtrado.at[idx, "Relação"] = "Titular"
+            elif cpf_titular_atual:
+                df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
+                df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
+
+        # Calculate active months and weights
+        df_filtrado["Meses Ativos"] = df_filtrado.apply(
+            lambda row: calculate_active_months(row["Adm."], row["Deslig."]), axis=1
+        )
+
+        # Process family groups
+        for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
+            if pd.notna(cpf_titular):
+                total_titular = grupo[grupo["Relação"] == "Titular"]["Total 2024"].sum()
+                meses_totais = grupo["Meses Ativos"].sum()
+                df_filtrado.loc[grupo.index, "Peso"] = grupo["Meses Ativos"] / meses_totais
+                df_filtrado.loc[grupo.index, "Total"] = df_filtrado.loc[grupo.index, "Peso"] * total_titular
+
+        # Format currency
+        df_filtrado["Total"] = df_filtrado["Total"].apply(
+            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+
+        # Save the updated base file
+        df_filtrado.to_csv(mensalidades_file, index=False)
+        print(f"Arquivo '{mensalidades_file}' criado com sucesso em {datetime.now() - start} segundos")
+        return df_filtrado
     
-    # Data transformations
-    df_filtrado["Mat."] = df_filtrado["Mat."].astype(str)
-    df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
-    df_filtrado["Titular_CPF"] = None
-    df_filtrado["Relação"] = None
-    df_filtrado["Total"] = 0.0
-
-    # Relationship mapping
-    relacao_mapeamento = {
-        "T.": "Titular",
-        "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge",
-        "fil.": "Filho(a)", "fil": "Filho(a)", "Filh.": "Filho(a)",
-        "Comp.": "Agregado(a)/outros",
-        "mãe": "Mãe", "Pai": "Pai"
-    }
-
-    # Process relationships
-    cpf_titular_atual = None
-    for idx, row in df_filtrado.iterrows():
-        par = row["Par."]
-        if par == "T.":
-            cpf_titular_atual = row["CPF"]
-            df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
-            df_filtrado.at[idx, "Relação"] = "Titular"
-        elif cpf_titular_atual:
-            df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
-            df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
-
-    # Calculate active months and weights
-    df_filtrado["Meses Ativos"] = df_filtrado.apply(
-        lambda row: calculate_active_months(row["Adm."], row["Deslig."]), axis=1
-    )
-
-    # Process family groups
-    for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
-        if pd.notna(cpf_titular):
-            total_titular = grupo[grupo["Relação"] == "Titular"]["Total 2024"].sum()
-            meses_totais = grupo["Meses Ativos"].sum()
-            df_filtrado.loc[grupo.index, "Peso"] = grupo["Meses Ativos"] / meses_totais
-            df_filtrado.loc[grupo.index, "Total"] = df_filtrado.loc[grupo.index, "Peso"] * total_titular
-
-    # Format currency
-    df_filtrado["Total"] = df_filtrado["Total"].apply(
-        lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    )
-    
-    return df_filtrado
+    else:
+        df_filtrado = pd.read_csv(mensalidades_file)
+        print(f"Arquivo '{mensalidades_file}' foi lido com sucesso.")
+        return df_filtrado
 
 def processa_despesas():
     # Caminho da pasta de dados
