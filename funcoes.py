@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import os
+from fpdf import FPDF
 
 ano_anterior = pd.Timestamp.now().year - 1
 ano_atual = pd.Timestamp.now().year
@@ -234,3 +235,67 @@ def busca_dados_despesas(cpf_alvo):
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'})
     return df_despesas
+
+def generate_pdf(df_mensalidades, df_despesas, cpf):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Title Section
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(0, 10, 'INFORME PLANO DE SAÚDE', 0, 1, 'C')
+    pdf.ln(5)
+    pdf.set_font('Arial', 'B', 14)
+    pdf.cell(0, 10, 'ANO - CALENDÁRIO DE 2024', 0, 1, 'C')
+    pdf.cell(0, 10, 'IMPOSTO DE RENDA - PESSOA FÍSICA', 0, 1, 'C')
+    pdf.ln(10)
+
+    # 1. DADOS CADASTRAIS
+    pdf.set_font('Arial', 'B', 12)
+    start_y = pdf.get_y()
+    pdf.cell(0, 10, '1 - DADOS CADASTRAIS', 0, 1, 'L')
+    pdf.set_font('Arial', '', 12)
+    pdf.cell(0, 8, f"TITULAR: {df_mensalidades.iloc[0]['Nome']}", 0, 1)
+    height = pdf.get_y() - start_y
+    pdf.rect(10, start_y, 190, height)
+    pdf.ln(5)
+
+    # 2. IDENTIFICAÇÃO DA FONTE PAGADORA
+    pdf.set_font('Arial', 'B', 12)
+    start_y = pdf.get_y()
+    pdf.cell(0, 10, '2 - IDENTIFICAÇÃO DA FONTE PAGADORA', 0, 1, 'L')
+    pdf.set_font('Arial', '', 12)
+    pdf.cell(0, 8, 'NOME EMPRESARIAL: Cosemi - Cooperativa de Economia E Credito Mutuo dos', 0, 1)
+    pdf.cell(0, 8, 'Servidores Municipais de Itabira Ltda', 0, 1)
+    pdf.cell(0, 8, 'CNPJ: 16.651.002/0001-80', 0, 1)
+    height = pdf.get_y() - start_y
+    pdf.rect(10, start_y, 190, height)
+    pdf.ln(5)
+
+    # 3. INFORMAÇÕES PLANO DE SAÚDE
+    pdf.set_font('Arial', 'B', 12)
+    start_y = pdf.get_y()
+    pdf.cell(0, 10, '3 - INFORMAÇÕES PLANO DE SAÚDE UNIMED/COSEMI', 0, 1, 'L')
+    
+    # Mensalidades Section
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 10, 'Mensalidade Plano de Saúde:', 0, 1, 'L')
+    pdf.set_font('Arial', '', 12)
+    for _, row in df_mensalidades.iterrows():
+        pdf.cell(0, 8, f"Nome: {row.iloc[0]}", 0, 1)
+        pdf.cell(0, 8, f"Valor: {row.iloc[1]}", 0, 1)
+        pdf.ln(5)
+    
+    # Despesas Section
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 10, 'Procedimentos co-participativos (consultas, exames, outros):', 0, 1, 'L')
+    pdf.set_font('Arial', '', 12)
+    for _, row in df_despesas.iterrows():
+        pdf.cell(0, 8, f"Nome: {row.iloc[0]}", 0, 1)
+        pdf.cell(0, 8, f"Valor: {row.iloc[1]}", 0, 1)
+        pdf.ln(5)
+    
+    height = pdf.get_y() - start_y
+    pdf.rect(10, start_y, 190, height)
+    
+    return pdf.output(dest='S').encode('latin1')
+
