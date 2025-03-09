@@ -3,8 +3,8 @@ import io
 from funcoes import *
 
 # Streamlit page configuration
-st.set_page_config(page_title="Dados DMED", layout="wide")
-st.title(f"NFORME PLANO DE SAÚDE {ano_anterior} IRPF - COSEMI")
+st.set_page_config(page_title=f"IRPF {ano_anterior}- COSEMI", layout="wide")
+st.title(f"INFORME PLANO DE SAÚDE {ano_anterior} IRPF - COSEMI")
 
 # Hide unnecessary UI elements
 st.markdown("""

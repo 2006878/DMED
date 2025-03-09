@@ -126,6 +126,7 @@ def processa_mensalidades():
             file_path = os.path.join(data_folder, filename)
             if os.path.isfile(file_path) and filename.endswith('.xlsx'):
                 df = pd.read_excel(file_path, engine="openpyxl")
+                # df = pd.read_excel(file_path, engine="openpyxl", usecols=["Nome", "CPF", "Total 2024", "Par.", "Adm.", "Deslig."])
                 df_mensalidades = pd.concat([df_mensalidades, df], ignore_index=True)
         
         # Filter data
@@ -183,6 +184,8 @@ def processa_mensalidades():
             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         )
 
+        df_filtrado["Titular_CPF"].apply(format_cpf)
+        df_filtrado["CPF"].apply(format_cpf)
         # Save the updated base file
         df_filtrado.to_csv(mensalidades_file, index=False)
         print(f"Arquivo '{mensalidades_file}' criado com sucesso em {datetime.now() - start} segundos")
