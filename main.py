@@ -57,9 +57,9 @@ if cpf_alvo:
             data=pdf_data,
             file_name=f"relatorio_dmed_{cpf_alvo}.pdf",
             mime="application/pdf")
-
+        
     # Create two columns
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     # Left column - Mensalidades
     with col1:
@@ -88,6 +88,22 @@ if cpf_alvo:
                 """, unsafe_allow_html=True)
         else:
             st.info("Não existem registros de despesas para o CPF informado.")
+
+    with col3:
+        st.markdown("### 💰 Descontos em folha ")
+        # Calculate total descontos
+        nome = df_despesas["Nome"].iloc[0]
+        descontos = busca_dados_descontos(nome)
+        # st.write(f"Total de descontos 2024:{descontos}")
+        if descontos:
+            st.markdown(f"""
+                <div style='background-color: #e6f3ff; padding: 10px; margin-bottom: 5px;'>
+                    <h4 style='color: #2196f3; margin: 0;'>{nome}</h4>
+                    <p style='font-size: 18px; margin: 5px 0;'>Valor: <strong>{descontos}</strong></p>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("Não existem registros de descontos para o CPF informado.")
 
 # Footer
 st.markdown("""
