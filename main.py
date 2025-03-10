@@ -48,7 +48,12 @@ cpf_alvo = format_cpf(st.text_input("", key="cpf_input"))
 if cpf_alvo:
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
     df_despesas = busca_dados_despesas(cpf_alvo)
-    nome = df_despesas["Nome"].iloc[0]
+    # Check if DataFrame has rows before accessing first element
+    if not df_despesas.empty:
+        nome = df_despesas["Nome"].iloc[0]
+    else:
+        nome = ""  # Or any default value you want to use
+
     descontos = busca_dados_descontos(nome)
  
     # Gerar PDF
