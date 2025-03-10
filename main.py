@@ -48,10 +48,12 @@ cpf_alvo = format_cpf(st.text_input("", key="cpf_input"))
 if cpf_alvo:
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
     df_despesas = busca_dados_despesas(cpf_alvo)
-
+    nome = df_despesas["Nome"].iloc[0]
+    descontos = busca_dados_descontos(nome)
+ 
     # Gerar PDF
     if not df_filtrado.empty or not df_despesas.empty:
-        pdf_data = generate_pdf(df_filtrado, df_despesas, cpf_alvo)
+        pdf_data = generate_pdf(df_filtrado, df_despesas, descontos, cpf_alvo)
         st.download_button(
             label="📥 Download PDF",
             data=pdf_data,
@@ -91,9 +93,6 @@ if cpf_alvo:
 
     with col3:
         st.markdown("### 💰 Descontos em folha ")
-        # Calculate total descontos
-        nome = df_despesas["Nome"].iloc[0]
-        descontos = busca_dados_descontos(nome)
         # st.write(f"Total de descontos 2024:{descontos}")
         if descontos:
             st.markdown(f"""
