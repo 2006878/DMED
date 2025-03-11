@@ -240,6 +240,58 @@ def processa_despesas():
         df_despesas = pd.read_csv(despesas_file)
         print(f"Arquivo '{despesas_file}' foi lido com sucesso.")
         return df_despesas
+
+def processa_descontos():
+    data_folder = os.path.join(os.getcwd(), 'descontos')
+    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
+    
+    # Verificar se o arquivo existe e não está vazio
+    if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
+        df_descontos = pd.DataFrame()
+        
+        for filename in os.listdir(data_folder):
+            file_path = os.path.join(data_folder, filename)
+            if os.path.isfile(file_path) and filename.endswith('.xlsx'):
+                df = pd.read_excel(file_path, engine="openpyxl", 
+                                usecols=["Nome", "Total de Descontos"])
+                df_descontos = pd.concat([df_descontos, df], ignore_index=True)
+        
+        # Convert column to numeric
+        df_descontos["Total de Descontos"] = pd.to_numeric(df_descontos["Total de Descontos"], 
+                                                        errors="coerce").fillna(0).round(2)
+        
+        # Group by Nome and sum Total de Descontos
+        df_descontos = df_descontos.groupby("Nome").agg({
+            'Total de Descontos': 'sum'
+        }).reset_index()
+
+        print("Registros únicos por Nome com soma total calculada.")
+        
+        # Save the updated base file
+        df_descontos.to_csv(descontos_file, index=False)
+        print(f"Arquivo '{descontos_file}' atualizado com sucesso em {datetime.now()}")
+        return df_descontos
+    else: 
+        df_descontos = pd.read_csv(descontos_file)
+        print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
+        return df_descontos
+    
+def busca_dados_descontos(nome):
+    df_descontos = processa_descontos()
+    if not df_descontos.empty and nome != "":
+        # Convert nome to string and normalize it
+        nome = str(nome).strip()
+        df_descontos['Nome'] = df_descontos['Nome'].astype(str).str.strip()
+        
+        # Now filter using the normalized values
+        df_descontos = df_descontos[df_descontos['Nome'].str.contains(nome, case=False, na=False)]
+        
+        # Format the values as currency
+        df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(
+            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+        return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "R$ 0,00"
+    return ""
     
 def busca_dados_mensalidades(cpf_alvo):
     df_filtrado = processa_mensalidades()
@@ -258,9 +310,12 @@ def busca_dados_despesas(cpf_alvo):
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'})
+        # Return empty DataFrame if no matches found
+        if df_despesas.empty:
+            return pd.DataFrame(columns=['Nome', 'Valor'])
     return df_despesas
 
-def generate_pdf(df_mensalidades, df_despesas, cpf):
+def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     pdf = FPDF()
     pdf.add_page()
     
@@ -278,7 +333,7 @@ def generate_pdf(df_mensalidades, df_despesas, cpf):
     start_y = pdf.get_y()
     pdf.cell(0, 10, '1 - DADOS CADASTRAIS', 0, 1, 'L')
     pdf.set_font('Arial', '', 12)
-    pdf.cell(0, 8, f"TITULAR: {df_mensalidades.iloc[0]['Nome']}", 0, 1)
+    pdf.cell(0, 8, f"Titular: {df_mensalidades.iloc[0]['Nome']}", 0, 1)
     height = pdf.get_y() - start_y
     pdf.rect(10, start_y, 190, height)
     pdf.ln(5)
@@ -288,7 +343,7 @@ def generate_pdf(df_mensalidades, df_despesas, cpf):
     start_y = pdf.get_y()
     pdf.cell(0, 10, '2 - IDENTIFICAÇÃO DA FONTE PAGADORA', 0, 1, 'L')
     pdf.set_font('Arial', '', 12)
-    pdf.cell(0, 8, 'NOME EMPRESARIAL: Cosemi - Cooperativa de Economia E Credito Mutuo dos', 0, 1)
+    pdf.cell(0, 8, 'Nome empresarial: Cosemi - Cooperativa de Economia E Credito Mutuo dos', 0, 1)
     pdf.cell(0, 8, 'Servidores Municipais de Itabira Ltda', 0, 1)
     pdf.cell(0, 8, 'CNPJ: 16.651.002/0001-80', 0, 1)
     height = pdf.get_y() - start_y
@@ -317,86 +372,15 @@ def generate_pdf(df_mensalidades, df_despesas, cpf):
         pdf.cell(0, 8, f"Nome: {row.iloc[0]}", 0, 1)
         pdf.cell(0, 8, f"Valor: {row.iloc[1]}", 0, 1)
         pdf.ln(5)
+
+    # Descontos Section
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 10, 'Descontos em Folha:', 0, 1, 'L')
+    pdf.set_font('Arial', '', 12)
+    pdf.cell(0, 8, f"Total de Descontos: {df_descontos}", 0, 1)
+    pdf.ln(5)
     
     height = pdf.get_y() - start_y
     pdf.rect(10, start_y, 190, height)
     
     return pdf.output(dest='S').encode('latin1')
-
-def processa_descontos1():
-    # Caminho da pasta de dados
-    data_folder = os.path.join(os.getcwd(), 'descontos')
-    # Arquivo base
-    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
-    
-    # Verificar se o arquivo existe e não está vazio
-    if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
-
-        # Initialize empty DataFrame
-        df_descontos = pd.DataFrame()
-        print("DataFrame df_descontos inicializado.")
-
-        start = datetime.now()
-        # Iterate through files in data folder 
-        for filename in os.listdir(data_folder):
-            file_path = os.path.join(data_folder, filename)
-            if os.path.isfile(file_path) and filename.endswith('.csv'):
-                # Read only specified columns
-                df = pd.read_csv(file_path, encoding='latin1', sep=';', 
-                    usecols=['Nome', 'Total de faturamento', 
-                            'Total de descontos', 'Debito 2024'])
-                df_descontos = pd.concat([df_descontos, df], ignore_index=True)
-        # Convert columns to numeric
-        df_descontos["Total de descontos"] = pd.to_numeric(df_descontos["Total de descontos"], errors="coerce").fillna(0).round(2)
-        
-        # Group by BENEFICIARIO and get the first occurrence of other columns while summing Total de descontos
-        df_descontos = df_descontos.groupby("Nome").agg({
-            'Total de descontos': 'sum'
-        }).reset_index()
-
-        print("Registros únicos por Nome com soma total calculada.")
-        
-        # Save the updated base file
-        df_descontos.to_csv(descontos_file, index=False)
-        print(f"Arquivo '{descontos_file}' atualizado com sucesso em {datetime.now() - start} segundos")
-        return df_descontos
-    else: 
-        df_descontos = pd.read_csv(descontos_file)
-        print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
-        return df_descontos
-    
-def processa_descontos():
-    data_folder = os.path.join(os.getcwd(), 'descontos')
-    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
-    
-    df_descontos = pd.DataFrame()
-    
-    for filename in os.listdir(data_folder):
-        file_path = os.path.join(data_folder, filename)
-        if os.path.isfile(file_path) and filename.endswith('.xlsx'):
-            df = pd.read_excel(file_path, engine="openpyxl", 
-                             usecols=["Nome", "Total de Descontos"])  # Note the capital D
-            df_descontos = pd.concat([df_descontos, df], ignore_index=True)
-    
-    # Convert column to numeric
-    df_descontos["Total de Descontos"] = pd.to_numeric(df_descontos["Total de Descontos"], 
-                                                      errors="coerce").fillna(0).round(2)
-    
-    return df_descontos
-    
-def busca_dados_descontos(nome):
-    df_descontos = processa_descontos()
-    if not df_descontos.empty:
-        # Convert nome to string and normalize it
-        nome = str(nome).strip()
-        df_descontos['Nome'] = df_descontos['Nome'].astype(str).str.strip()
-        
-        # Now filter using the normalized values
-        df_descontos = df_descontos[df_descontos['Nome'].str.contains(nome, case=False, na=False)]
-        
-        # Format the values as currency
-        df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(
-            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        )
-        return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "R$ 0,00"
-    return "R$ 0,00"
