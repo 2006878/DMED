@@ -315,72 +315,80 @@ def busca_dados_despesas(cpf_alvo):
             return pd.DataFrame(columns=['Nome', 'Valor'])
     return df_despesas
 
+def format_currency(value):
+    try:
+        value = float(value)  # Converte para número caso seja string
+        return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except ValueError:
+        return "Valores de desconto não encontrados."
+
 def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)  # Quebra de página automática
     pdf.add_page()
     
-    # Title Section
+    # Função para formatar títulos de seções
+    def draw_section(title, content_lines):
+        """ Cria uma seção com um título sublinhado e uma borda ao redor do conteúdo. """
+        pdf.set_font('Arial', 'B', 12)
+        start_y = pdf.get_y()
+        
+        # Criando o título sublinhado
+        pdf.cell(0, 8, title, ln=True, align='L')
+        pdf.set_draw_color(0, 0, 0)  # Cor preta para a linha
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())  # Linha abaixo do título
+        pdf.ln(4)  # Espaço após a linha
+        
+        # Adicionando o conteúdo dentro do retângulo
+        pdf.set_font('Arial', '', 12)
+        for line in content_lines:
+            pdf.cell(0, 6, line, ln=True)
+        
+        end_y = pdf.get_y()
+        pdf.rect(10, start_y, 190, end_y - start_y + 2)  # Borda ao redor do conteúdo
+        pdf.ln(6)  # Espaçamento extra
+
+    # Cabeçalho
     pdf.set_font('Arial', 'B', 16)
-    pdf.cell(0, 10, 'INFORME PLANO DE SAÚDE', 0, 1, 'C')
-    pdf.ln(5)
+    pdf.cell(0, 10, 'INFORME PLANO DE SAÚDE', ln=True, align='C')
+    pdf.ln(3)
     pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 10, 'ANO - CALENDÁRIO DE 2024', 0, 1, 'C')
-    pdf.cell(0, 10, 'IMPOSTO DE RENDA - PESSOA FÍSICA', 0, 1, 'C')
+    pdf.cell(0, 8, 'ANO - CALENDÁRIO DE 2024', ln=True, align='C')
+    pdf.cell(0, 8, 'IMPOSTO DE RENDA - PESSOA FÍSICA', ln=True, align='C')
     pdf.ln(10)
 
     # 1. DADOS CADASTRAIS
-    pdf.set_font('Arial', 'B', 12)
-    start_y = pdf.get_y()
-    pdf.cell(0, 10, '1 - DADOS CADASTRAIS', 0, 1, 'L')
-    pdf.set_font('Arial', '', 12)
-    pdf.cell(0, 8, f"Titular: {df_mensalidades.iloc[0]['Nome']}", 0, 1)
-    height = pdf.get_y() - start_y
-    pdf.rect(10, start_y, 190, height)
-    pdf.ln(5)
+    titular = df_mensalidades.iloc[0]['Nome'] if not df_mensalidades.empty else "N/A"
+    draw_section('1 - DADOS CADASTRAIS', [f"Titular: {titular}"])
 
     # 2. IDENTIFICAÇÃO DA FONTE PAGADORA
-    pdf.set_font('Arial', 'B', 12)
-    start_y = pdf.get_y()
-    pdf.cell(0, 10, '2 - IDENTIFICAÇÃO DA FONTE PAGADORA', 0, 1, 'L')
-    pdf.set_font('Arial', '', 12)
-    pdf.cell(0, 8, 'Nome empresarial: Cosemi - Cooperativa de Economia E Credito Mutuo dos', 0, 1)
-    pdf.cell(0, 8, 'Servidores Municipais de Itabira Ltda', 0, 1)
-    pdf.cell(0, 8, 'CNPJ: 16.651.002/0001-80', 0, 1)
-    height = pdf.get_y() - start_y
-    pdf.rect(10, start_y, 190, height)
-    pdf.ln(5)
+    fonte_pagadora = [
+        "Nome empresarial: Cosemi - Cooperativa de Economia E Credito Mutuo dos",
+        "Servidores Municipais de Itabira Ltda",
+        "CNPJ: 16.651.002/0001-80"
+    ]
+    draw_section('2 - IDENTIFICAÇÃO DA FONTE PAGADORA', fonte_pagadora)
 
     # 3. INFORMAÇÕES PLANO DE SAÚDE
-    pdf.set_font('Arial', 'B', 12)
-    start_y = pdf.get_y()
-    pdf.cell(0, 10, '3 - INFORMAÇÕES PLANO DE SAÚDE UNIMED/COSEMI', 0, 1, 'L')
-    
-    # Mensalidades Section
-    pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 10, 'Mensalidade Plano de Saúde:', 0, 1, 'L')
-    pdf.set_font('Arial', '', 12)
-    for _, row in df_mensalidades.iterrows():
-        pdf.cell(0, 8, f"Nome: {row.iloc[0]}", 0, 1)
-        pdf.cell(0, 8, f"Valor: {row.iloc[1]}", 0, 1)
-        pdf.ln(5)
-    
-    # Despesas Section
-    pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 10, 'Procedimentos co-participativos (consultas, exames, outros):', 0, 1, 'L')
-    pdf.set_font('Arial', '', 12)
-    for _, row in df_despesas.iterrows():
-        pdf.cell(0, 8, f"Nome: {row.iloc[0]}", 0, 1)
-        pdf.cell(0, 8, f"Valor: {row.iloc[1]}", 0, 1)
-        pdf.ln(5)
+    info_plano = ["Mensalidade Plano de Saúde:"]
+    if not df_mensalidades.empty:
+        for _, row in df_mensalidades.iterrows():
+            nome = row['Nome'] if 'Nome' in row else "N/A"
+            valor = row['Valor'] if 'Valor' in row else "R$ 0,00"
+            info_plano.append(f"Nome: {nome} - Valor: {valor}")
+    draw_section('3 - INFORMAÇÕES PLANO DE SAÚDE', info_plano)
 
-    # Descontos Section
-    pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 10, 'Descontos em Folha:', 0, 1, 'L')
-    pdf.set_font('Arial', '', 12)
-    pdf.cell(0, 8, f"Total de Descontos: {df_descontos}", 0, 1)
-    pdf.ln(5)
+    # 4. INFORMAÇÕES DESPESAS
+    despesas_info = []
+    for _, row in df_despesas.iterrows():
+        nome = row['Nome'] if 'Nome' in row else "N/A"
+        valor = row['Valor'] if 'Valor' in row else "R$ 0,00"
+        despesas_info.append(f"Nome: {nome} - Valor: {valor}")
+    draw_section('4 - INFORMAÇÕES DESPESAS', despesas_info)
+
+    # 5. DESCONTOS
+    total_descontos = format_currency(df_descontos) if isinstance(df_descontos, (int, float)) else "R$ 0,00"
+    descontos_info = [f"Total de Descontos: {total_descontos}"]
+    draw_section('5 - DESCONTOS', descontos_info)
     
-    height = pdf.get_y() - start_y
-    pdf.rect(10, start_y, 190, height)
-    
-    return pdf.output(dest='S').encode('latin1')
+    return pdf.output(dest='S').encode('latin-1')
