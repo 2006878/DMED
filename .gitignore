@@ -1,3 +1,6 @@
 /venv/
 /anexos/
+/despesas/
+/mensalidades/
+/descontos/
 .env
