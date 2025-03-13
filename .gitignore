@@ -3,4 +3,6 @@
 /despesas/
 /mensalidades/
 /descontos/
+/__pycache__/
 .env
+MENSALIDADES.xlsx
