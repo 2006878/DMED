@@ -2,6 +2,16 @@ from fpdf import FPDF
 import pandas as pd
 from datetime import datetime
 
+def calcular_mensalidade(row):
+    if row['tipo_acomodacao'] == 'enfermaria':
+        valor_por_usuario = 250.25 if row['pertence_camara'] else 156.80
+        return min(row['num_usuarios'], 4) * valor_por_usuario
+    elif row['tipo_acomodacao'] == 'apartamento':
+        if row['pertence_camara']:
+            return 454.23 + (row['num_usuarios'] - 1) * 704.49
+        else:
+            return (min(row['num_usuarios'], 4) * 156.80) + max(0, row['num_usuarios'] - 4) * 284.61
+
 cpf_titular = input("Por favor, digite o CPF do titular: ")
 
 df = pd.read_excel("mensalidades/IRF.xlsx", engine="openpyxl", skiprows=2, sheet_name="Mensalidade")
