@@ -95,108 +95,309 @@ def format_date(date):
 
 def calculate_active_months(admission, termination=None):
     if pd.isna(admission):
-        return 0
+        return []
     if pd.isna(termination):
-        return 12 if admission.year < ano_anterior else 13 - admission.month
+        return [month for month in range(1, 13)] if admission.year < ano_anterior else [month for month in range(int(admission.month), 13)]
+    
     if termination.year == ano_anterior and admission.year == ano_anterior:
-        return (termination.month - admission.month)
+        return [month for month in range(int(admission.month), int(termination.month) + 1)]
+    
     if termination.year == ano_anterior and admission.year < ano_anterior:
-        return termination.month
+        return [month for month in range(1, int(termination.month) + 1)]
+    
     if termination.year > ano_anterior and admission.year == ano_anterior:
-        return (12 - admission.month)
+        return [month for month in range(int(admission.month), 13)]
+    
     if termination.year > ano_anterior and admission.year < ano_anterior:
-        return 12
+        return [month for month in range(1, 13)]  # Returns [1,2,3,4,5,6,7,8,9,10,11,12]
     
+    return []
+    
+# def processa_mensalidades():
+#     mensalidades_file = os.path.join(os.getcwd(), 'mensalidades_file.csv')
+#     excel_file = os.path.join(os.getcwd(), 'MENSALIDADES.xlsx')
+
+#     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+#         df_mensalidades = pd.DataFrame()
+        
+#         excel = pd.ExcelFile(excel_file)
+#         monthly_columns = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+        
+#         for sheet_name in excel.sheet_names:
+#             # print(f"Processing sheet: {sheet_name}")
+#             df_mensalidades = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
+#             # print(f"Columns in {sheet_name}: {df_mensalidades.columns.tolist()}")
+#             # Check if required columns exist
+#             required_columns = ['Adm.', 'Deslig.', 'Par.', 'CPF']
+#             missing_columns = [col for col in required_columns if col not in df_mensalidades.columns]
+#             if missing_columns:
+#                 print(f"Warning: Sheet '{sheet_name}' is missing columns: {missing_columns}")
+#             # Add missing columns if they don't exist
+#             if 'Deslig.' not in df_mensalidades.columns:
+#                 df_mensalidades['Deslig.'] = None
+#                 print(f"Added missing column 'Deslig.' to sheet {sheet_name}")
+
+#             # Add plan type and source columns
+#             df_mensalidades["Tipo de Plano"] = df_mensalidades.get("Tipo de Plano", "Enfermaria")
+#             df_mensalidades['is_camara'] = sheet_name.lower().startswith('câmara')
+            
+#         # Filter data
+#         ano_anterior = pd.Timestamp.now().year - 1
+#         ano_atual = pd.Timestamp.now().year
+#         df_mensalidades["Deslig."] = pd.to_datetime(df_mensalidades["Deslig."], errors="coerce")
+#         df_mensalidades["Adm."] = pd.to_datetime(df_mensalidades["Adm."], errors="coerce")
+#         df_filtrado = df_mensalidades[(df_mensalidades["Deslig."].dt.year == ano_anterior) | 
+#                         (df_mensalidades["Deslig."].dt.year == ano_atual) | 
+#                         (df_mensalidades["Deslig."].isna())].copy()
+        
+#         # Data transformations
+#         df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
+#         df_filtrado["Titular_CPF"] = None
+#         df_filtrado["Relação"] = None
+#         df_filtrado["Total"] = 0.0
+
+#         # Relationship mapping
+#         relacao_mapeamento = {
+#             "T.": "Titular",
+#             "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge",
+#             "fil.": "Filho(a)", "fil": "Filho(a)", "Filh.": "Filho(a)",
+#             "Comp.": "Agregado(a)/outros",
+#             "mãe": "Mãe", "Pai": "Pai"
+#         }
+
+#         # Process relationships
+#         cpf_titular_atual = None
+#         for idx, row in df_filtrado.iterrows():
+#             par = row["Par."]
+#             if par == "T.":
+#                 cpf_titular_atual = format_cpf(row["CPF"])
+#                 df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
+#                 df_filtrado.at[idx, "Relação"] = "Titular"
+#             elif cpf_titular_atual:
+#                 df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
+#                 df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
+        
+#         # Calculate active months and weights
+#         df_filtrado["Meses Ativos"] = df_filtrado.apply(
+#             lambda row: calculate_active_months(row["Adm."], row["Deslig."]), axis=1
+#         )
+
+#         # Process family groups
+#         for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
+#             if pd.notna(cpf_titular):
+#                 total_titular = grupo[grupo["Relação"] == "Titular"]["Total 2024"].sum()
+#                 meses_totais = grupo["Meses Ativos"].sum()
+#                 df_filtrado.loc[grupo.index, "Peso"] = grupo["Meses Ativos"] / meses_totais
+#                 df_filtrado.loc[grupo.index, "Total"] = df_filtrado.loc[grupo.index, "Peso"] * total_titular
+
+#         for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
+#             if pd.notna(cpf_titular):
+#                 titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
+#                 is_camara = titular['is_camara']
+#                 plano_tipo = titular['Tipo de Plano']
+                
+#                 # Sort group members (titular first)
+#                 grupo_sorted = grupo.sort_values("Relação", key=lambda x: (x != "Titular"))
+                
+#                 for idx, (i, member) in enumerate(grupo_sorted.iterrows()):
+#                     for month in monthly_columns:
+#                         current_value = df_filtrado.at[i, month]
+                        
+#                         if is_camara:
+#                             if plano_tipo == "Enfermaria":
+#                                 if member["Relação"] != "Titular" and current_value > 250.25:
+#                                     df_filtrado.at[i, month] = 250.25
+#                             else:  # Apartamento
+#                                 max_value = 454.23 if member["Relação"] == "Titular" else 704.49
+#                                 if current_value > max_value:
+#                                     df_filtrado.at[i, month] = max_value
+#                         else:
+#                             if idx < 4:  # First 4 family members
+#                                 if current_value > 156.80:
+#                                     df_filtrado.at[i, month] = 156.80
+#                                 if plano_tipo == "Apartamento":
+#                                     df_filtrado.at[i, month] += 284.61
+#                             else:  # Beyond 4 members
+#                                 if plano_tipo == "Enfermaria":
+#                                     df_filtrado.at[i, month] = 0
+#                                 else:  # Apartamento
+#                                     df_filtrado.at[i, month] = 284.61
+        
+#         df_filtrado = pd.concat([df_filtrado, df_filtrado], ignore_index=True)
+
+#         # Calculate total for 2024
+#         df_filtrado['Total 2024'] = df_filtrado[monthly_columns].sum(axis=1)
+
+#         # Format currency
+#         df_filtrado["Total"] = df_filtrado["Total"].apply(
+#             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+#         )
+
+#         df_filtrado["Titular_CPF"].apply(format_cpf)
+#         df_filtrado["CPF"].apply(format_cpf)
+#         df_filtrado = df_filtrado[["Nome", "CPF", "Relação", "Titular_CPF", "Total"]]
+#         # Save the updated base file
+#         df_filtrado.to_csv(mensalidades_file, index=False)
+#         print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
+#         return df_filtrado
+    
+#     else:
+#         df_filtrado = pd.read_csv(mensalidades_file)
+#         print(f"Arquivo '{mensalidades_file}' foi lido com sucesso.")
+#         return df_filtrado
+
 def processa_mensalidades():
-    # Caminho da pasta de dados
-    data_folder = os.path.join(os.getcwd(), 'mensalidades')
-
-    # Arquivo base
     mensalidades_file = os.path.join(os.getcwd(), 'mensalidades_file.csv')
+    excel_file = os.path.join(os.getcwd(), 'MENSALIDADES.xlsx')
 
-    # Verificar se o arquivo existe e não está vazio
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-        # Initialize empty DataFrame
         df_mensalidades = pd.DataFrame()
-        print("DataFrame df_mensalidades inicializado.")
-
-        start = datetime.now()
-        # Iterate through files in data folder 
-        for filename in os.listdir(data_folder):
-            file_path = os.path.join(data_folder, filename)
-            if os.path.isfile(file_path) and filename.endswith('.xlsx'):
-                df = pd.read_excel(file_path, engine="openpyxl")
-                # df = pd.read_excel(file_path, engine="openpyxl", usecols=["Nome", "CPF", "Total 2024", "Par.", "Adm.", "Deslig."])
-                df_mensalidades = pd.concat([df_mensalidades, df], ignore_index=True)
+        monthly_columns = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
+                           'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+        excel = pd.ExcelFile(excel_file)
+        print("Reading Excel sheets:", excel.sheet_names)
         
-        # Filter data
-        ano_anterior = pd.Timestamp.now().year - 1
-        ano_atual = pd.Timestamp.now().year
-        df_mensalidades["Deslig."] = pd.to_datetime(df_mensalidades["Deslig."], errors="coerce")
-        df_mensalidades["Adm."] = pd.to_datetime(df_mensalidades["Adm."], errors="coerce")
-        df_filtrado = df_mensalidades[(df_mensalidades["Deslig."].dt.year == ano_anterior) | 
-                        (df_mensalidades["Deslig."].dt.year == ano_atual) | 
-                        (df_mensalidades["Deslig."].isna())].copy()
+        for sheet_name in excel.sheet_names:
+            print(f"\nProcessing sheet: {sheet_name}")
+            # Read all columns from Excel
+            df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
+            print(f"Found columns: {df.columns.tolist()}")
+            
+            # Verificar se as colunas necessárias existem
+            required_columns = ['Par.', 'CPF', 'Adm.', 'Deslig.']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                raise KeyError(f"Colunas ausentes na planilha {sheet_name}: {missing_columns}")
+            
+            # Converter colunas mensais para numérico
+            for month in monthly_columns:
+                if month in df.columns:
+                    df[month] = pd.to_numeric(df[month].replace('[\$,]', '', regex=True), errors='coerce')
+            
+            # Filtrar dados
+            ano_anterior = pd.Timestamp.now().year - 1
+            ano_atual = pd.Timestamp.now().year
+            df["Deslig."] = pd.to_datetime(df["Deslig."], errors="coerce")
+            df["Adm."] = pd.to_datetime(df["Adm."], errors="coerce")
+            df_filtrado = df[
+                (df["Deslig."].dt.year >= ano_anterior) | 
+                (pd.isna(df["Deslig."]))
+            ].copy()
+
+            # Transformações de dados
+            # df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
+            df_filtrado["CPF"] = df_filtrado["CPF"].apply(format_cpf)
+            df_filtrado["Titular_CPF"] = None
+            df_filtrado["Relação"] = None
+            df_filtrado["Total"] = 0.0
+
+            # Mapeamento de relações
+            relacao_mapeamento = {
+                "T.": "Titular",
+                "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge",
+                "fil.": "Filho(a)", "fil": "Filho(a)", "Filh.": "Filho(a)",
+                "Comp.": "Agregado(a)/outros",
+                "mãe": "Mãe", "Pai": "Pai"
+            }
+
+            # Processar relações
+            cpf_titular_atual = None
+            for idx, row in df_filtrado.iterrows():
+                par = row["Par."]
+                if par == "T.":
+                    cpf_titular_atual = format_cpf(row["CPF"]) if pd.notna(row["CPF"]) else row["Nome"]
+                    df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
+                    df_filtrado.at[idx, "Relação"] = "Titular"
+                elif cpf_titular_atual:
+                    df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
+                    df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
+            
+            # Calcular meses ativos e pesos
+            df_filtrado["Meses Ativos"] = df_filtrado.apply(
+                lambda row: calculate_active_months(row["Adm."], row["Deslig."]), axis=1
+            )
+
+            # Adicionar colunas padrão
+            df_filtrado["Tipo de Plano"] = df_filtrado.get("Tipo de Plano", "Enfermaria")
+            df_filtrado['is_camara'] = sheet_name.lower().startswith('câmara')
+
+            # Create a month name to number mapping
+            month_mapping = {
+                'janeiro': 1,
+                'fevereiro': 2, 
+                'março': 3,
+                'abril': 4,
+                'maio': 5,
+                'junho': 6,
+                'julho': 7,
+                'agosto': 8,
+                'setembro': 9,
+                'outubro': 10,
+                'novembro': 11,
+                'dezembro': 12
+            }
+
+            # Dividir valores entre os dependentes
+                        
+            # Processar valores mensais
+            for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
+                if pd.notna(cpf_titular):
+                    titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
+                    is_camara = titular['is_camara']
+                    plano_tipo = titular['Tipo de Plano']
+
+                    # Para cada mês, calcular quantos dependentes estão ativos
+                    for month in monthly_columns:
+                        month_num = month_mapping[month]
+                        
+                        # Contar dependentes ativos no mês atual
+                        dependentes_ativos = sum(1 for _, member in grupo.iterrows() 
+                                            if month_num in member["Meses Ativos"])
+                        
+                        if dependentes_ativos > 0:
+                            # Pegar o valor total do mês do titular
+                            valor_total_mes = float(titular[month]) if pd.notna(titular[month]) else 0
+                            valor_por_dependente = valor_total_mes / dependentes_ativos
+                            
+                            # Distribuir o valor entre os dependentes ativos
+                            for idx, (i, member) in enumerate(grupo.iterrows()):
+                                if month_num in member["Meses Ativos"]:
+                                    # Aplicar valor dividido antes das regras de limite
+                                    current_value = valor_por_dependente
+                                    
+                                    # Aplicar regras de limite após a divisão
+                                    if is_camara:
+                                        if plano_tipo == "Enfermaria":
+                                            max_value = 250.25
+                                        else:  
+                                            max_value = 454.23 if member["Relação"] == "Titular" else 704.49
+                                        df_filtrado.at[i, month] = min(current_value, max_value)
+                                    else:
+                                        if idx < 4:
+                                            base_value = min(current_value, 156.80)
+                                            if plano_tipo == "Apartamento":
+                                                base_value += 284.61
+                                            df_filtrado.at[i, month] = base_value
+                                        else:
+                                            df_filtrado.at[i, month] = 284.61 if plano_tipo == "Apartamento" else 0
+
+            # Concatenar com os dados existentes:
+            df_mensalidades = pd.concat([df_mensalidades, df_filtrado], ignore_index=True)
+
+        # Calcular total para 2024
+        existing_months = [col for col in monthly_columns if col in df_mensalidades.columns]
+        if existing_months:
+            df_mensalidades['Total'] = df_mensalidades[existing_months].sum(axis=1)         
+        else:
+            print("Nenhuma coluna de meses encontrada no DataFrame.")
         
-        # Data transformations
-        df_filtrado["Mat."] = df_filtrado["Mat."].astype(str)
-        df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
-        df_filtrado["Titular_CPF"] = None
-        df_filtrado["Relação"] = None
-        df_filtrado["Total"] = 0.0
-
-        # Relationship mapping
-        relacao_mapeamento = {
-            "T.": "Titular",
-            "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge",
-            "fil.": "Filho(a)", "fil": "Filho(a)", "Filh.": "Filho(a)",
-            "Comp.": "Agregado(a)/outros",
-            "mãe": "Mãe", "Pai": "Pai"
-        }
-
-        # Process relationships
-        cpf_titular_atual = None
-        for idx, row in df_filtrado.iterrows():
-            par = row["Par."]
-            if par == "T.":
-                cpf_titular_atual = row["CPF"]
-                df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
-                df_filtrado.at[idx, "Relação"] = "Titular"
-            elif cpf_titular_atual:
-                df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
-                df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
-
-        # Calculate active months and weights
-        df_filtrado["Meses Ativos"] = df_filtrado.apply(
-            lambda row: calculate_active_months(row["Adm."], row["Deslig."]), axis=1
-        )
-
-        # Process family groups
-        for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
-            if pd.notna(cpf_titular):
-                total_titular = grupo[grupo["Relação"] == "Titular"]["Total 2024"].sum()
-                meses_totais = grupo["Meses Ativos"].sum()
-                df_filtrado.loc[grupo.index, "Peso"] = grupo["Meses Ativos"] / meses_totais
-                df_filtrado.loc[grupo.index, "Total"] = df_filtrado.loc[grupo.index, "Peso"] * total_titular
-
-        # Format currency
-        df_filtrado["Total"] = df_filtrado["Total"].apply(
-            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        )
-
-        df_filtrado["Titular_CPF"].apply(format_cpf)
-        df_filtrado["CPF"].apply(format_cpf)
-        df_filtrado = df_filtrado[["Nome", "CPF", "Relação", "Titular_CPF", "Total"]]
-        # Save the updated base file
-        df_filtrado.to_csv(mensalidades_file, index=False)
-        print(f"Arquivo '{mensalidades_file}' criado com sucesso em {datetime.now() - start} segundos")
-        return df_filtrado
-    
+        # Salvar dados processados
+        df_mensalidades.to_csv(mensalidades_file, index=False)
+        print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
+        return df_mensalidades
     else:
-        df_filtrado = pd.read_csv(mensalidades_file)
-        print(f"Arquivo '{mensalidades_file}' foi lido com sucesso.")
-        return df_filtrado
-
+        return pd.read_csv(mensalidades_file)
+    
 def processa_despesas():
     # Caminho da pasta de dados
     data_folder = os.path.join(os.getcwd(), 'despesas')
@@ -293,14 +494,34 @@ def busca_dados_descontos(nome):
         return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "R$ 0,00"
     return ""
     
+# def busca_dados_mensalidades(cpf_alvo):
+    # df_filtrado = processa_mensalidades()
+    # if not df_filtrado.empty:
+    #     df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
+    #     df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
+    #     df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
+    # return df_filtrado
 def busca_dados_mensalidades(cpf_alvo):
+    """
+    Busca os dados das mensalidades do titular e seus dependentes com base no CPF do titular.
+    Retorna um DataFrame com os nomes e valores das mensalidades.
+    """
     df_filtrado = processa_mensalidades()
+    
     if not df_filtrado.empty:
+        # Formatar o CPF do titular e dos dependentes
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
+        
+        # Filtrar pelo CPF do titular (incluindo dependentes)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
+        
+        # Selecionar apenas as colunas necessárias
         df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
+        
+        # Formatar o valor como moeda
+        df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
+    
     return df_filtrado
-
 
 def busca_dados_despesas(cpf_alvo):
     df_despesas = processa_despesas()
@@ -392,3 +613,5 @@ def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     draw_section('5 - DESCONTOS', descontos_info)
     
     return pdf.output(dest='S').encode('latin-1')
+
+busca_dados_mensalidades(66323908620)
