@@ -357,8 +357,15 @@ def processa_mensalidades():
                         if dependentes_ativos > 0:
                             # Pegar o valor total do mês do titular
                             valor_total_mes = float(titular[month]) if pd.notna(titular[month]) else 0
-                            valor_por_dependente = valor_total_mes / dependentes_ativos
-                            
+                            # Regra específica para camara:
+                            if is_camara:
+                                if dependentes_ativos > 1:
+                                    valor_por_dependente = valor_total_mes / (dependentes_ativos - 1)
+                                else:
+                                    valor_por_dependente = valor_total_mes
+                            else:
+                                valor_por_dependente = valor_total_mes / dependentes_ativos
+
                             # Distribuir o valor entre os dependentes ativos
                             for idx, (i, member) in enumerate(grupo.iterrows()):
                                 if month_num in member["Meses Ativos"]:
@@ -368,9 +375,9 @@ def processa_mensalidades():
                                     # Aplicar regras de limite após a divisão
                                     if is_camara:
                                         if plano_tipo == "Enfermaria":
-                                            max_value = 250.25
+                                            max_value = 0 if member["Relação"] == "Titular" else 250.25
                                         else:  
-                                            max_value = 454.23 if member["Relação"] == "Titular" else 704.49
+                                            max_value = 0 if member["Relação"] == "Titular" else 704.49
                                         df_filtrado.at[i, month] = min(current_value, max_value)
                                     else:
                                         if idx < 4:
@@ -614,4 +621,4 @@ def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     
     return pdf.output(dest='S').encode('latin-1')
 
-busca_dados_mensalidades(66323908620)
+busca_dados_mensalidades('05947262630')
