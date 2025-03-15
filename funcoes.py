@@ -317,19 +317,18 @@ def processa_despesas():
         return df_despesas
 
 def processa_descontos():
-    data_folder = os.path.join(os.getcwd(), 'descontos')
     descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
+    excel_file = os.path.join(os.getcwd(), 'DESCONTOS.xlsx')
     
-    # Verificar se o arquivo existe e não está vazio
     if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
         df_descontos = pd.DataFrame()
         
-        for filename in os.listdir(data_folder):
-            file_path = os.path.join(data_folder, filename)
-            if os.path.isfile(file_path) and filename.endswith('.xlsx'):
-                df = pd.read_excel(file_path, engine="openpyxl", 
-                                usecols=["Nome", "Total de Descontos"])
-                df_descontos = pd.concat([df_descontos, df], ignore_index=True)
+        # Read all sheets from single Excel file
+        excel = pd.ExcelFile(excel_file)
+        for sheet_name in excel.sheet_names:
+            df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl",
+                             usecols=["Nome", "Total de Descontos"])
+            df_descontos = pd.concat([df_descontos, df], ignore_index=True)
         
         # Convert column to numeric
         df_descontos["Total de Descontos"] = pd.to_numeric(df_descontos["Total de Descontos"], 
@@ -344,7 +343,7 @@ def processa_descontos():
         
         # Save the updated base file
         df_descontos.to_csv(descontos_file, index=False)
-        print(f"Arquivo '{descontos_file}' atualizado com sucesso em {datetime.now()}")
+        print(f"Arquivo '{descontos_file}' criado com sucesso")
         return df_descontos
     else: 
         df_descontos = pd.read_csv(descontos_file)
