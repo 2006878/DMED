@@ -113,139 +113,6 @@ def calculate_active_months(admission, termination=None):
     
     return []
     
-# def processa_mensalidades():
-#     mensalidades_file = os.path.join(os.getcwd(), 'mensalidades_file.csv')
-#     excel_file = os.path.join(os.getcwd(), 'MENSALIDADES.xlsx')
-
-#     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-#         df_mensalidades = pd.DataFrame()
-        
-#         excel = pd.ExcelFile(excel_file)
-#         monthly_columns = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-        
-#         for sheet_name in excel.sheet_names:
-#             # print(f"Processing sheet: {sheet_name}")
-#             df_mensalidades = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
-#             # print(f"Columns in {sheet_name}: {df_mensalidades.columns.tolist()}")
-#             # Check if required columns exist
-#             required_columns = ['Adm.', 'Deslig.', 'Par.', 'CPF']
-#             missing_columns = [col for col in required_columns if col not in df_mensalidades.columns]
-#             if missing_columns:
-#                 print(f"Warning: Sheet '{sheet_name}' is missing columns: {missing_columns}")
-#             # Add missing columns if they don't exist
-#             if 'Deslig.' not in df_mensalidades.columns:
-#                 df_mensalidades['Deslig.'] = None
-#                 print(f"Added missing column 'Deslig.' to sheet {sheet_name}")
-
-#             # Add plan type and source columns
-#             df_mensalidades["Tipo de Plano"] = df_mensalidades.get("Tipo de Plano", "Enfermaria")
-#             df_mensalidades['is_camara'] = sheet_name.lower().startswith('câmara')
-            
-#         # Filter data
-#         ano_anterior = pd.Timestamp.now().year - 1
-#         ano_atual = pd.Timestamp.now().year
-#         df_mensalidades["Deslig."] = pd.to_datetime(df_mensalidades["Deslig."], errors="coerce")
-#         df_mensalidades["Adm."] = pd.to_datetime(df_mensalidades["Adm."], errors="coerce")
-#         df_filtrado = df_mensalidades[(df_mensalidades["Deslig."].dt.year == ano_anterior) | 
-#                         (df_mensalidades["Deslig."].dt.year == ano_atual) | 
-#                         (df_mensalidades["Deslig."].isna())].copy()
-        
-#         # Data transformations
-#         df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
-#         df_filtrado["Titular_CPF"] = None
-#         df_filtrado["Relação"] = None
-#         df_filtrado["Total"] = 0.0
-
-#         # Relationship mapping
-#         relacao_mapeamento = {
-#             "T.": "Titular",
-#             "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge",
-#             "fil.": "Filho(a)", "fil": "Filho(a)", "Filh.": "Filho(a)",
-#             "Comp.": "Agregado(a)/outros",
-#             "mãe": "Mãe", "Pai": "Pai"
-#         }
-
-#         # Process relationships
-#         cpf_titular_atual = None
-#         for idx, row in df_filtrado.iterrows():
-#             par = row["Par."]
-#             if par == "T.":
-#                 cpf_titular_atual = format_cpf(row["CPF"])
-#                 df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
-#                 df_filtrado.at[idx, "Relação"] = "Titular"
-#             elif cpf_titular_atual:
-#                 df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
-#                 df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
-        
-#         # Calculate active months and weights
-#         df_filtrado["Meses Ativos"] = df_filtrado.apply(
-#             lambda row: calculate_active_months(row["Adm."], row["Deslig."]), axis=1
-#         )
-
-#         # Process family groups
-#         for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
-#             if pd.notna(cpf_titular):
-#                 total_titular = grupo[grupo["Relação"] == "Titular"]["Total 2024"].sum()
-#                 meses_totais = grupo["Meses Ativos"].sum()
-#                 df_filtrado.loc[grupo.index, "Peso"] = grupo["Meses Ativos"] / meses_totais
-#                 df_filtrado.loc[grupo.index, "Total"] = df_filtrado.loc[grupo.index, "Peso"] * total_titular
-
-#         for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
-#             if pd.notna(cpf_titular):
-#                 titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
-#                 is_camara = titular['is_camara']
-#                 plano_tipo = titular['Tipo de Plano']
-                
-#                 # Sort group members (titular first)
-#                 grupo_sorted = grupo.sort_values("Relação", key=lambda x: (x != "Titular"))
-                
-#                 for idx, (i, member) in enumerate(grupo_sorted.iterrows()):
-#                     for month in monthly_columns:
-#                         current_value = df_filtrado.at[i, month]
-                        
-#                         if is_camara:
-#                             if plano_tipo == "Enfermaria":
-#                                 if member["Relação"] != "Titular" and current_value > 250.25:
-#                                     df_filtrado.at[i, month] = 250.25
-#                             else:  # Apartamento
-#                                 max_value = 454.23 if member["Relação"] == "Titular" else 704.49
-#                                 if current_value > max_value:
-#                                     df_filtrado.at[i, month] = max_value
-#                         else:
-#                             if idx < 4:  # First 4 family members
-#                                 if current_value > 156.80:
-#                                     df_filtrado.at[i, month] = 156.80
-#                                 if plano_tipo == "Apartamento":
-#                                     df_filtrado.at[i, month] += 284.61
-#                             else:  # Beyond 4 members
-#                                 if plano_tipo == "Enfermaria":
-#                                     df_filtrado.at[i, month] = 0
-#                                 else:  # Apartamento
-#                                     df_filtrado.at[i, month] = 284.61
-        
-#         df_filtrado = pd.concat([df_filtrado, df_filtrado], ignore_index=True)
-
-#         # Calculate total for 2024
-#         df_filtrado['Total 2024'] = df_filtrado[monthly_columns].sum(axis=1)
-
-#         # Format currency
-#         df_filtrado["Total"] = df_filtrado["Total"].apply(
-#             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-#         )
-
-#         df_filtrado["Titular_CPF"].apply(format_cpf)
-#         df_filtrado["CPF"].apply(format_cpf)
-#         df_filtrado = df_filtrado[["Nome", "CPF", "Relação", "Titular_CPF", "Total"]]
-#         # Save the updated base file
-#         df_filtrado.to_csv(mensalidades_file, index=False)
-#         print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
-#         return df_filtrado
-    
-#     else:
-#         df_filtrado = pd.read_csv(mensalidades_file)
-#         print(f"Arquivo '{mensalidades_file}' foi lido com sucesso.")
-#         return df_filtrado
-
 def processa_mensalidades():
     mensalidades_file = os.path.join(os.getcwd(), 'mensalidades_file.csv')
     excel_file = os.path.join(os.getcwd(), 'MENSALIDADES.xlsx')
@@ -450,19 +317,18 @@ def processa_despesas():
         return df_despesas
 
 def processa_descontos():
-    data_folder = os.path.join(os.getcwd(), 'descontos')
     descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
+    excel_file = os.path.join(os.getcwd(), 'DESCONTOS.xlsx')
     
-    # Verificar se o arquivo existe e não está vazio
     if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
         df_descontos = pd.DataFrame()
         
-        for filename in os.listdir(data_folder):
-            file_path = os.path.join(data_folder, filename)
-            if os.path.isfile(file_path) and filename.endswith('.xlsx'):
-                df = pd.read_excel(file_path, engine="openpyxl", 
-                                usecols=["Nome", "Total de Descontos"])
-                df_descontos = pd.concat([df_descontos, df], ignore_index=True)
+        # Read all sheets from single Excel file
+        excel = pd.ExcelFile(excel_file)
+        for sheet_name in excel.sheet_names:
+            df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl",
+                             usecols=["Nome", "Total de Descontos"])
+            df_descontos = pd.concat([df_descontos, df], ignore_index=True)
         
         # Convert column to numeric
         df_descontos["Total de Descontos"] = pd.to_numeric(df_descontos["Total de Descontos"], 
@@ -477,7 +343,7 @@ def processa_descontos():
         
         # Save the updated base file
         df_descontos.to_csv(descontos_file, index=False)
-        print(f"Arquivo '{descontos_file}' atualizado com sucesso em {datetime.now()}")
+        print(f"Arquivo '{descontos_file}' criado com sucesso")
         return df_descontos
     else: 
         df_descontos = pd.read_csv(descontos_file)
@@ -500,14 +366,7 @@ def busca_dados_descontos(nome):
         )
         return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "R$ 0,00"
     return ""
-    
-# def busca_dados_mensalidades(cpf_alvo):
-    # df_filtrado = processa_mensalidades()
-    # if not df_filtrado.empty:
-    #     df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
-    #     df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
-    #     df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
-    # return df_filtrado
+
 def busca_dados_mensalidades(cpf_alvo):
     """
     Busca os dados das mensalidades do titular e seus dependentes com base no CPF do titular.
