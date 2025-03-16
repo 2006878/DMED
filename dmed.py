@@ -3,8 +3,8 @@ import io
 from funcoes import *
 
 # Streamlit page configuration
-st.set_page_config(page_title=f"IRPF {ano_anterior}- COSEMI", layout="wide")
-st.title(f"INFORME PLANO DE SAÚDE {ano_anterior} IRPF - COSEMI")
+st.set_page_config(page_title=f"DMED {ano_anterior}- COSEMI", layout="wide")
+st.title(f"DOWNLOAD DMED {ano_anterior} IRPF - COSEMI")
 
 # Hide unnecessary UI elements
 st.markdown("""
@@ -58,11 +58,10 @@ import streamlit as st
 from funcoes import *
 
 # First load and cache the data
-@st.cache_data
+# @st.cache_data
 def load_data():
     return processa_mensalidades()
 
-# Load the data
 df = load_data()
 
 if not df.empty:
@@ -74,16 +73,20 @@ if not df.empty:
     
     # Show the dataframe
     st.dataframe(df[colunas_desejadas])
-    
+
+    @st.cache_data
+    def create_file(df):
+        return create_dmed_content(df)
+
     with st.spinner("Criando arquivo..."):
-        dmed_content = create_dmed_content(df)
-        
-        st.download_button(
-            label="📥 Download DMED",
-            data=dmed_content.encode('utf-8'),
-            file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
-            mime="text/plain"
-        )
+        dmed_content = create_file(df)
+    
+    st.download_button(
+        label="📥 Download DMED",
+        data=dmed_content.encode('utf-8'),
+        file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
+        mime="text/plain"
+    )
 
         
 # Footer
