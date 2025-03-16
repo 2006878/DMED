@@ -33,10 +33,15 @@ def normalize_name(name):
     return normalized
 
 def create_dmed_content(df_filtrado):
+    cpf_respostavel = "59374705672"
+    nome_respostavel = "Paulo Alexandre da Silva"
+    cnpj_empresa = "16651002000180"
+    nome_empresa = "COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI"
+
     content = [
-        "DMED|{ano_atual}|{ano_anterior}|N|||",
-        "RESPO|49904329672|NOME DO RESPONSAVEL|31|995216547||||",
-        "DECPJ|05699886000127|NOME EMPRESA|2|419761||49904329672|N||S|",
+        f"DMED|{ano_atual}|{ano_anterior}|N|||",
+        f"RESPO|{cpf_respostavel}|{nome_respostavel}||||||",
+        f"DECPJ|{cnpj_empresa}|{nome_empresa}|2|419761||{cpf_respostavel}|N||S|",
         "OPPAS|"
     ]
     
