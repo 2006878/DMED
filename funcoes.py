@@ -478,5 +478,3 @@ def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     draw_section('5 - DESCONTOS', descontos_info)
     
     return pdf.output(dest='S').encode('latin-1')
-
-# busca_dados_mensalidades('05947262630')
