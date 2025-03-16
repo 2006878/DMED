@@ -462,7 +462,7 @@ def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
 
     # 1. DADOS CADASTRAIS
     titular = df_mensalidades.iloc[0]['Nome'] if not df_mensalidades.empty else "N/A"
-    draw_section('1 - DADOS CADASTRAIS', [f"Titular: {titular}"])
+    draw_section('1 - DADOS CADASTRAIS', [f"Titular: {titular} - CPF: {cpf}"])
 
     # 2. IDENTIFICAÇÃO DA FONTE PAGADORA
     fonte_pagadora = [
