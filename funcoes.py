@@ -223,11 +223,8 @@ def processa_mensalidades():
                 if pd.notna(cpf_titular):
                     titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
                     is_camara = titular['is_camara']
-                    # plano_tipo = titular['Tipo de Plano']
-                    # # Apply titular's plan type to all members in the group
-                    # for idx in grupo.index:
-                    #     df_filtrado.at[idx, 'Tipo de Plano'] = plano_tipo
-
+                    plano_tipo = titular['Tipo de Plano']
+                    
                     # Para cada mês, calcular quantos dependentes estão ativos
                     for month in monthly_columns:
                         month_num = month_mapping[month]
@@ -253,7 +250,6 @@ def processa_mensalidades():
                                 if month_num in member["Meses Ativos"]:
                                     # Aplicar valor dividido antes das regras de limite
                                     current_value = valor_por_dependente
-                                    plano_tipo = member['Tipo de Plano']
                                     # Aplicar regras de limite após a divisão
                                     if is_camara:
                                         if plano_tipo == "Enfermaria":
