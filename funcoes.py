@@ -130,6 +130,16 @@ def processa_mensalidades():
             df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
             print(f"Found columns: {df.columns.tolist()}")
             
+            # Add default plan type if column doesn't exist
+            if 'Tipo de Plano' not in df.columns:
+                df['Tipo de Plano'] = 'Enfermaria'
+            
+            # Standardize plan types
+            df['Tipo de Plano'] = df['Tipo de Plano'].apply(
+                lambda x: 'Apartamento' if str(x).strip().upper() == 'APARTAMENTO' 
+                else 'Enfermaria'
+            )
+
             # Verificar se as colunas necessárias existem
             required_columns = ['Par.', 'CPF', 'Adm.', 'Deslig.']
             missing_columns = [col for col in required_columns if col not in df.columns]
@@ -168,15 +178,18 @@ def processa_mensalidades():
 
             # Processar relações
             cpf_titular_atual = None
+            plano_tipo_atual = None
             for idx, row in df_filtrado.iterrows():
                 par = row["Par."]
                 if par == "T.":
                     cpf_titular_atual = format_cpf(row["CPF"]) if pd.notna(row["CPF"]) else row["Nome"]
                     df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
                     df_filtrado.at[idx, "Relação"] = "Titular"
+                    plano_tipo_atual = row["Tipo de Plano"]  # Store titular's plan type
                 elif cpf_titular_atual:
                     df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
                     df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
+                    df_filtrado.at[idx, "Tipo de Plano"] = plano_tipo_atual  # Apply titular's plan type to dependent
             
             # Calcular meses ativos e pesos
             df_filtrado["Meses Ativos"] = df_filtrado.apply(
@@ -210,7 +223,10 @@ def processa_mensalidades():
                 if pd.notna(cpf_titular):
                     titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
                     is_camara = titular['is_camara']
-                    plano_tipo = titular['Tipo de Plano']
+                    # plano_tipo = titular['Tipo de Plano']
+                    # # Apply titular's plan type to all members in the group
+                    # for idx in grupo.index:
+                    #     df_filtrado.at[idx, 'Tipo de Plano'] = plano_tipo
 
                     # Para cada mês, calcular quantos dependentes estão ativos
                     for month in monthly_columns:
@@ -237,7 +253,7 @@ def processa_mensalidades():
                                 if month_num in member["Meses Ativos"]:
                                     # Aplicar valor dividido antes das regras de limite
                                     current_value = valor_por_dependente
-                                    
+                                    plano_tipo = member['Tipo de Plano']
                                     # Aplicar regras de limite após a divisão
                                     if is_camara:
                                         if plano_tipo == "Enfermaria":
