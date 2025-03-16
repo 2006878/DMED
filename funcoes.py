@@ -137,7 +137,10 @@ def processa_mensalidades():
             
             # Add default plan type if column doesn't exist
             if 'Tipo de Plano' not in df.columns:
-                df['Tipo de Plano'] = 'Enfermaria'
+                if sheet_name.lower().startswith('apartamento'):
+                    df['Tipo de Plano'] = 'Apartamento'
+                else:
+                    df['Tipo de Plano'] = 'Enfermaria'
             
             # Standardize plan types
             df['Tipo de Plano'] = df['Tipo de Plano'].apply(
@@ -202,6 +205,7 @@ def processa_mensalidades():
             )
 
             # Adicionar colunas padrão
+            
             df_filtrado["Tipo de Plano"] = df_filtrado.get("Tipo de Plano", "Enfermaria")
             df_filtrado['is_camara'] = sheet_name.lower().startswith('câmara')
 
