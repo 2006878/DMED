@@ -52,7 +52,7 @@ def create_dmed_content(df_filtrado):
 
         if pd.notna(titular_cpf):
             titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
-            valor_titular = float(titular["Total"].replace("R$", "").replace(".", "").replace(",", ".").strip() or 0)
+            valor_titular = float(str(titular["Total"]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0)
             
             if valor_titular > 0:
                 nome_titular = normalize_name(titular['Nome'])
@@ -152,7 +152,6 @@ def processa_mensalidades():
             ].copy()
 
             # Transformações de dados
-            # df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
             df_filtrado["CPF"] = df_filtrado["CPF"].apply(format_cpf)
             df_filtrado["Titular_CPF"] = None
             df_filtrado["Relação"] = None
