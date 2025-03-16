@@ -33,10 +33,15 @@ def normalize_name(name):
     return normalized
 
 def create_dmed_content(df_filtrado):
+    cpf_respostavel = "59374705672"
+    nome_respostavel = "Paulo Alexandre da Silva"
+    cnpj_empresa = "16651002000180"
+    nome_empresa = "COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI"
+
     content = [
-        "DMED|{ano_atual}|{ano_anterior}|N|||",
-        "RESPO|59374705672|Paulo Alexandre da Silva||||||",
-        "DECPJ|16651002000180|COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI|2|419761||59374705672|N||S|",
+        f"DMED|{ano_atual}|{ano_anterior}|N|||",
+        f"RESPO|{cpf_respostavel}|{nome_respostavel}||||||",
+        f"DECPJ|{cnpj_empresa}|{nome_empresa}|2|419761||{cpf_respostavel}|N||S|",
         "OPPAS|"
     ]
     
@@ -52,7 +57,7 @@ def create_dmed_content(df_filtrado):
 
         if pd.notna(titular_cpf):
             titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
-            valor_titular = float(titular["Total"].replace("R$", "").replace(".", "").replace(",", ".").strip() or 0)
+            valor_titular = float(str(titular["Total"]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0)
             
             if valor_titular > 0:
                 nome_titular = normalize_name(titular['Nome'])
@@ -130,6 +135,16 @@ def processa_mensalidades():
             df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
             print(f"Found columns: {df.columns.tolist()}")
             
+            # Add default plan type if column doesn't exist
+            if 'Tipo de Plano' not in df.columns:
+                df['Tipo de Plano'] = 'Enfermaria'
+            
+            # Standardize plan types
+            df['Tipo de Plano'] = df['Tipo de Plano'].apply(
+                lambda x: 'Apartamento' if str(x).strip().upper() == 'APARTAMENTO' 
+                else 'Enfermaria'
+            )
+
             # Verificar se as colunas necessárias existem
             required_columns = ['Par.', 'CPF', 'Adm.', 'Deslig.']
             missing_columns = [col for col in required_columns if col not in df.columns]
@@ -152,7 +167,6 @@ def processa_mensalidades():
             ].copy()
 
             # Transformações de dados
-            # df_filtrado["Total 2024"] = pd.to_numeric(df_filtrado["Total 2024"], errors="coerce").fillna(0).round(2)
             df_filtrado["CPF"] = df_filtrado["CPF"].apply(format_cpf)
             df_filtrado["Titular_CPF"] = None
             df_filtrado["Relação"] = None
@@ -169,15 +183,18 @@ def processa_mensalidades():
 
             # Processar relações
             cpf_titular_atual = None
+            plano_tipo_atual = None
             for idx, row in df_filtrado.iterrows():
                 par = row["Par."]
                 if par == "T.":
                     cpf_titular_atual = format_cpf(row["CPF"]) if pd.notna(row["CPF"]) else row["Nome"]
                     df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
                     df_filtrado.at[idx, "Relação"] = "Titular"
+                    plano_tipo_atual = row["Tipo de Plano"]  # Store titular's plan type
                 elif cpf_titular_atual:
                     df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
                     df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
+                    df_filtrado.at[idx, "Tipo de Plano"] = plano_tipo_atual  # Apply titular's plan type to dependent
             
             # Calcular meses ativos e pesos
             df_filtrado["Meses Ativos"] = df_filtrado.apply(
@@ -212,7 +229,7 @@ def processa_mensalidades():
                     titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
                     is_camara = titular['is_camara']
                     plano_tipo = titular['Tipo de Plano']
-
+                    
                     # Para cada mês, calcular quantos dependentes estão ativos
                     for month in monthly_columns:
                         month_num = month_mapping[month]
@@ -238,7 +255,6 @@ def processa_mensalidades():
                                 if month_num in member["Meses Ativos"]:
                                     # Aplicar valor dividido antes das regras de limite
                                     current_value = valor_por_dependente
-                                    
                                     # Aplicar regras de limite após a divisão
                                     if is_camara:
                                         if plano_tipo == "Enfermaria":
