@@ -157,8 +157,8 @@ def processa_mensalidades():
             # Converter colunas mensais para numérico
             for month in monthly_columns:
                 if month in df.columns:
-                    df[month] = pd.to_numeric(df[month].replace('[\$,]', '', regex=True), errors='coerce')
-            
+                    df[month] = pd.to_numeric(df[month].replace('[\\$,]', '', regex=True), errors='coerce')
+
             # Filtrar dados
             ano_anterior = pd.Timestamp.now().year - 1
             ano_atual = pd.Timestamp.now().year
