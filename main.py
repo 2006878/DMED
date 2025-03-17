@@ -43,7 +43,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<h3 style='font-size: 24px;'>Digite o CPF do titular a ser consultado:</h3>", unsafe_allow_html=True)
-cpf_alvo = format_cpf(st.text_input("", key="cpf_input"))
+cpf_alvo = format_cpf(st.text_input("Digite o CPF do Titular aqui.", label_visibility="collapsed", key="cpf_input"))
 
 if cpf_alvo:
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
