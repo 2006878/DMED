@@ -49,8 +49,8 @@ if cpf_alvo:
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
     df_despesas = busca_dados_despesas(cpf_alvo)
     # Check if DataFrame has rows before accessing first element
-    if not df_despesas.empty:
-        nome = df_despesas["Nome"].iloc[0]
+    if not df_filtrado.empty:
+        nome = df_filtrado["Nome"].iloc[0]
     else:
         nome = ""  # Or any default value you want to use
 
@@ -86,6 +86,10 @@ if cpf_alvo:
     with col2:
         st.markdown("### 💉 Procedimentos co-participativos")
         if not df_despesas.empty:
+            # Create boolean mask for exact matches
+            df_despesas['exact_match'] = df_despesas['Nome'].str.upper() == nome.upper()
+            # Sort by exact match (True values first)
+            df_despesas = df_despesas.sort_values('exact_match', ascending=False).drop('exact_match', axis=1)
             for _, row in df_despesas.iterrows():
                 st.markdown(f"""
                     <div style='background-color: #e6f3ff; padding: 10px; margin-bottom: 5px;'>
@@ -97,7 +101,7 @@ if cpf_alvo:
             st.info("Não existem registros de despesas para o CPF informado.")
 
     with col3:
-        st.markdown("### 💰 Descontos em folha ")
+        st.markdown("### 💰 Descontos ")
         # st.write(f"Total de descontos 2024:{descontos}")
         if descontos:
             st.markdown(f"""

@@ -415,7 +415,6 @@ def busca_dados_despesas(cpf_alvo):
     df_despesas = processa_despesas()
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
-        df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'})
@@ -431,7 +430,7 @@ def format_currency(value):
     except ValueError:
         return "Valores de desconto não encontrados."
 
-def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
+def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)  # Quebra de página automática
     pdf.add_page()
@@ -496,10 +495,7 @@ def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     draw_section('4 - INFORMAÇÕES DESPESAS', despesas_info)
 
     # 5. DESCONTOS
-    total_descontos = format_currency(df_descontos) if isinstance(df_descontos, (int, float)) else "R$ 0,00"
-    descontos_info = [f"Total de Descontos: {total_descontos}"]
+    descontos_info = [f"Total de Descontos: {descontos}"]
     draw_section('5 - DESCONTOS', descontos_info)
     
     return pdf.output(dest='S').encode('latin-1')
-
-processa_descontos()
