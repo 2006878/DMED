@@ -177,11 +177,12 @@ def processa_mensalidades():
 
             # Mapeamento de relações
             relacao_mapeamento = {
-                "T.": "Titular",
-                "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge",
+                "T.": "Titular", "T": "Titular",
+                "esp.": "Cônjuge", "esp": "Cônjuge", "es": "Cônjuge", "Conj.": "Cônjuge", "conj": "Cônjuge",
                 "fil.": "Filho(a)", "fil": "Filho(a)", "Filh.": "Filho(a)",
-                "Comp.": "Agregado(a)/outros",
-                "mãe": "Mãe", "Pai": "Pai"
+                "ent.": "Enteado(a)", "ent": "Enteado(a)", "Ent.": "Enteado(a)",
+                "Comp.": "Agregado(a)/outros", "comp.": "Agregado(a)/outros",
+                "mãe": "Pais", "mae": "Pais", "Pai": "Pais"
             }
 
             # Processar relações
