@@ -260,18 +260,16 @@ def processa_mensalidades():
                                     # Aplicar valor dividido antes das regras de limite
                                     current_value = valor_por_dependente
                                     # Aplicar regras de limite após a divisão
-                                    if is_camara:
-                                        if plano_tipo == "Enfermaria":
-                                            max_value = 0 if member["Relação"] == "Titular" else 250.25
-                                        else:  
-                                            max_value = 0 if member["Relação"] == "Titular" else 704.49
-                                        df_filtrado.at[i, month] = min(current_value, max_value)
+                                    if is_camara and member["Relação"] == "Titular":
+                                        if member["Relação"] == "Titular":
+                                            df_filtrado.at[i, month] = 0
+                                        else:
+                                            df_filtrado.at[i, month] = current_value
                                     else:
                                         if idx < 4:
-                                            base_value = min(current_value, 156.80)
                                             if plano_tipo == "Apartamento":
-                                                base_value += 284.61
-                                            df_filtrado.at[i, month] = base_value
+                                                current_value += 284.61
+                                            df_filtrado.at[i, month] = current_value
                                         else:
                                             df_filtrado.at[i, month] = 284.61 if plano_tipo == "Apartamento" else 0
 
@@ -499,3 +497,5 @@ def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     draw_section('5 - DESCONTOS', descontos_info)
     
     return pdf.output(dest='S').encode('latin-1')
+
+processa_mensalidades()
