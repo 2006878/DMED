@@ -497,5 +497,7 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     # 5. DESCONTOS
     descontos_info = [f"Total de Descontos: {descontos}"]
     draw_section('5 - DESCONTOS', descontos_info)
+
+    pdf.cell(0, 6, f'Documento criado em: {datetime.now().strftime("%d/%m/%Y")}', ln=True, align='C')
     
     return pdf.output(dest='S').encode('latin-1')
