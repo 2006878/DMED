@@ -352,10 +352,14 @@ def processa_descontos():
         df_descontos["Total de Descontos"] = pd.to_numeric(df_descontos["Total de Descontos"], 
                                                         errors="coerce").fillna(0).round(2)
         
-        # Group by Nome and sum Total de Descontos
-        df_descontos = df_descontos.groupby("Nome").agg({
+        # Clean the Nome column by stripping whitespace and standardizing case
+        df_descontos['Nome'] = df_descontos['Nome'].str.strip().str.upper()
+
+        # Group by Nome after cleaning and sum Total de Descontos
+        df_descontos = df_descontos.groupby('Nome', as_index=False).agg({
             'Total de Descontos': 'sum'
-        }).reset_index()
+        }).reset_index(drop=True)
+
 
         print("Registros únicos por Nome com soma total calculada.")
         
@@ -498,4 +502,4 @@ def generate_pdf(df_mensalidades, df_despesas, df_descontos, cpf):
     
     return pdf.output(dest='S').encode('latin-1')
 
-processa_mensalidades()
+processa_descontos()
