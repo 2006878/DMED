@@ -209,7 +209,8 @@ def processa_mensalidades():
             
             df_filtrado["Tipo de Plano"] = df_filtrado.get("Tipo de Plano", "Enfermaria")
             df_filtrado['is_camara'] = sheet_name.lower().startswith('câmara')
-
+            df_filtrado['is_complemento'] = sheet_name.lower().startswith('complemento')
+            
             # Create a month name to number mapping
             month_mapping = {
                 'janeiro': 1,
@@ -233,7 +234,7 @@ def processa_mensalidades():
                 if pd.notna(cpf_titular):
                     titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
                     is_camara = titular['is_camara']
-                    plano_tipo = titular['Tipo de Plano']
+                    is_complemento = titular['is_complemento']
                     
                     # Para cada mês, calcular quantos dependentes estão ativos
                     for month in monthly_columns:
@@ -266,13 +267,13 @@ def processa_mensalidades():
                                             df_filtrado.at[i, month] = 0
                                         else:
                                             df_filtrado.at[i, month] = current_value
+                                    elif is_complemento:
+                                        df_filtrado.at[i, month] = current_value 
                                     else:
                                         if idx < 4:
-                                            if plano_tipo == "Apartamento":
-                                                current_value += 284.61
                                             df_filtrado.at[i, month] = current_value
                                         else:
-                                            df_filtrado.at[i, month] = 284.61 if plano_tipo == "Apartamento" else 0
+                                            df_filtrado.at[i, month] = 0
 
             # Concatenar com os dados existentes:
             df_mensalidades = pd.concat([df_mensalidades, df_filtrado], ignore_index=True)
@@ -328,7 +329,7 @@ def processa_despesas():
         
         # Save the updated base file
         df_despesas.to_csv(despesas_file, index=False)
-        print(f"Arquivo '{despesas_file}' atualizado com sucesso em {datetime.now() - start} segundos")
+        print(f"Arquivo '{despesas_file}' criado com sucesso em {datetime.now() - start} segundos")
         return df_despesas
     else: 
         df_despesas = pd.read_csv(despesas_file)
