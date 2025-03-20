@@ -205,6 +205,9 @@ def processa_mensalidades():
                 lambda row: calculate_active_months(row["Adm."], row["Deslig."]), axis=1
             )
 
+            # Filtrar linhas com meses ativos diferente de vazio
+            df_filtrado = df_filtrado[df_filtrado["Meses Ativos"].astype(bool)]
+
             # Adicionar colunas padrão
             
             df_filtrado["Tipo de Plano"] = df_filtrado.get("Tipo de Plano", "Enfermaria")
