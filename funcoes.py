@@ -294,7 +294,7 @@ def processa_mensalidades():
     
 def processa_despesas():
     # Caminho da pasta de dados
-    data_folder = os.path.join(os.getcwd(), 'despesas')
+    data_folder = os.path.join(os.getcwd(), 'despesas_nova')
     # Arquivo base
     despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
     
@@ -312,8 +312,7 @@ def processa_despesas():
             if os.path.isfile(file_path) and filename.endswith('.csv'):
                 # Read only specified columns
                 df = pd.read_csv(file_path, encoding='latin1', sep=';', 
-                    usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 
-                            'DATA_DE_REALIZACAO', 'VALOR_DO_SERVICO'])
+                    usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
                 df_despesas = pd.concat([df_despesas, df], ignore_index=True)
         # Convert columns to numeric
         df_despesas["VALOR_DO_SERVICO"] = pd.to_numeric(df_despesas["VALOR_DO_SERVICO"], errors="coerce").fillna(0).round(2)
