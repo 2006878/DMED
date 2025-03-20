@@ -4,6 +4,7 @@
 /despesas_nova/
 /mensalidades/
 /descontos/
+app.py
 /__pycache__/
 .env
 MENSALIDADES.xlsx
