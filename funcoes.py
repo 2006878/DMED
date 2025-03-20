@@ -374,6 +374,19 @@ def processa_descontos():
         print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
         return df_descontos
     
+def busca_descontos(nome):
+    df_descontos = processa_descontos()
+    if not df_descontos.empty and nome != "":
+        # Convert nome to string and normalize it
+        nome = str(nome).strip()
+        df_descontos['Nome'] = df_descontos['Nome'].astype(str).str.strip()
+        
+        # Now filter using the normalized values
+        df_descontos = df_descontos[df_descontos['Nome'].str.contains(nome, case=False, na=False)]
+        
+        return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "0"
+    return "0"
+
 def busca_dados_descontos(nome):
     df_descontos = processa_descontos()
     if not df_descontos.empty and nome != "":
@@ -413,16 +426,46 @@ def busca_dados_mensalidades(cpf_alvo):
     
     return df_filtrado
 
-def busca_dados_despesas(cpf_alvo):
+def busca_dados_despesas(cpf_alvo, nome):
     df_despesas = processa_despesas()
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
-        df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'})
-        # Return empty DataFrame if no matches found
+        total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
+        
+        # Convert descontos to float
+        descontos = float(busca_descontos(nome))
+        diferenca = descontos - total_despesas
+        print(f"Diferença: {diferenca}")
+        
+        # Busca o titular usando str.contains()
+        mask = df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
+
+        if diferenca > 0:
+            df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+                
+        elif diferenca < 0:
+            print(f"Diferença: {diferenca} menor que 0")
+            remaining_mask = ~df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
+            print(f"remaining_mask: {remaining_mask}")
+            remaining_count = remaining_mask.sum()
+            
+            if remaining_count > 0:
+                value_per_record = diferenca / remaining_count
+                df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] + value_per_record
+        else: 
+            pass
+
+        df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
+            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+        df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(
+            columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'}
+        )
+        
         if df_despesas.empty:
             return pd.DataFrame(columns=['Nome', 'Valor'])
+            
     return df_despesas
 
 def format_currency(value):
