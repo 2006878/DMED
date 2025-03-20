@@ -99,7 +99,7 @@ def format_date(date):
     return pd.to_datetime(date).strftime('%Y%m%d')
 
 def calculate_active_months(admission, termination=None):
-    if pd.isna(admission):
+    if pd.isna(admission) or admission.year > ano_anterior:
         return []
     if pd.isna(termination):
         return [month for month in range(1, 13)] if admission.year < ano_anterior else [month for month in range(int(admission.month), 13)]
