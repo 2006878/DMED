@@ -1,5 +1,4 @@
 import streamlit as st
-import io
 from funcoes import *
 
 # Streamlit page configuration
