@@ -1,5 +1,4 @@
 import streamlit as st
-import io
 from funcoes import *
 
 # Streamlit page configuration
@@ -47,13 +46,15 @@ cpf_alvo = format_cpf(st.text_input("Digite o CPF do Titular aqui.", label_visib
 
 if cpf_alvo:
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
-    df_despesas = busca_dados_despesas(cpf_alvo)
     # Check if DataFrame has rows before accessing first element
     if not df_filtrado.empty:
         nome = df_filtrado["Nome"].iloc[0]
     else:
         nome = ""  # Or any default value you want to use
-
+    
+    df_despesas = busca_dados_despesas(cpf_alvo, nome)
+    
+    # Buscar dados de descontos
     descontos = busca_dados_descontos(nome)
  
     # Gerar PDF

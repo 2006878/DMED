@@ -209,7 +209,8 @@ def processa_mensalidades():
             
             df_filtrado["Tipo de Plano"] = df_filtrado.get("Tipo de Plano", "Enfermaria")
             df_filtrado['is_camara'] = sheet_name.lower().startswith('câmara')
-
+            df_filtrado['is_complemento'] = sheet_name.lower().startswith('complemento')
+            
             # Create a month name to number mapping
             month_mapping = {
                 'janeiro': 1,
@@ -233,7 +234,7 @@ def processa_mensalidades():
                 if pd.notna(cpf_titular):
                     titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
                     is_camara = titular['is_camara']
-                    plano_tipo = titular['Tipo de Plano']
+                    is_complemento = titular['is_complemento']
                     
                     # Para cada mês, calcular quantos dependentes estão ativos
                     for month in monthly_columns:
@@ -266,13 +267,13 @@ def processa_mensalidades():
                                             df_filtrado.at[i, month] = 0
                                         else:
                                             df_filtrado.at[i, month] = current_value
+                                    elif is_complemento:
+                                        df_filtrado.at[i, month] = current_value 
                                     else:
                                         if idx < 4:
-                                            if plano_tipo == "Apartamento":
-                                                current_value += 284.61
                                             df_filtrado.at[i, month] = current_value
                                         else:
-                                            df_filtrado.at[i, month] = 284.61 if plano_tipo == "Apartamento" else 0
+                                            df_filtrado.at[i, month] = 0
 
             # Concatenar com os dados existentes:
             df_mensalidades = pd.concat([df_mensalidades, df_filtrado], ignore_index=True)
@@ -293,7 +294,7 @@ def processa_mensalidades():
     
 def processa_despesas():
     # Caminho da pasta de dados
-    data_folder = os.path.join(os.getcwd(), 'despesas')
+    data_folder = os.path.join(os.getcwd(), 'despesas_nova')
     # Arquivo base
     despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
     
@@ -311,8 +312,7 @@ def processa_despesas():
             if os.path.isfile(file_path) and filename.endswith('.csv'):
                 # Read only specified columns
                 df = pd.read_csv(file_path, encoding='latin1', sep=';', 
-                    usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 
-                            'DATA_DE_REALIZACAO', 'VALOR_DO_SERVICO'])
+                    usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
                 df_despesas = pd.concat([df_despesas, df], ignore_index=True)
         # Convert columns to numeric
         df_despesas["VALOR_DO_SERVICO"] = pd.to_numeric(df_despesas["VALOR_DO_SERVICO"], errors="coerce").fillna(0).round(2)
@@ -328,7 +328,7 @@ def processa_despesas():
         
         # Save the updated base file
         df_despesas.to_csv(despesas_file, index=False)
-        print(f"Arquivo '{despesas_file}' atualizado com sucesso em {datetime.now() - start} segundos")
+        print(f"Arquivo '{despesas_file}' criado com sucesso em {datetime.now() - start} segundos")
         return df_despesas
     else: 
         df_despesas = pd.read_csv(despesas_file)
@@ -373,6 +373,19 @@ def processa_descontos():
         print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
         return df_descontos
     
+def busca_descontos(nome):
+    df_descontos = processa_descontos()
+    if not df_descontos.empty and nome != "":
+        # Convert nome to string and normalize it
+        nome = str(nome).strip()
+        df_descontos['Nome'] = df_descontos['Nome'].astype(str).str.strip()
+        
+        # Now filter using the normalized values
+        df_descontos = df_descontos[df_descontos['Nome'].str.contains(nome, case=False, na=False)]
+        
+        return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "0"
+    return "0"
+
 def busca_dados_descontos(nome):
     df_descontos = processa_descontos()
     if not df_descontos.empty and nome != "":
@@ -412,16 +425,46 @@ def busca_dados_mensalidades(cpf_alvo):
     
     return df_filtrado
 
-def busca_dados_despesas(cpf_alvo):
+def busca_dados_despesas(cpf_alvo, nome):
     df_despesas = processa_despesas()
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
-        df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'})
-        # Return empty DataFrame if no matches found
+        total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
+        
+        # Convert descontos to float
+        descontos = float(busca_descontos(nome))
+        diferenca = descontos - total_despesas
+        print(f"Diferença: {diferenca}")
+        
+        # Busca o titular usando str.contains()
+        mask = df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
+
+        if diferenca > 0:
+            df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+                
+        elif diferenca < 0:
+            print(f"Diferença: {diferenca} menor que 0")
+            remaining_mask = ~df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
+            print(f"remaining_mask: {remaining_mask}")
+            remaining_count = remaining_mask.sum()
+            
+            if remaining_count > 0:
+                value_per_record = diferenca / remaining_count
+                df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] + value_per_record
+        else: 
+            pass
+
+        df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
+            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+        df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(
+            columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'}
+        )
+        
         if df_despesas.empty:
             return pd.DataFrame(columns=['Nome', 'Valor'])
+            
     return df_despesas
 
 def format_currency(value):
