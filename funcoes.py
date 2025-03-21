@@ -474,9 +474,11 @@ def busca_dados_despesas(cpf_alvo, nome):
                 'BENEFICIARIO': [nome],
                 'VALOR_DO_SERVICO': [diferenca]
             })
-            df_despesas = pd.concat([df_despesas, new_row], ignore_index=True)
+            pass
+            #df_despesas = pd.concat([df_despesas, new_row], ignore_index=True)
         else:
-            df_despesas.loc[titular_mask, "VALOR_DO_SERVICO"] += diferenca
+            pass
+            #df_despesas.loc[titular_mask, "VALOR_DO_SERVICO"] += diferenca
 
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
