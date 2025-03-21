@@ -377,35 +377,24 @@ def processa_descontos():
         print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
         return df_descontos
     
-def busca_descontos(nome):
+def busca_dados_descontos(cpf_alvo):
+    df_filtrado = busca_dados_mensalidades(cpf_alvo)
     df_descontos = processa_descontos()
-    if not df_descontos.empty and nome != "":
-        # Convert nome to string and normalize it
-        nome = str(nome).strip()
-        df_descontos['Nome'] = df_descontos['Nome'].astype(str).str.strip()
-        
-        # Now filter using the normalized values
-        df_descontos = df_descontos[df_descontos['Nome'].str.contains(nome, case=False, na=False)]
-        
-        return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "0"
-    return "0"
+    total_descontos = 0
 
-def busca_dados_descontos(nome):
-    df_descontos = processa_descontos()
-    if not df_descontos.empty and nome != "":
-        # Convert nome to string and normalize it
-        nome = str(nome).strip()
-        df_descontos['Nome'] = df_descontos['Nome'].astype(str).str.strip()
-        
-        # Now filter using the normalized values
-        df_descontos = df_descontos[df_descontos['Nome'].str.contains(nome, case=False, na=False)]
-        
-        # Format the values as currency
-        df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(
-            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        )
-        return df_descontos["Total de Descontos"].iloc[0] if not df_descontos.empty else "R$ 0,00"
-    return ""
+    if not df_descontos.empty:
+        if not df_filtrado.empty:
+            for _, row in df_filtrado.iterrows():
+                nome = str(row['Nome']).strip()
+                if nome:
+                    df_descontos['Nome'] = df_descontos['Nome'].astype(str).str.strip()
+                    # Convert nome to string explicitly before using in contains()
+                    pattern = str(nome)
+                    matches = df_descontos[df_descontos['Nome'].str.contains(pattern, case=False, na=False, regex=False)]
+                    if not matches.empty:
+                        total_descontos += matches["Total de Descontos"].iloc[0]
+
+    return total_descontos
 
 def busca_dados_mensalidades(cpf_alvo):
     """
@@ -435,41 +424,60 @@ def busca_dados_despesas(cpf_alvo, nome):
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
         total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
+        print(f"Total de despesas: {total_despesas}")
         
-        descontos = float(busca_descontos(nome))
+        descontos = float(busca_dados_descontos(nome))
+        print(f"Descontos: {descontos}")
         diferenca = descontos - total_despesas
         print(f"Diferença: {diferenca}")
-        
+
         mask = df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
         remaining_mask = ~df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
         remaining_count = remaining_mask.sum()
         total_remaining_mask = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"].sum()
+        print(f"Total do valor dos dependentes: {total_remaining_mask}")
+        print(f"Quantidade de dependentes: {remaining_count}")
 
-        if diferenca > 0 or remaining_count == 0 or total_remaining_mask < diferenca:
-            if total_remaining_mask < diferenca:
-                diferenca = diferenca - total_remaining_mask
-            df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+        
+        if descontos > 0 and not mask.empty():    
+            if diferenca > 0 or remaining_count == 0 or total_remaining_mask < diferenca:
+                if total_remaining_mask < diferenca:
+                    diferenca = diferenca - total_remaining_mask
+                df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+                    
+            elif diferenca < 0 and remaining_count > 0 or mask.empty and remaining_count > 0:
+                value_per_record = abs(diferenca) / remaining_count
                 
-        elif diferenca < 0 and remaining_count > 0:
-            value_per_record = abs(diferenca) / remaining_count
-            
-            # First handle records with insufficient values
-            insufficient_mask = remaining_mask & (df_despesas["VALOR_DO_SERVICO"] < value_per_record)
-            if insufficient_mask.any():
-                insufficient_values = df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"]
-                df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"] = 0
-                diferenca += insufficient_values.sum()
+                # First handle records with insufficient values
+                insufficient_mask = remaining_mask & (df_despesas["VALOR_DO_SERVICO"] < value_per_record)
+                if insufficient_mask.any():
+                    insufficient_values = df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"]
+                    df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"] = 0
+                    diferenca += insufficient_values.sum()
+                    
+                    # Update remaining records
+                    remaining_mask = remaining_mask & ~insufficient_mask
+                    remaining_count = remaining_mask.sum()
+                    
+                    if remaining_count > 0:
+                        value_per_record = abs(diferenca) / remaining_count
                 
-                # Update remaining records
-                remaining_mask = remaining_mask & ~insufficient_mask
-                remaining_count = remaining_mask.sum()
-                
+                # Process remaining records with sufficient values
                 if remaining_count > 0:
-                    value_per_record = abs(diferenca) / remaining_count
-            
-            # Process remaining records with sufficient values
-            if remaining_count > 0:
-                df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
+                    df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
+        
+        if diferenca > total_despesas:
+            # Create new row for titular if not exists
+            titular_mask = df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
+            if not titular_mask.any():
+                new_row = pd.DataFrame({
+                    'CPF_DO_RESPONSAVEL': [cpf_alvo],
+                    'BENEFICIARIO': [nome],
+                    'VALOR_DO_SERVICO': [diferenca]
+                })
+                df_despesas = pd.concat([df_despesas, new_row], ignore_index=True)
+            else:
+                df_despesas.loc[titular_mask, "VALOR_DO_SERVICO"] += diferenca
 
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")

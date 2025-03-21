@@ -52,10 +52,13 @@ if cpf_alvo:
     else:
         nome = ""  # Or any default value you want to use
     
-    df_despesas = busca_dados_despesas(cpf_alvo, nome)
-    
     # Buscar dados de descontos
-    descontos = busca_dados_descontos(nome)
+    descontos = busca_dados_descontos(cpf_alvo)
+    
+    df_despesas = busca_dados_despesas(cpf_alvo, nome)
+
+    # Convert currency string to float before formatting
+    descontos = f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
  
     # Gerar PDF
     if not df_filtrado.empty or not df_despesas.empty:
