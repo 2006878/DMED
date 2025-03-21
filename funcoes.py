@@ -274,6 +274,7 @@ def processa_mensalidades():
                                         df_filtrado.at[i, month] = current_value 
                                     else:
                                         if idx < 4:
+                                            current_value = valor_total_mes / 4
                                             df_filtrado.at[i, month] = current_value
                                         else:
                                             df_filtrado.at[i, month] = 0
