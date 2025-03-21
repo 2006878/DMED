@@ -439,11 +439,12 @@ def busca_dados_despesas(cpf_alvo, nome):
         print(f"Quantidade de dependentes: {remaining_count}")
 
         
-        if descontos > 0 and not mask.empty:    
-            if diferenca > 0 or remaining_count == 0 or total_remaining_mask < diferenca:
-                if total_remaining_mask < diferenca:
-                    diferenca = diferenca - total_remaining_mask
-                df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+        if descontos > 0:
+            if diferenca > 0 and not mask.empty:
+                if  remaining_count == 0 or total_remaining_mask < diferenca:
+                    if total_remaining_mask < diferenca:
+                        diferenca = diferenca - total_remaining_mask
+                    df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
                     
             elif diferenca < 0 and remaining_count > 0 or mask.empty and remaining_count > 0:
                 value_per_record = abs(diferenca) / remaining_count
@@ -465,20 +466,6 @@ def busca_dados_despesas(cpf_alvo, nome):
                 # Process remaining records with sufficient values
                 if remaining_count > 0:
                     df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
-        
-        # Create new row for titular if not exists
-        titular_mask = df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
-        if not titular_mask.any() and not df_despesas.empty:
-            new_row = pd.DataFrame({
-                'CPF_DO_RESPONSAVEL': [cpf_alvo],
-                'BENEFICIARIO': [nome],
-                'VALOR_DO_SERVICO': [diferenca]
-            })
-            pass
-            #df_despesas = pd.concat([df_despesas, new_row], ignore_index=True)
-        else:
-            pass
-            #df_despesas.loc[titular_mask, "VALOR_DO_SERVICO"] += diferenca
 
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
