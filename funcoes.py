@@ -439,34 +439,39 @@ def busca_dados_despesas(cpf_alvo, nome):
         print(f"Total do valor dos dependentes: {total_remaining_mask}")
         print(f"Quantidade de dependentes: {remaining_count}")
 
-        
         if descontos > 0:
-            if diferenca > 0 and not mask.empty:
-                if  remaining_count == 0 or total_remaining_mask < diferenca:
-                    if total_remaining_mask < diferenca:
-                        diferenca = diferenca - total_remaining_mask
-                    df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+            if diferenca > 0 and mask is True:
+                df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
                     
-            elif diferenca < 0 and remaining_count > 0 or mask.empty and remaining_count > 0:
+            elif diferenca < 0 and remaining_count > 0 or not remaining_mask.empty:
                 value_per_record = abs(diferenca) / remaining_count
                 
-                # First handle records with insufficient values
-                insufficient_mask = remaining_mask & (df_despesas["VALOR_DO_SERVICO"] < value_per_record)
-                if insufficient_mask.any():
-                    insufficient_values = df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"]
-                    df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"] = 0
-                    diferenca += insufficient_values.sum()
-                    
-                    # Update remaining records
-                    remaining_mask = remaining_mask & ~insufficient_mask
-                    remaining_count = remaining_mask.sum()
-                    
-                    if remaining_count > 0:
-                        value_per_record = abs(diferenca) / remaining_count
+                if diferenca < 0:
+                    # First handle records with insufficient values
+                    insufficient_mask = remaining_mask & (df_despesas["VALOR_DO_SERVICO"] < value_per_record)
+                    if insufficient_mask.any():
+                        insufficient_values = df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"]
+                        df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"] = 0
+                        diferenca += insufficient_values.sum()
+                        
+                        # Update remaining records
+                        remaining_mask = remaining_mask & ~insufficient_mask
+                        remaining_count = remaining_mask.sum()
+                        
+                        if remaining_count > 0:
+                            value_per_record = abs(diferenca) / remaining_count
                 
                 # Process remaining records with sufficient values
                 if remaining_count > 0:
-                    df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
+                    if diferenca < 0:
+                        df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
+                    else: 
+                        df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] += value_per_record
+
+            elif descontos != 0 and df_despesas.empty:
+                df_despesas = pd.DataFrame(columns=['BENEFICIARIO', 'VALOR_DO_SERVICO'])
+                df_despesas["VALOR_DO_SERVICO"] = descontos
+                df_despesas["BENEFICIARIO"] = nome
 
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
