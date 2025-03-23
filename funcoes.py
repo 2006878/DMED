@@ -238,7 +238,7 @@ def processa_mensalidades():
                     titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
                     is_camara = titular['is_camara']
                     is_complemento = titular['is_complemento']
-                    
+
                     # Para cada mês, calcular quantos dependentes estão ativos
                     for month in monthly_columns:
                         month_num = month_mapping[month]
@@ -256,6 +256,8 @@ def processa_mensalidades():
                                     valor_por_dependente = valor_total_mes / (dependentes_ativos - 1)
                                 else:
                                     valor_por_dependente = valor_total_mes
+                            if dependentes_ativos > 4:
+                                valor_por_dependente = valor_total_mes / 4
                             else:
                                 valor_por_dependente = valor_total_mes / dependentes_ativos
 
@@ -274,7 +276,6 @@ def processa_mensalidades():
                                         df_filtrado.at[i, month] = current_value 
                                     else:
                                         if idx < 4:
-                                            current_value = valor_total_mes / 4
                                             df_filtrado.at[i, month] = current_value
                                         else:
                                             df_filtrado.at[i, month] = 0
@@ -288,7 +289,7 @@ def processa_mensalidades():
             df_mensalidades['Total'] = df_mensalidades[existing_months].sum(axis=1)         
         else:
             print("Nenhuma coluna de meses encontrada no DataFrame.")
-        
+
         # Salvar dados processados
         df_mensalidades.to_csv(mensalidades_file, index=False)
         print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
