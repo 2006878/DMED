@@ -214,82 +214,46 @@ def processa_mensalidades():
             df_filtrado['is_camara'] = sheet_name.lower().startswith('câmara')
             df_filtrado['is_complemento'] = sheet_name.lower().startswith('complemento')
             
-            # Create a month name to number mapping
-            month_mapping = {
-                'janeiro': 1,
-                'fevereiro': 2, 
-                'março': 3,
-                'abril': 4,
-                'maio': 5,
-                'junho': 6,
-                'julho': 7,
-                'agosto': 8,
-                'setembro': 9,
-                'outubro': 10,
-                'novembro': 11,
-                'dezembro': 12
-            }
-
             # Dividir valores entre os dependentes
-                        
-            # Processar valores mensais
+            # Inside the group processing section of processa_mensalidades()
+            # Dentro do loop que processa os grupos:
             for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
                 if pd.notna(cpf_titular):
                     titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
                     is_camara = titular['is_camara']
-                    is_complemento = titular['is_complemento']
 
-                    # Para cada mês, calcular quantos dependentes estão ativos
-                    for month in monthly_columns:
-                        month_num = month_mapping[month]
-                        
-                        # Contar dependentes ativos no mês atual
-                        dependentes_ativos = sum(1 for _, member in grupo.iterrows() 
-                                            if month_num in member["Meses Ativos"])
-                        
-                        if dependentes_ativos > 0:
-                            # Pegar o valor total do mês do titular
-                            valor_total_mes = float(titular[month]) if pd.notna(titular[month]) else 0
-                            # Regra específica para camara:
-                            if is_camara:
-                                if dependentes_ativos > 1:
-                                    valor_por_dependente = valor_total_mes / (dependentes_ativos - 1)
-                                else:
-                                    valor_por_dependente = valor_total_mes
-                            if dependentes_ativos > 4:
-                                valor_por_dependente = valor_total_mes / 4
+                    # Get total value from "Total 2024" column
+                    valor_total_anual = float(titular["Total 2024"]) if pd.notna(titular["Total 2024"]) else 0
+
+                    # Calculate active months only for first 4 members
+                    total_meses_validos = sum(
+                        len(member["Meses Ativos"])
+                        for idx, (_, member) in enumerate(grupo.iterrows())
+                        if idx < 4
+                    )
+
+                    # Calculate value per active month for valid members
+                    valor_por_mes = valor_total_anual / total_meses_validos if total_meses_validos > 0 else 0
+
+                    # Redefinir os índices do grupo para evitar problemas de indexação
+                    grupo = grupo.reset_index(drop=True)
+
+                    # Distribute value based on active months for each member
+                    for idx, member in grupo.iterrows():
+                        if idx < 4:  # First 4 members
+                            meses_ativos_membro = len(member["Meses Ativos"])
+                            valor_membro = valor_por_mes * meses_ativos_membro
+
+                            if is_camara and member["Relação"] == "Titular":
+                                grupo.at[idx, "Total"] = 0
                             else:
-                                valor_por_dependente = valor_total_mes / dependentes_ativos
+                                grupo.at[idx, "Total"] = valor_membro
+                        else:  # Beyond 4 members
+                            grupo.at[idx, "Total"] = 0
 
-                            # Distribuir o valor entre os dependentes ativos
-                            for idx, (i, member) in enumerate(grupo.iterrows()):
-                                if month_num in member["Meses Ativos"]:
-                                    # Aplicar valor dividido antes das regras de limite
-                                    current_value = valor_por_dependente
-                                    # Aplicar regras de limite após a divisão
-                                    if is_camara and member["Relação"] == "Titular":
-                                        if member["Relação"] == "Titular":
-                                            df_filtrado.at[i, month] = 0
-                                        else:
-                                            df_filtrado.at[i, month] = current_value
-                                    elif is_complemento:
-                                        df_filtrado.at[i, month] = current_value 
-                                    else:
-                                        if idx < 4:
-                                            df_filtrado.at[i, month] = current_value
-                                        else:
-                                            df_filtrado.at[i, month] = 0
-
-            # Concatenar com os dados existentes:
-            df_mensalidades = pd.concat([df_mensalidades, df_filtrado], ignore_index=True)
-
-        # Calcular total para 2024
-        existing_months = [col for col in monthly_columns if col in df_mensalidades.columns]
-        if existing_months:
-            df_mensalidades['Total'] = df_mensalidades[existing_months].sum(axis=1)         
-        else:
-            print("Nenhuma coluna de meses encontrada no DataFrame.")
-
+                    # Adicionar os registros ao DataFrame df_mensalidades
+                    df_mensalidades = pd.concat([df_mensalidades, grupo], ignore_index=True)
+            
         # Salvar dados processados
         df_mensalidades.to_csv(mensalidades_file, index=False)
         print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
