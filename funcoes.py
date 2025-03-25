@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime
 import os
 from fpdf import FPDF
+import re
 
 ano_anterior = pd.Timestamp.now().year - 1
 ano_atual = pd.Timestamp.now().year
@@ -396,8 +397,29 @@ def busca_dados_despesas(cpf_alvo, nome):
         diferenca = descontos - total_despesas
         print(f"Diferença: {diferenca}")
 
-        mask = df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
-        remaining_mask = ~df_despesas["BENEFICIARIO"].str.contains(nome, case=False, na=False)
+        # Normalizar os nomes no DataFrame
+        df_despesas["BENEFICIARIO"] = df_despesas["BENEFICIARIO"].str.strip().str.upper()
+
+        # Normalizar o nome fornecido
+        nome_normalizado = nome.strip().upper()
+
+        # Aplicar a máscara para encontrar o nome
+        pattern = re.escape(nome_normalizado)  # Escapar caracteres especiais no nome
+        mask = df_despesas["BENEFICIARIO"].str.contains(pattern, case=False, na=False)
+
+        print(f"Nome fornecido: {nome_normalizado}")
+        print(f"Nomes no DataFrame: {df_despesas['BENEFICIARIO'].unique()}")
+        print(f"Máscara gerada: {mask}")
+
+        # Verificar se há correspondências
+        if mask.any():
+            # Create a sorting column (True values will come first)
+            df_despesas['sort_order'] = mask
+            
+            # Sort by the new column and drop it
+            df_despesas = df_despesas.sort_values('sort_order', ascending=False).drop('sort_order', axis=1)
+        
+        remaining_mask = ~mask
         remaining_count = remaining_mask.sum()
         total_remaining_mask = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"].sum()
         print(f"Total do valor dos dependentes: {total_remaining_mask}")
