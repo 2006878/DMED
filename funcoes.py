@@ -380,6 +380,10 @@ def busca_dados_mensalidades(cpf_alvo):
     if not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
+
+        df_filtrado = df_filtrado.groupby(["Nome"], as_index=False).agg({
+            "Total": "sum"
+        })
         
         # Convert Total to numeric and ensure Total 2024 exists
         df_filtrado["Total"] = pd.to_numeric(df_filtrado["Total"], errors='coerce').round(2)
