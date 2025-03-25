@@ -375,23 +375,34 @@ def busca_dados_descontos(cpf_alvo):
     return total_descontos
 
 def busca_dados_mensalidades(cpf_alvo):
-    """
-    Busca os dados das mensalidades do titular e seus dependentes com base no CPF do titular.
-    Retorna um DataFrame com os nomes e valores das mensalidades.
-    """
     df_filtrado = processa_mensalidades()
     
     if not df_filtrado.empty:
-        # Formatar o CPF do titular e dos dependentes
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
-        
-        # Filtrar pelo CPF do titular (incluindo dependentes)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
         
-        # Selecionar apenas as colunas necessárias
-        df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
+        # Convert Total to numeric and ensure Total 2024 exists
+        df_filtrado["Total"] = pd.to_numeric(df_filtrado["Total"], errors='coerce').round(2)
         
-        # Formatar o valor como moeda
+        if "Total 2024" in df_filtrado.columns:
+            total_esperado = float(df_filtrado[df_filtrado["Relação"] == "Titular"]["Total 2024"].iloc[0])
+            soma_atual = df_filtrado["Total"].sum()
+            
+            print(f"Total esperado: {total_esperado}")
+            print(f"Soma atual: {soma_atual}")
+            
+            if abs(soma_atual - total_esperado) >= 0.01:  # Using threshold for float comparison
+                diferenca = total_esperado - soma_atual
+                print(f"Diferença a ajustar: {diferenca}")
+                
+                # Find first adjustable record
+                mask = df_filtrado["Total"] > 0
+                if mask.any():
+                    idx = df_filtrado[mask].index[0]
+                    df_filtrado.at[idx, "Total"] += diferenca
+                    print(f"Valor ajustado no registro {idx}")
+        
+        df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
         df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
     
     return df_filtrado
