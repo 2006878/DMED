@@ -410,10 +410,10 @@ def busca_dados_mensalidades(cpf_alvo):
         df_filtrado["Ordem"] = (df_filtrado["CPF"] != cpf_alvo).astype(int)
         
         # Ordenando pelo critério (Titular primeiro, depois por outro atributo, por exemplo, idade)
-        df_ordenado = df_filtrado.sort_values(by=["Ordem", "Idade"])
+        df_filtrado = df_filtrado.sort_values(by=["Ordem", "Idade"])
         
         # Removendo a coluna auxiliar
-        df_ordenado = df_ordenado.drop(columns=["Ordem"])
+        df_filtrado = df_filtrado.drop(columns=["Ordem"])
         
         df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
         df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
