@@ -383,20 +383,21 @@ def busca_dados_mensalidades(cpf_alvo):
 
         # Criando a coluna auxiliar para priorizar o Titular
         df_filtrado["Ordem"] = (df_filtrado["Relação"] != "Titular").astype(int)
-        
-        # Ordenando Titular primeiro e mantendo os demais na ordem original
-        df_filtrado = df_filtrado.sort_values(by=["Ordem"]).drop(columns=["Ordem"])
 
-        # Agora podemos fazer o groupby sem perder informações importantes
-        df_filtrado = df_filtrado.groupby(["Nome", "Relação"], as_index=False).agg({
+        # Aplicando groupby mantendo "Ordem"
+        df_filtrado = df_filtrado.groupby(["Nome", "Ordem"], as_index=False).agg({
             "Total": "sum"
         })
 
-        # Convertendo "Total" para número e garantindo que "Total 2024" existe
+        # Convertendo "Total" para número
         df_filtrado["Total"] = pd.to_numeric(df_filtrado["Total"], errors='coerce').round(2)
 
+        # Ordenação final: Titular primeiro
+        df_filtrado = df_filtrado.sort_values(by=["Ordem"]).drop(columns=["Ordem"])
+
+        # Ajuste do Total 2024, se necessário
         if "Total 2024" in df_filtrado.columns:
-            total_esperado = float(df_filtrado[df_filtrado["Relação"] == "Titular"]["Total 2024"].iloc[0])
+            total_esperado = float(df_filtrado[df_filtrado["Ordem"] == 0]["Total 2024"].iloc[0])
             soma_atual = df_filtrado["Total"].sum()
             
             print(f"Total esperado: {total_esperado}")
@@ -413,7 +414,7 @@ def busca_dados_mensalidades(cpf_alvo):
                     df_filtrado.at[idx, "Total"] += diferenca
                     print(f"Valor ajustado no registro {idx}")
 
-        # Mantendo apenas as colunas desejadas
+        # Renomeando e formatando saída
         df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Total': 'Valor'})
         df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
     
