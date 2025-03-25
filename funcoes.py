@@ -226,12 +226,20 @@ def processa_mensalidades():
                     # Get total value from "Total 2024" column
                     valor_total_anual = float(titular["Total 2024"]) if pd.notna(titular["Total 2024"]) else 0
 
-                    # Calculate active months only for first 4 members
-                    total_meses_validos = sum(
-                        len(member["Meses Ativos"])
-                        for idx, (_, member) in enumerate(grupo.iterrows())
-                        if idx < 4
-                    )
+                    if is_camara:
+                        # Calculate active months only for first 4 members
+                        total_meses_validos = sum(
+                            len(member["Meses Ativos"])
+                            for idx, (_, member) in enumerate(grupo.iterrows())
+                            if idx > 0
+                        )
+                    else:
+                        # Calculate active months only for first 4 members
+                        total_meses_validos = sum(
+                            len(member["Meses Ativos"])
+                            for idx, (_, member) in enumerate(grupo.iterrows())
+                            if idx < 4
+                        )
 
                     # Calculate value per active month for valid members
                     valor_por_mes = valor_total_anual / total_meses_validos if total_meses_validos > 0 else 0
@@ -241,16 +249,20 @@ def processa_mensalidades():
 
                     # Distribute value based on active months for each member
                     for idx, member in grupo.iterrows():
-                        if idx < 4:  # First 4 members
-                            meses_ativos_membro = len(member["Meses Ativos"])
-                            valor_membro = valor_por_mes * meses_ativos_membro
-
-                            if is_camara and member["Relação"] == "Titular":
+                        if is_camara:
+                            if member["Relação"] == "Titular":
                                 grupo.at[idx, "Total"] = 0
                             else:
+                                meses_ativos_membro = len(member["Meses Ativos"])
+                                valor_membro = valor_por_mes * meses_ativos_membro
                                 grupo.at[idx, "Total"] = valor_membro
-                        else:  # Beyond 4 members
-                            grupo.at[idx, "Total"] = 0
+                        else:
+                            if idx < 4:  # First 4 members
+                                meses_ativos_membro = len(member["Meses Ativos"])
+                                valor_membro = valor_por_mes * meses_ativos_membro
+                                grupo.at[idx, "Total"] = valor_membro
+                            else:  # Beyond 4 members
+                                grupo.at[idx, "Total"] = 0
 
                     # Adicionar os registros ao DataFrame df_mensalidades
                     df_mensalidades = pd.concat([df_mensalidades, grupo], ignore_index=True)
