@@ -380,6 +380,15 @@ def busca_dados_mensalidades(cpf_alvo):
     if not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
+        
+        # Criando uma coluna auxiliar para garantir "Titular" no topo
+        df_filtrado["Ordem"] = (df_filtrado["CPF"] != cpf_alvo).astype(int)
+        
+        # Ordenando pelo critério (Titular primeiro, depois por outro atributo, por exemplo, idade)
+        df_filtrado = df_filtrado.sort_values(by=["Ordem"])
+        
+        # Removendo a coluna auxiliar
+        df_filtrado = df_filtrado.drop(columns=["Ordem"])
 
         df_filtrado = df_filtrado.groupby(["Nome"], as_index=False).agg({
             "Total": "sum"
@@ -405,15 +414,6 @@ def busca_dados_mensalidades(cpf_alvo):
                     idx = df_filtrado[mask].index[0]
                     df_filtrado.at[idx, "Total"] += diferenca
                     print(f"Valor ajustado no registro {idx}")
-        
-        # Criando uma coluna auxiliar para garantir "Titular" no topo
-        df_filtrado["Ordem"] = (df_filtrado["CPF"] != cpf_alvo).astype(int)
-        
-        # Ordenando pelo critério (Titular primeiro, depois por outro atributo, por exemplo, idade)
-        df_filtrado = df_filtrado.sort_values(by=["Ordem", "Idade"])
-        
-        # Removendo a coluna auxiliar
-        df_filtrado = df_filtrado.drop(columns=["Ordem"])
         
         df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
         df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
