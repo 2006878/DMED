@@ -407,7 +407,7 @@ def busca_dados_mensalidades(cpf_alvo):
                     print(f"Valor ajustado no registro {idx}")
         
         # Criando uma coluna auxiliar para garantir "Titular" no topo
-        df_filtrado["Ordem"] = (df_filtrado["Relação"] != "Titular").astype(int)
+        df_filtrado["Ordem"] = (df_filtrado["CPF"] != cpf_alvo).astype(int)
         
         # Ordenando pelo critério (Titular primeiro, depois por outro atributo, por exemplo, idade)
         df_ordenado = df_filtrado.sort_values(by=["Ordem", "Idade"])
