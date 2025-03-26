@@ -381,32 +381,40 @@ def busca_dados_mensalidades(cpf_alvo):
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
 
-        df_filtrado = df_filtrado.groupby(["Nome"], as_index=False).agg({
+        # Criando a coluna auxiliar para priorizar o Titular
+        df_filtrado["Ordem"] = (df_filtrado["Relação"] != "Titular").astype(int)
+
+        # Aplicando groupby mantendo "Ordem"
+        df_filtrado = df_filtrado.groupby(["Nome", "Ordem"], as_index=False).agg({
             "Total": "sum"
         })
-        
-        # Convert Total to numeric and ensure Total 2024 exists
+
+        # Convertendo "Total" para número
         df_filtrado["Total"] = pd.to_numeric(df_filtrado["Total"], errors='coerce').round(2)
-        
+
+        # Ordenação final: Titular primeiro
+        df_filtrado = df_filtrado.sort_values(by=["Ordem"]).drop(columns=["Ordem"])
+
+        # Ajuste do Total 2024, se necessário
         if "Total 2024" in df_filtrado.columns:
-            total_esperado = float(df_filtrado[df_filtrado["Relação"] == "Titular"]["Total 2024"].iloc[0])
+            total_esperado = float(df_filtrado[df_filtrado["Ordem"] == 0]["Total 2024"].iloc[0])
             soma_atual = df_filtrado["Total"].sum()
             
             #print(f"Total esperado: {total_esperado}")
             #print(f"Soma atual: {soma_atual}")
             
-            if abs(soma_atual - total_esperado) >= 0.01:  # Using threshold for float comparison
+            if abs(soma_atual - total_esperado) >= 0.01:  # Tolerância para comparação de float
                 diferenca = total_esperado - soma_atual
                 #print(f"Diferença a ajustar: {diferenca}")
                 
-                # Find first adjustable record
+                # Ajustando o primeiro registro com Total > 0
                 mask = df_filtrado["Total"] > 0
                 if mask.any():
                     idx = df_filtrado[mask].index[0]
                     df_filtrado.at[idx, "Total"] += diferenca
-                    #print(f"Valor ajustado no registro {idx}")
         
         df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
+
         df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
     
     return df_filtrado
