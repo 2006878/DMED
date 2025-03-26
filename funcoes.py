@@ -580,9 +580,9 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     # 5. TOTAIS
     descontos_info = []
     total_descontos = descontos
-    total_mensalidades = sum(df_mensalidades['Valor'].str.replace('R$ ', '').str.replace(',', '').astype(float))
-    descontos_info.append(f"Total de Descontos: {total_descontos}")
-    descontos_info.append(f"Total de Mensalidades: {total_mensalidades}")
+    total_mensalidades = sum(df_mensalidades['Valor'].str.replace('R$ ', '', regex=True).str.replace(',', '', regex=True).astype(float))
+    descontos_info.append(f"Total de Descontos: R$ {total_descontos:,.2f}".replace('.', ','))
+    descontos_info.append(f"Total de Mensalidades: R$ {total_mensalidades:,.2f}".replace('.', ','))
     
     draw_section('5 - TOTAIS', descontos_info)
 
