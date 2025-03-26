@@ -393,7 +393,7 @@ def busca_dados_mensalidades(cpf_alvo):
         df_filtrado["Total"] = pd.to_numeric(df_filtrado["Total"], errors='coerce').round(2)
 
         # Ordenação final: Titular primeiro
-        df_filtrado = df_filtrado.sort_values(by=["Ordem"]).drop(columns=["Ordem"])
+        df_filtrado = df_filtrado.sort_values(by=["Ordem", "Total"], ascending=[True, False]).drop(columns=["Ordem"])
 
         # Ajuste do Total 2024, se necessário
         if "Total 2024" in df_filtrado.columns:
