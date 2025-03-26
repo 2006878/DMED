@@ -77,10 +77,11 @@ if cpf_alvo:
         st.markdown("### 📊 Mensalidade Plano de Saúde")
         if not df_filtrado.empty:
             for _, row in df_filtrado.iterrows():
+                valor_formatado = f"{row.iloc[1]:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
                 st.markdown(f"""
                     <div style='background-color: #f0f2f6; padding: 10px; margin-bottom: 5px;'>
                         <h4 style='color: #1f77b4; margin: 0;'>{row.iloc[0]}</h4>
-                        <p style='font-size: 18px; margin: 5px 0;'>Valor: <strong>R$ {row.iloc[1]:,.2f}</strong></p>.replace(',', 'X').replace('.', ',').replace('X', '.')
+                        <p style='font-size: 18px; margin: 5px 0;'>Valor: <strong>R$ {valor_formatado}</strong></p>
                     </div>
                 """, unsafe_allow_html=True)
         else:
