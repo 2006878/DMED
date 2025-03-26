@@ -128,13 +128,13 @@ def processa_mensalidades():
         monthly_columns = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
                            'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
         excel = pd.ExcelFile(excel_file)
-        print("Reading Excel sheets:", excel.sheet_names)
+        #print("Reading Excel sheets:", excel.sheet_names)
         
         for sheet_name in excel.sheet_names:
-            print(f"\nProcessing sheet: {sheet_name}")
+            #print(f"\nProcessing sheet: {sheet_name}")
             # Read all columns from Excel
             df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
-            print(f"Found columns: {df.columns.tolist()}")
+            #print(f"Found columns: {df.columns.tolist()}")
             
             # Add default plan type if column doesn't exist
             if 'Tipo de Plano' not in df.columns:
@@ -269,7 +269,7 @@ def processa_mensalidades():
             
         # Salvar dados processados
         df_mensalidades.to_csv(mensalidades_file, index=False)
-        print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
+        #print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
         return df_mensalidades
     else:
         return pd.read_csv(mensalidades_file)
@@ -285,7 +285,7 @@ def processa_despesas():
 
         # Initialize empty DataFrame
         df_despesas = pd.DataFrame()
-        print("DataFrame df_despesas inicializado.")
+        #print("DataFrame df_despesas inicializado.")
 
         start = datetime.now()
         # Iterate through files in data folder 
@@ -305,16 +305,16 @@ def processa_despesas():
             'VALOR_DO_SERVICO': 'sum'
         }).reset_index()
 
-        print("Registros únicos por BENEFICIARIO com soma total calculada.")
+        #print("Registros únicos por BENEFICIARIO com soma total calculada.")
         df_despesas['CPF_DO_RESPONSAVEL'] = df_despesas['CPF_DO_RESPONSAVEL'].apply(format_cpf)
         
         # Save the updated base file
         df_despesas.to_csv(despesas_file, index=False)
-        print(f"Arquivo '{despesas_file}' criado com sucesso em {datetime.now() - start} segundos")
+        #print(f"Arquivo '{despesas_file}' criado com sucesso em {datetime.now() - start} segundos")
         return df_despesas
     else: 
         df_despesas = pd.read_csv(despesas_file)
-        print(f"Arquivo '{despesas_file}' foi lido com sucesso.")
+        #print(f"Arquivo '{despesas_file}' foi lido com sucesso.")
         return df_despesas
 
 def processa_descontos():
@@ -344,15 +344,15 @@ def processa_descontos():
         }).reset_index(drop=True)
 
 
-        print("Registros únicos por Nome com soma total calculada.")
+        #print("Registros únicos por Nome com soma total calculada.")
         
         # Save the updated base file
         df_descontos.to_csv(descontos_file, index=False)
-        print(f"Arquivo '{descontos_file}' criado com sucesso")
+        #print(f"Arquivo '{descontos_file}' criado com sucesso")
         return df_descontos
     else: 
         df_descontos = pd.read_csv(descontos_file)
-        print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
+        #print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
         return df_descontos
     
 def busca_dados_descontos(cpf_alvo):
@@ -392,19 +392,19 @@ def busca_dados_mensalidades(cpf_alvo):
             total_esperado = float(df_filtrado[df_filtrado["Relação"] == "Titular"]["Total 2024"].iloc[0])
             soma_atual = df_filtrado["Total"].sum()
             
-            print(f"Total esperado: {total_esperado}")
-            print(f"Soma atual: {soma_atual}")
+            #print(f"Total esperado: {total_esperado}")
+            #print(f"Soma atual: {soma_atual}")
             
             if abs(soma_atual - total_esperado) >= 0.01:  # Using threshold for float comparison
                 diferenca = total_esperado - soma_atual
-                print(f"Diferença a ajustar: {diferenca}")
+                #print(f"Diferença a ajustar: {diferenca}")
                 
                 # Find first adjustable record
                 mask = df_filtrado["Total"] > 0
                 if mask.any():
                     idx = df_filtrado[mask].index[0]
                     df_filtrado.at[idx, "Total"] += diferenca
-                    print(f"Valor ajustado no registro {idx}")
+                    #print(f"Valor ajustado no registro {idx}")
         
         df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
         df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
@@ -417,12 +417,12 @@ def busca_dados_despesas(cpf_alvo, nome):
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
         total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
-        print(f"Total de despesas: {total_despesas}")
+        #print(f"Total de despesas: {total_despesas}")
         
         descontos = float(busca_dados_descontos(cpf_alvo))
-        print(f"Descontos: {descontos}")
+        #print(f"Descontos: {descontos}")
         diferenca = descontos - total_despesas
-        print(f"Diferença: {diferenca}")
+        #print(f"Diferença: {diferenca}")
 
         # Normalizar os nomes no DataFrame
         df_despesas["BENEFICIARIO"] = df_despesas["BENEFICIARIO"].str.strip().str.upper()
@@ -434,9 +434,9 @@ def busca_dados_despesas(cpf_alvo, nome):
         pattern = re.escape(nome_normalizado)  # Escapar caracteres especiais no nome
         mask = df_despesas["BENEFICIARIO"].str.contains(pattern, case=False, na=False)
 
-        print(f"Nome fornecido: {nome_normalizado}")
-        print(f"Nomes no DataFrame: {df_despesas['BENEFICIARIO'].unique()}")
-        print(f"Máscara gerada: {mask}")
+        #print(f"Nome fornecido: {nome_normalizado}")
+        #print(f"Nomes no DataFrame: {df_despesas['BENEFICIARIO'].unique()}")
+        #print(f"Máscara gerada: {mask}")
 
         # Verificar se há correspondências
         if mask.any():
@@ -449,8 +449,8 @@ def busca_dados_despesas(cpf_alvo, nome):
         remaining_mask = ~mask
         remaining_count = remaining_mask.sum()
         total_remaining_mask = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"].sum()
-        print(f"Total do valor dos dependentes: {total_remaining_mask}")
-        print(f"Quantidade de dependentes: {remaining_count}")
+        #print(f"Total do valor dos dependentes: {total_remaining_mask}")
+        #print(f"Quantidade de dependentes: {remaining_count}")
 
         if descontos > 0:
             if diferenca > 0 and mask is True:
@@ -569,9 +569,14 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
         despesas_info.append(f"Nome: {nome} - Valor: {valor}")
     draw_section('4 - INFORMAÇÕES DESPESAS', despesas_info)
 
-    # 5. DESCONTOS
-    descontos_info = [f"Total de Descontos: {descontos}"]
-    draw_section('5 - DESCONTOS', descontos_info)
+    # 5. TOTAIS
+    descontos_info = []
+    total_descontos = descontos
+    total_mensalidades = sum(df_mensalidades['Valor'].str.replace('R$ ', '').str.replace(',', '').astype(float))
+    descontos_info.append(f"Total de Descontos: {total_descontos}")
+    descontos_info.append(f"Total de Mensalidades: {total_mensalidades}")
+    
+    draw_section('5 - TOTAIS', descontos_info)
 
     pdf.cell(0, 6, f'Documento criado em: {datetime.now().strftime("%d/%m/%Y")}', ln=True, align='C')
     
