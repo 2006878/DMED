@@ -504,8 +504,8 @@ def busca_dados_despesas(cpf_alvo, nome):
             columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'}
         )
         
-        if df_despesas.empty and descontos == 0:
-            return pd.DataFrame(columns=['Nome', 'Valor'])
+        #if df_despesas.empty and descontos == 0:
+        #    return pd.DataFrame(columns=['Nome', 'Valor'])
             
     return df_despesas
 
