@@ -80,7 +80,7 @@ if cpf_alvo:
                 st.markdown(f"""
                     <div style='background-color: #f0f2f6; padding: 10px; margin-bottom: 5px;'>
                         <h4 style='color: #1f77b4; margin: 0;'>{row.iloc[0]}</h4>
-                        <p style='font-size: 18px; margin: 5px 0;'>Valor: <strong>R$ {row.iloc[1]:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))</strong></p>
+                        <p style='font-size: 18px; margin: 5px 0;'>Valor: <strong>R$ {str(f"{row.iloc[1]:,.2f}").replace(',', 'X').replace('.', ',').replace('X', '.')}</strong></p>
                     </div>
                 """, unsafe_allow_html=True)
         else:
