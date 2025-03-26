@@ -493,7 +493,10 @@ def busca_dados_despesas(cpf_alvo, nome):
                 df_despesas = pd.DataFrame(columns=['BENEFICIARIO', 'VALOR_DO_SERVICO'])
                 df_despesas["VALOR_DO_SERVICO"] = descontos
                 df_despesas["BENEFICIARIO"] = nome
-
+            else:
+                if len(df_despesas) == 1:
+                    df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
+                
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         )
