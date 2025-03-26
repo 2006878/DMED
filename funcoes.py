@@ -595,7 +595,7 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     
     # Exibir resultado formatado
     descontos_info = []
-    descontos_info.append(f"Total de Descontos: {descontos}
+    descontos_info.append(f"Total de Descontos: {descontos})
     descontos_info.append(f"Total de Mensalidades: R$ {total_mensalidades:,.2f}".replace('.', ','))
     
     draw_section('5 - TOTAIS', descontos_info)
