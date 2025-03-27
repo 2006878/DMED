@@ -132,8 +132,9 @@ if cpf_alvo:
             st.info("Não existem registros de despesas para o CPF informado.")
 
     with col3:
-        st.markdown("### 💰 Descontos")
-        if descontos:
+
+        st.markdown("### 💰 Descontos ")
+        if descontos and descontos != "R$ 0,00":
             st.markdown(f"""
                 <div class='info-container'>
                     <h4>{nome}</h4>
