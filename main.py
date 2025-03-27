@@ -2,8 +2,11 @@ import streamlit as st
 from funcoes import *
 import base64
 
+# Carreguando o ícone da aba
+favicon = "icone.jpeg"
+
 # Configuração da página
-st.set_page_config(page_title=f"IRPF {ano_anterior} - COSEMI", layout="wide")
+st.set_page_config(page_title=f"IRPF {ano_anterior} - COSEMI", page_icon=favicon, layout="wide")
 
 # Ocultar elementos desnecessários da interface
 st.markdown("""
