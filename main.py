@@ -1,9 +1,9 @@
 import streamlit as st
 from funcoes import *
+import base64
 
 # Streamlit page configuration
 st.set_page_config(page_title=f"IRPF {ano_anterior}- COSEMI", layout="wide")
-st.title(f"INFORME PLANO DE SAÚDE {ano_anterior} IRPF - COSEMI")
 
 # Hide unnecessary UI elements
 st.markdown("""
@@ -40,6 +40,32 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Add logo with responsive styling
+st.markdown("""
+    <style>
+    .container {
+        display: flex;
+        justify-content: center;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 10px;
+    }
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Display the logo
+st.markdown("""
+    <div class="container">
+        <img src="data:image/png;base64,{}"/>
+    </div>
+""".format(base64.b64encode(open("logo.jpg", "rb").read()).decode()), unsafe_allow_html=True)
+
+st.title(f"INFORME PLANO DE SAÚDE {ano_anterior} IRPF - COSEMI")
 
 st.markdown("<h3 style='font-size: 24px;'>Digite o CPF do titular a ser consultado:</h3>", unsafe_allow_html=True)
 cpf_alvo = format_cpf(st.text_input("Digite o CPF do Titular aqui.", label_visibility="collapsed", key="cpf_input"))
