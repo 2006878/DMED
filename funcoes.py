@@ -460,9 +460,8 @@ def busca_dados_despesas(cpf_alvo, nome):
         #print(f"Total do valor dos dependentes: {total_remaining_mask}")
         #print(f"Quantidade de dependentes: {remaining_count}")
 
-        if descontos > 0:
-            if diferenca > 0 and mask is True:
-                df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+        if descontos > 0 and mask is True:
+            df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
                     
         elif diferenca < 0 and remaining_count > 0 or not remaining_mask.empty:
             value_per_record = abs(diferenca) / remaining_count
