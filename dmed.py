@@ -1,12 +1,26 @@
 import streamlit as st
-import io
 from funcoes import *
+import base64
+
+# Carreguando o ícone da aba
+favicon = "icone.jpeg"
 
 # Streamlit page configuration
-st.set_page_config(page_title=f"DMED {ano_anterior}- COSEMI", layout="wide")
+st.set_page_config(page_title=f"DMED {ano_anterior}- COSEMI", page_icon=favicon, layout="wide")
+
+# Display logo
+with open('logo.png', 'rb') as f:
+    image_data = base64.b64encode(f.read()).decode()
+
+st.markdown(f"""
+    <div style="display: flex; justify-content: center; margin: 1em 0;">
+        <img src="data:image/png;base64,{image_data}" style="max-width: 300px; width: 100%; height: auto;">
+    </div>
+""", unsafe_allow_html=True)
+
 st.title(f"DOWNLOAD DMED {ano_anterior} IRPF - COSEMI")
 
-# Hide unnecessary UI elements
+# Ocultar elementos desnecessários da interface
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -14,81 +28,71 @@ st.markdown("""
     header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
-    
-# Add custom CSS to center content and style spinner
+
+# Estilos personalizados
 st.markdown("""
     <style>
-    /* Center all content */
-    .stApp {
-        align-items: center;
-        max-width: 1200px;
+    /* Ajuste da largura do input CPF */
+    [data-testid="stTextInput"] {
+        max-width: 300px;
         margin: 0 auto;
-        padding: 2rem;
     }
-    
-    /* Make spinner larger */
-    .stSpinner > div {
-        width: 100px !important;
-        height: 100px !important;
-        border-width: 6px !important;
-    }
-    
-    /* Center title */
-    h1 {
+    /* Centralizar títulos */
+    h1, h3 {
         text-align: center;
     }
-    
-    /* Center dataframe */
-    [data-testid="stDataFrame"] {
-        margin: 0 auto;
-    }
-    
-    /* Center download button */
+    /* Centralizar botão de download */
     [data-testid="stDownloadButton"] {
         display: block;
-        margin: 2rem auto;
+        margin: 0 auto;
         max-width: 300px;
+    }
+    /* Estilização dos containers de informações */
+    .info-container {
+        background-color: #D9E3DA; /* Verde claro */
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+    }
+    .info-container h4 {
+        color: #005822; /* Verde escuro */
+        margin: 0;
+    }
+    .info-container p {
+        font-size: 18px;
+        margin: 5px 0;
     }
     </style>
 """, unsafe_allow_html=True)
 
+# Adicionar logo com estilo responsivo
+st.markdown("""
+    <style>
+    .container {
+        display: flex;
+        justify-content: center;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 10px;
+    }
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 st.markdown("<h3 style='font-size: 24px;'>Baixe o arquivo de importação DMED:</h3>", unsafe_allow_html=True)
-import streamlit as st
-from funcoes import *
+with st.spinner("Criando arquivo..."):
+    dmed_content = create_dmed_content()
 
-# First load and cache the data
-# @st.cache_data
-def load_data():
-    return processa_mensalidades()
+st.download_button(
+    label="📥 Download DMED",
+    data=dmed_content.encode('utf-8'),
+    file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
+    mime="text/plain"
+)
 
-df = load_data()
-
-if not df.empty:
-    # Format Total column correctly
-    df['Total'] = df['Total'].round(2).apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    
-    # Define columns to display
-    colunas_desejadas = ['Nome', 'Empresa', 'Tipo de Plano', 'CPF', 'Titular_CPF', 'Relação', 'Total']
-    
-    # Show the dataframe
-    st.dataframe(df[colunas_desejadas])
-
-    @st.cache_data
-    def create_file(df):
-        return create_dmed_content(df)
-
-    with st.spinner("Criando arquivo..."):
-        dmed_content = create_file(df)
-    
-    st.download_button(
-        label="📥 Download DMED",
-        data=dmed_content.encode('utf-8'),
-        file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
-        mime="text/plain"
-    )
-
-        
 # Footer
 st.markdown("""
     <hr style='border:1px solid #e3e3e3;margin-top:40px'>
