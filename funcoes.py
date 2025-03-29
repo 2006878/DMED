@@ -16,8 +16,16 @@ def format_valor(valor_str):
     try:
         if pd.isna(valor_str):
             return ""
-        valor = valor_str.replace("R$", "").replace(".", "").replace(",", ".").strip()
-        return f"{int(float(valor)*100):09d}"
+        # Remove currency symbol and standardize decimal separator
+        valor = str(valor_str).replace("R$", "").strip()
+        # Handle different decimal formats
+        if "," in valor:
+            valor = valor.replace(".", "").replace(",", ".")
+        # Convert to float and round to 2 decimal places
+        valor_float = round(float(valor), 2)
+        # Convert to cents without decimal point
+        valor_cents = int(valor_float * 100)
+        return f"{valor_cents:09d}"
     except:
         return ""
 
@@ -33,7 +41,13 @@ def normalize_name(name):
     normalized = ''.join(c for c in normalized if c.isalnum() or c.isspace())
     return normalized
 
-def create_dmed_content(df_filtrado):
+def create_dmed_content():
+    start = datetime.now()
+    df_filtrado = processa_mensalidades()
+    # Format Total column correctly
+    df_filtrado['Total'] = df_filtrado['Total'].round(2).apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
+
     cpf_respostavel = "59374705672"
     nome_respostavel = "Paulo Alexandre da Silva"
     cnpj_empresa = "16651002000180"
@@ -50,7 +64,7 @@ def create_dmed_content(df_filtrado):
     for titular_cpf, grupo in sorted(df_filtrado.groupby("Titular_CPF")):
 
         # Create sorting key and sort the dataframe
-        df_filtrado['CPF_Sort'] = df_filtrado['Titular_CPF'].apply(format_cpf)
+        df_filtrado['CPF_Sort'] = df_filtrado['Titular_CPF']
         df_filtrado = df_filtrado.sort_values(['CPF_Sort', 'Relação'], ascending=[True, False])
 
         # Remove temporary sorting column
@@ -58,30 +72,47 @@ def create_dmed_content(df_filtrado):
 
         if pd.notna(titular_cpf):
             titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
-            valor_titular = float(str(titular["Total"]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0)
+            nome_titular = normalize_name(titular['Nome'])
+    
+            # Get all family expenses at once
+            df_despesas = busca_dados_despesas(titular_cpf, titular['Nome'])
             
-            if valor_titular > 0:
-                nome_titular = normalize_name(titular['Nome'])
-                valor_titular_fmt = format_valor(titular["Total"])
+            # Get titular value from both sources
+            valor_mensalidade = pd.to_numeric(str(titular["Total"]).replace("R$", "").replace(".", "").replace(",", ".").strip(), errors='coerce')
+
+            valor_despesas = float(str(df_despesas[df_despesas['Nome'] == nome_titular]['Valor'].iloc[0]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0) if not df_despesas.empty and nome_titular in df_despesas['Nome'].values else 0
+            
+            valor_titular = valor_mensalidade + valor_despesas
+            
+            valor_titular_fmt = format_valor(valor_titular)
+            
+            content.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{valor_titular_fmt}|")
+            
+            # Get dependents and ensure CPF is properly formatted for sorting
+            # print(grupo)
+            dependentes = grupo[grupo["Relação"] != "Titular"].copy()
+            # print(len(dependentes))
+            dependentes['CPF'] = dependentes['CPF'].apply(format_cpf)
+            
+            # Sort dependents by formatted CPF and birth date
+            dependentes_sorted = dependentes.sort_values(['CPF'])
+            
+            # For dependents, reuse the same df_despesas
+            for _, dep in dependentes_sorted.iterrows():
+                nome_dep = normalize_name(dep['Nome'])
+                valor_mensalidade = pd.to_numeric(str(dep["Total"]).replace("R$", "").replace(".", "").replace(",", ".").strip(), errors='coerce')
+                valor_despesas = float(str(df_despesas[df_despesas['Nome'] == nome_dep]['Valor'].iloc[0]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0) if not df_despesas.empty and nome_dep in df_despesas['Nome'].values else 0
                 
-                content.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{valor_titular_fmt}|")
+                valor_total = valor_mensalidade + valor_despesas
+                valor_dep = format_valor(str(valor_total))
+                codigo_dep = get_dependent_code(dep["Relação"])
+                data_nasc = ""
                 
-                # Get dependents and ensure CPF is properly formatted for sorting
-                dependentes = grupo[grupo["Relação"] != "Titular"].copy()
-                dependentes['CPF'] = dependentes['CPF'].apply(format_cpf)
-                
-                # Sort dependents by formatted CPF and birth date
-                dependentes_sorted = dependentes.sort_values(['CPF'])
-                
-                for _, dep in dependentes_sorted.iterrows():
-                    valor_dep = format_valor(dep["Total"])
-                    codigo_dep = get_dependent_code(dep["Relação"])
-                    nome_dep = normalize_name(dep['Nome'])
-                    data_nasc = "" # Default if birth date is missing
-                    
-                    content.append(f"DTOP|{format_cpf(dep['CPF'])}|{data_nasc}|{nome_dep}|{codigo_dep}|{valor_dep}|")
+                content.append(f"DTOP|{format_cpf(dep['CPF'])}|{data_nasc}|{nome_dep}|{codigo_dep}|{valor_dep}|")
     
     content.append("FIMDmed|")
+    end = datetime.now()
+    print(f"Tempo total de execução: {end - start}")
     return "\n".join(content)
 
 def get_dependent_code(relacao):
