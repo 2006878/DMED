@@ -83,12 +83,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<h3 style='font-size: 24px;'>Baixe o arquivo de importação DMED:</h3>", unsafe_allow_html=True)
-with st.spinner("Criando arquivo..."):
-    dmed_content = create_dmed_content()
+# At the beginning of the file, after imports
+if 'dmed_content' not in st.session_state:
+    with st.spinner("Criando arquivo..."):
+        st.session_state.dmed_content = create_dmed_content()
 
+# Replace the download button section with
 st.download_button(
     label="📥 Download DMED",
-    data=dmed_content.encode('utf-8'),
+    data=st.session_state.dmed_content.encode('utf-8'),
     file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
     mime="text/plain"
 )
