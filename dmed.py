@@ -1,6 +1,8 @@
 import streamlit as st
 from funcoes import *
 import base64
+import pandas as pd
+from datetime import datetime
 
 # Carreguando o ícone da aba
 favicon = "icone.jpeg"
@@ -82,15 +84,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+mensalidades = len(pd.read_csv('mensalidades_file.csv'))
+descontos = len(pd.read_csv('descontos_file.csv'))
+despesas = len(pd.read_csv('despesas_file.csv'))
+quantidade_de_registros = mensalidades + despesas + descontos  
+
 st.markdown("<h3 style='font-size: 24px;'>Baixe o arquivo de importação DMED:</h3>", unsafe_allow_html=True)
 @st.cache_data
 def content():
-    content = create_dmed_content()
-    return create_dmed_content()
+    start = datetime.now()
+    try:
+        content = create_dmed_content()
+    except Exception as e:
+        st.error(f"Ocorreu um erro ao gerar o arquivo DMED: {str(e)}")
+        return
+    end = datetime.now()
+    st.success(f"Arquivo DMED gerado com sucesso! Tempo de execução: {end - start}")
+    return content
 
-with st.spinner("Criando arquivo..."):
+with st.spinner(f"Processando {quantidade_de_registros} registros e criando arquivo DMED..."):
     dmed_content = content()
-
+    
 # Replace the download button section with
 st.download_button(
     label="📥 Download DMED",
