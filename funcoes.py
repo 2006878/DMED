@@ -3,6 +3,8 @@ from datetime import datetime
 import os
 from fpdf import FPDF
 import re
+import requests
+from io import BytesIO
 
 ano_anterior = pd.Timestamp.now().year - 1
 ano_atual = pd.Timestamp.now().year
@@ -152,19 +154,25 @@ def calculate_active_months(admission, termination=None):
     
 def processa_mensalidades():
     mensalidades_file = os.path.join(os.getcwd(), 'mensalidades_file.csv')
-    excel_file = os.path.join(os.getcwd(), 'MENSALIDADES.xlsx')
+    url_excel_file = "https://drive.google.com/uc?id=1NEqJ7VaM_dICfTPpSSVIkwwfSLCaOTcE"
 
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
         df_mensalidades = pd.DataFrame()
         monthly_columns = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
                            'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-        excel = pd.ExcelFile(excel_file)
-        #print("Reading Excel sheets:", excel.sheet_names)
+        try:
+            response = requests.get(url_excel_file)
+            response.raise_for_status()  # Verificar se o download foi bem-sucedido
+            excel = pd.ExcelFile(BytesIO(response.content), engine="openpyxl")
+        except Exception as e:
+            print(f"Erro ao baixar ou processar o arquivo do Google Drive: {e}")
+            return pd.DataFrame()
         
+        print("Processando mensalidades...")
         for sheet_name in excel.sheet_names:
             #print(f"\nProcessing sheet: {sheet_name}")
             # Read all columns from Excel
-            df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
+            df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
             #print(f"Found columns: {df.columns.tolist()}")
             
             # Add default plan type if column doesn't exist
@@ -300,7 +308,7 @@ def processa_mensalidades():
             
         # Salvar dados processados
         df_mensalidades.to_csv(mensalidades_file, index=False)
-        #print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
+        print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
         return df_mensalidades
     else:
         return pd.read_csv(mensalidades_file)
