@@ -86,10 +86,13 @@ st.markdown("<h3 style='font-size: 24px;'>Digite o CPF do titular a ser consulta
 cpf_alvo = format_cpf(st.text_input("Digite o CPF do Titular aqui.", label_visibility="collapsed", key="cpf_input"))
 
 if cpf_alvo:
-    df_filtrado = busca_dados_mensalidades(cpf_alvo)
-    nome = df_filtrado["Nome"].iloc[0] if not df_filtrado.empty else ""
-    descontos = busca_dados_descontos(cpf_alvo)
-    df_despesas = busca_dados_despesas(cpf_alvo, nome)
+    with st.spinner("Buscando dados de mensalidades..."):
+        df_filtrado = busca_dados_mensalidades(cpf_alvo)
+        nome = df_filtrado["Nome"].iloc[0] if not df_filtrado.empty else ""
+    with st.spinner("Buscando dados de descontos..."):
+        descontos = busca_dados_descontos(cpf_alvo)
+    with st.spinner("Buscando dados de despesas..."):
+        df_despesas = busca_dados_despesas(cpf_alvo, nome)
 
     descontos = f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 

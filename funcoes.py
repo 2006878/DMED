@@ -386,9 +386,18 @@ def processa_descontos():
         #print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
         return df_descontos
     
+def busca_descontos_drive():
+    url_descontos = "https://drive.google.com/uc?id=1UR7B8kd1B_-Y-bVf1eNaMThDThQ56ui8"
+    try:
+        df_descontos = pd.read_csv(url_descontos, delimiter=',', encoding='utf-8')
+        return df_descontos
+    except Exception as e:
+        print(f"Erro ao ler o arquivo do Drive: {e}")
+        return pd.DataFrame()
+    
 def busca_dados_descontos(cpf_alvo):
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
-    df_descontos = processa_descontos()
+    df_descontos = busca_descontos_drive()
     total_descontos = 0
 
     if not df_descontos.empty:
@@ -405,9 +414,17 @@ def busca_dados_descontos(cpf_alvo):
 
     return total_descontos
 
-def busca_dados_mensalidades(cpf_alvo):
-    df_filtrado = processa_mensalidades()
+def busca_mensalidades_drive():
+    url_mensalidades = "https://drive.google.com/uc?id=1t4h1Y2OmvZiYTrmHkBRBmVAP3GC4KYdM"
+    try:
+        df_mensalidades = pd.read_csv(url_mensalidades, delimiter=',', encoding='utf-8')
+        return df_mensalidades
+    except Exception as e:
+        print(f"Erro ao ler o arquivo do Drive: {e}")
+        return pd.DataFrame()
     
+def busca_dados_mensalidades(cpf_alvo):
+    df_filtrado = busca_mensalidades_drive()
     if not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
@@ -450,8 +467,17 @@ def busca_dados_mensalidades(cpf_alvo):
     
     return df_filtrado
 
+def busca_despesas_drive():
+    url_despesas = "https://drive.google.com/uc?id=1jBGtNAQEVI6lVslyEJkPfXZpesm39193"
+    try:
+        df_despesas = pd.read_csv(url_despesas, delimiter=',', encoding='utf-8')
+        return df_despesas
+    except Exception as e:
+        print(f"Erro ao ler o arquivo do Drive: {e}")
+        return pd.DataFrame()
+    
 def busca_dados_despesas(cpf_alvo, nome):
-    df_despesas = processa_despesas()
+    df_despesas = busca_despesas_drive()
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
