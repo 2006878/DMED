@@ -168,4 +168,70 @@
 
 ---
 
+# GERAÇÃO DE PDF - DETALHAMENTO:
+
+## Cálculos de Valores e fluxo de construção do arquivo:
+
+- Soma valores por beneficiário
+- Formata com duas casas decimais
+- Condicionais de Processamento
+- Para cada beneficiário:
+- Se existir nome: inclui na lista
+- Se valor ausente: usa "R$ 0,00"
+- Se dados incompletos: marca como "N/A"
+- Ajustes de Totais
+- Verifica valores vazios antes da conversão
+- Soma apenas valores válidos
+- Formata total em moeda brasileira
+- Adiciona totais de descontos
+
+# GERAÇÃO DE DMED - DETALHAMENTO:
+
+## Regras de Processamento
+
+### Para cada titular:
+
+- Se CPF válido: processa família
+- Se tem dependentes: ordena por CPF
+- Se tem despesas: soma com mensalidades
+- Cálculos por Beneficiário
+
+### Titular:
+
+- Valor mensalidade + valor despesas
+- Formatação em centavos (9 dígitos)
+- Valor zero se só dependentes
+
+### Dependentes:
+
+- Valor individual calculado
+- Soma de despesas próprias
+- Formatação específica DMED
+- Condicionais de Registro
+
+### Se é Câmara:
+- Titular sem valor
+- Dependentes recebem distribuição
+
+### Se é normal:
+- Titular participa da divisão
+- Limita a 4 beneficiários
+- Validações de Valores
+
+### Se existem valores:
+- Distribui entre beneficiários
+- Ajusta diferenças
+- Garante soma correta
+
+### Se não há valores:
+- Registra zerado
+- Mantém estrutura padrão
+
+Formatação Final
+Valores em centavos
+CPFs com 11 dígitos
+Nomes padronizados
+Códigos de relação específicos
+O sistema mantém consistência matemática e segue rigorosamente as regras da Receita Federal para declaração DMED.
+
 O sistema garante que todas as despesas sejam corretamente processadas e distribuídas, mantendo a integridade dos dados e a transparência necessária para o negócio.
