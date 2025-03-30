@@ -91,3 +91,14 @@ manual_content = carregar_manual("manual.md")
 
 # Exibir o conteúdo do manual em formato Markdown
 st.markdown(manual_content)
+
+# Footer
+st.markdown("""
+    <hr style='border:1px solid #e3e3e3;margin-top:40px'>
+    <div style='text-align: center;'>
+        Desenvolvido por 
+        <a href='https://www.linkedin.com/in/tairone-amaral/' target='_blank'>
+            Tairone Leandro do Amaral
+        </a>
+    </div>
+""", unsafe_allow_html=True)
