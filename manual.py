@@ -1,11 +1,11 @@
 import streamlit as st
 import base64
 
-# Configuração da página
-st.set_page_config(page_title="Manual do Sistema")
-
 # Carreguando o ícone da aba
 favicon = "icone.jpeg"
+
+# Configuração da página
+st.set_page_config(page_title="Manual do Sistema", page_icon=favicon)
 
 # Display logo
 with open('logo.png', 'rb') as f:
