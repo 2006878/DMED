@@ -8,7 +8,7 @@ from datetime import datetime
 favicon = "icone.jpeg"
 
 # Streamlit page configuration
-st.set_page_config(page_title=f"DMED - COSEMI", page_icon=favicon, layout="wide")
+st.set_page_config(page_title=f"ARQUIVOS- COSEMI", page_icon=favicon, layout="wide")
 
 # Display logo
 with open('logo.png', 'rb') as f:
@@ -20,7 +20,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.title(f"DOWNLOAD DMED {ano_anterior} IRPF - COSEMI")
+st.title(f"DOWNLOAD ARQUIVOS - COSEMI")
 
 # Ocultar elementos desnecessários da interface
 st.markdown("""
@@ -84,7 +84,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h3 style='font-size: 24px;'>Baixe o arquivo de importação DMED:</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='font-size: 24px;'>Escolha quais arquivos reprocessar para baixar:</h3>", unsafe_allow_html=True)
 
 col1, col2, col3, col4 = st.columns(4)
 
