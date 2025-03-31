@@ -3,6 +3,10 @@ from datetime import datetime
 import os
 from fpdf import FPDF
 import re
+import requests
+from bs4 import BeautifulSoup
+from io import BytesIO
+import streamlit as st
 
 ano_anterior = pd.Timestamp.now().year - 1
 ano_atual = pd.Timestamp.now().year
@@ -43,7 +47,7 @@ def normalize_name(name):
 
 def create_dmed_content():
     start = datetime.now()
-    df_filtrado = processa_mensalidades()
+    df_filtrado = busca_mensalidades_drive()
     # Format Total column correctly
     df_filtrado['Total'] = df_filtrado['Total'].round(2).apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
     df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
@@ -151,20 +155,19 @@ def calculate_active_months(admission, termination=None):
     return []
     
 def processa_mensalidades():
-    mensalidades_file = os.path.join(os.getcwd(), 'mensalidades_file.csv')
-    excel_file = os.path.join(os.getcwd(), 'MENSALIDADES.xlsx')
-
-    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-        df_mensalidades = pd.DataFrame()
-        monthly_columns = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
-                           'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-        excel = pd.ExcelFile(excel_file)
-        #print("Reading Excel sheets:", excel.sheet_names)
+    url_excel_file = "https://drive.google.com/uc?id=1NEqJ7VaM_dICfTPpSSVIkwwfSLCaOTcE"
+    df_mensalidades = pd.DataFrame()
+    
+    try:
+        response = requests.get(url_excel_file)
+        response.raise_for_status()  # Verificar se o download foi bem-sucedido
+        excel = pd.ExcelFile(BytesIO(response.content), engine="openpyxl")
         
+        print("Processando mensalidades...")
         for sheet_name in excel.sheet_names:
             #print(f"\nProcessing sheet: {sheet_name}")
             # Read all columns from Excel
-            df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl")
+            df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
             #print(f"Found columns: {df.columns.tolist()}")
             
             # Add default plan type if column doesn't exist
@@ -186,14 +189,8 @@ def processa_mensalidades():
             if missing_columns:
                 raise KeyError(f"Colunas ausentes na planilha {sheet_name}: {missing_columns}")
             
-            # Converter colunas mensais para numérico
-            for month in monthly_columns:
-                if month in df.columns:
-                    df[month] = pd.to_numeric(df[month].replace('[\\$,]', '', regex=True), errors='coerce')
-
             # Filtrar dados
             ano_anterior = pd.Timestamp.now().year - 1
-            ano_atual = pd.Timestamp.now().year
             df["Deslig."] = pd.to_datetime(df["Deslig."], errors="coerce")
             df["Adm."] = pd.to_datetime(df["Adm."], errors="coerce")
             df_filtrado = df[
@@ -297,68 +294,99 @@ def processa_mensalidades():
 
                     # Adicionar os registros ao DataFrame df_mensalidades
                     df_mensalidades = pd.concat([df_mensalidades, grupo], ignore_index=True)
-            
+        
+        mensalidades_file = 'mensalidade_file.csv'
         # Salvar dados processados
         df_mensalidades.to_csv(mensalidades_file, index=False)
-        #print(f"Arquivo '{mensalidades_file}' criado com sucesso!")
-        return df_mensalidades
-    else:
-        return pd.read_csv(mensalidades_file)
+        print(f"Arquivo de mensalidades criado com sucesso!")
+        return mensalidades_file
+    except Exception as e:
+        print(f"Erro ao baixar ou processar o arquivo do Google Drive: {e}")
+        return None
     
 def processa_despesas():
-    # Caminho da pasta de dados
-    data_folder = os.path.join(os.getcwd(), 'despesas_nova')
-    # Arquivo base
-    despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
-    
-    # Verificar se o arquivo existe e não está vazio
-    if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
-
-        # Initialize empty DataFrame
-        df_despesas = pd.DataFrame()
-        #print("DataFrame df_despesas inicializado.")
-
-        start = datetime.now()
-        # Iterate through files in data folder 
-        for filename in os.listdir(data_folder):
-            file_path = os.path.join(data_folder, filename)
-            if os.path.isfile(file_path) and filename.endswith('.csv'):
-                # Read only specified columns
-                df = pd.read_csv(file_path, encoding='latin1', sep=';', 
-                    usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
-                df_despesas = pd.concat([df_despesas, df], ignore_index=True)
-        # Convert columns to numeric
-        df_despesas["VALOR_DO_SERVICO"] = pd.to_numeric(df_despesas["VALOR_DO_SERVICO"], errors="coerce").fillna(0).round(2)
+    try:
+        # Direct download URLs for each CSV file
+        csv_urls = [
+            "https://drive.google.com/uc?id=1Z5pfvRtS8yqXVf8u867BDmgN4BiHhPKs",
+            "https://drive.google.com/uc?id=1sHdItzuc6srIbM11a255DSy_xIJGEpsy",
+            "https://drive.google.com/uc?id=1d3oN54IUvfJKoakIC4X2AypDWSkDrBrR",
+            "https://drive.google.com/uc?id=1B-4TwpLRHMlxVjQco21BIaFPepvd1Le1",
+            "https://drive.google.com/uc?id=1Pq_o57GAohLgpcqBe8A4iHeNIUgS5pwh",
+            "https://drive.google.com/uc?id=1YQWTcyZT7Z7nlC3xVluA7K7liKNlxIYK",
+            "https://drive.google.com/uc?id=1MCgApVa45epiFX5mvUEAJFmXEahe3bxW",
+            "https://drive.google.com/uc?id=1ujLQQL12rZ6giicEL25EK2t60n8zuRnY",
+            "https://drive.google.com/uc?id=1gI8JE9KMP2hII2J4I8CzEAANImiVy9_e",
+            "https://drive.google.com/uc?id=1Yz2MLHBi1MLrDglu18s18vGmUqaPZuBe",
+            "https://drive.google.com/uc?id=1yXn_HleVD0lZ_1kA2exTQUK8OrrsEuKJ",
+            "https://drive.google.com/uc?id=1m-kEXJl2hjfxkYahHRiWYxbDerieKULx",
+            "https://drive.google.com/uc?id=1IhJoaM-rzk5PxAllmiOixCJy43I5JywP",
+            "https://drive.google.com/uc?id=14KQMu3DGf487Lac_KQgb6G8t6pMe1XXu",
+            "https://drive.google.com/uc?id=1W-PfFd9QEbs5qO9Z0teq2th2hn35_0Tq",
+            "https://drive.google.com/uc?id=1j0GLvhXqNgmYWOQi8kHCnFbGHd7lS4Q7",
+            "https://drive.google.com/uc?id=10nmuCaNHdXCALwTMKlCqBwtVnEwgjET0",
+            "https://drive.google.com/uc?id=1QME2XU1NNhYcDZhkU03ExOXAJSKHw4du",
+            "https://drive.google.com/uc?id=1u_TEEOdEPBGBqWWMcjmYGYgh0UBZ07-c",
+            "https://drive.google.com/uc?id=16xlx0fiEW3cxLI42pxjoTFw7FAdGy_hP",
+            "https://drive.google.com/uc?id=17TzbF1SLlwD7a6Kn2xATO32a2XMwnGKp",
+            "https://drive.google.com/uc?id=1w-CDOzq5h6Q0VI8Leu14XIX_ZhsKVaah",
+            "https://drive.google.com/uc?id=1MKUWXU1IZyHKvTpuHH3eZZE-AgX6Nysv",
+            "https://drive.google.com/uc?id=1qlAGVHPVdPTre4pj3dlXO88Xxa5VGNXE",
+            "https://drive.google.com/uc?id=1AD_AXTQoBBYMszNrZhUidjVuasQ8IQy9",
+            "https://drive.google.com/uc?id=1JnXLFUbZCAAJgaBF4EIA6sFhqbCpRtOd",
+            "https://drive.google.com/uc?id=1OVg4IMe-j0P8eKRPujsyv9RV8PTfKAMh",
+            "https://drive.google.com/uc?id=1eP5HfqthGyfKlbWxcEFyLrSmsfWRO7Hx",
+            "https://drive.google.com/uc?id=1tlLfCci_Yo0ty0QR1u1KLedH19xBBJNK",
+            "https://drive.google.com/uc?id=1Fdn8ePUM1CVk7dHuw9VGjA-DZR57bMWq",
+            "https://drive.google.com/uc?id=1bOIsE182VieY5Xt-Dmlt96m72oaMNT92",
+            "https://drive.google.com/uc?id=1yEDq1VNrPTJLp00ogKdLvfCKTIZRU1I3",
+            "https://drive.google.com/uc?id=1nhF-NvJIB61pUjI1XdCIrD1LS7wT68Dq",
+            "https://drive.google.com/uc?id=1qQ1JYJmMh7zhNqfXThWC1SpdxP7EoZdD",
+            "https://drive.google.com/uc?id=1_WV2At8dOh4hCW9sdo6Y_JnYtyukOiDh",
+            "https://drive.google.com/uc?id=1k6QX0qDeT4VSTXLTuNQxd6PSj7AkQtS1",
+        ]
         
-        # Group by BENEFICIARIO and get the first occurrence of other columns while summing VALOR_DO_SERVICO
+        df_despesas = pd.DataFrame()
+
+        for url in csv_urls:
+            response = requests.get(url)
+            response.raise_for_status()
+            
+            df = pd.read_csv(BytesIO(response.content), encoding='latin1', sep=';',
+                           usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
+            df_despesas = pd.concat([df_despesas, df], ignore_index=True)
+            print(f'Processando o arquivo {url}')
+
+        df_despesas["VALOR_DO_SERVICO"] = pd.to_numeric(df_despesas["VALOR_DO_SERVICO"], errors="coerce").fillna(0).round(2)
         df_despesas = df_despesas.groupby("BENEFICIARIO").agg({
             'CPF_DO_RESPONSAVEL': 'first',
             'VALOR_DO_SERVICO': 'sum'
         }).reset_index()
-
-        #print("Registros únicos por BENEFICIARIO com soma total calculada.")
         df_despesas['CPF_DO_RESPONSAVEL'] = df_despesas['CPF_DO_RESPONSAVEL'].apply(format_cpf)
         
-        # Save the updated base file
+        despesas_file = 'despesas_file.csv'
         df_despesas.to_csv(despesas_file, index=False)
-        #print(f"Arquivo '{despesas_file}' criado com sucesso em {datetime.now() - start} segundos")
-        return df_despesas
-    else: 
-        df_despesas = pd.read_csv(despesas_file)
-        #print(f"Arquivo '{despesas_file}' foi lido com sucesso.")
-        return df_despesas
+        return despesas_file
+    
+    except Exception as e:
+        print(f"Error processing expenses: {e}")
+        return None
 
 def processa_descontos():
-    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
-    excel_file = os.path.join(os.getcwd(), 'DESCONTOS.xlsx')
-    
-    if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
-        df_descontos = pd.DataFrame()
+    url_excel_file = "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
+    df_descontos = pd.DataFrame()
+
+    try:
+        response = requests.get(url_excel_file)
+        response.raise_for_status()  # Verificar se o download foi bem-sucedido
+        excel = pd.ExcelFile(BytesIO(response.content), engine="openpyxl")
         
+        print("Processando descontos...")
+
         # Read all sheets from single Excel file
-        excel = pd.ExcelFile(excel_file)
+        excel = pd.ExcelFile(excel)
         for sheet_name in excel.sheet_names:
-            df = pd.read_excel(excel_file, sheet_name=sheet_name, engine="openpyxl",
+            df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl",
                              usecols=["Nome", "Total de Descontos"])
             df_descontos = pd.concat([df_descontos, df], ignore_index=True)
         
@@ -374,25 +402,25 @@ def processa_descontos():
             'Total de Descontos': 'sum'
         }).reset_index(drop=True)
 
-
-        #print("Registros únicos por Nome com soma total calculada.")
-        
+        descontos_file = 'descontos_file.csv'
         # Save the updated base file
         df_descontos.to_csv(descontos_file, index=False)
-        #print(f"Arquivo '{descontos_file}' criado com sucesso")
-        return df_descontos
-    else: 
-        df_descontos = pd.read_csv(descontos_file)
-        #print(f"Arquivo '{descontos_file}' foi lido com sucesso.")
-        return df_descontos
-    
+        print(f"Arquivo de descontos criado com sucesso")
+        return descontos_file
+    except Exception as e:  
+        print(f"Erro ao baixar ou processar o arquivo do Google Drive: {e}")
+        return None
+
+@st.cache_data    
 def busca_descontos_drive():
+    print("Buscando descontos no drive...")
     url_descontos = "https://drive.google.com/uc?id=1UR7B8kd1B_-Y-bVf1eNaMThDThQ56ui8"
     try:
         df_descontos = pd.read_csv(url_descontos, delimiter=',', encoding='utf-8')
+        print("Descontos baixado com sucesso.")
         return df_descontos
     except Exception as e:
-        print(f"Erro ao ler o arquivo do Drive: {e}")
+        print(f"Erro ao ler o arquivo de desontos do Drive: {e}")
         return pd.DataFrame()
     
 def busca_dados_descontos(cpf_alvo):
@@ -414,13 +442,16 @@ def busca_dados_descontos(cpf_alvo):
 
     return total_descontos
 
+@st.cache_data
 def busca_mensalidades_drive():
+    print("Buscando mensalidades no drive...")
     url_mensalidades = "https://drive.google.com/uc?id=1t4h1Y2OmvZiYTrmHkBRBmVAP3GC4KYdM"
     try:
         df_mensalidades = pd.read_csv(url_mensalidades, delimiter=',', encoding='utf-8')
+        print("Mensalidades baixadas com sucesso.")
         return df_mensalidades
     except Exception as e:
-        print(f"Erro ao ler o arquivo do Drive: {e}")
+        print(f"Erro ao ler o arquivo de mensalidades do Drive: {e}")
         return pd.DataFrame()
     
 def busca_dados_mensalidades(cpf_alvo):
@@ -467,13 +498,16 @@ def busca_dados_mensalidades(cpf_alvo):
     
     return df_filtrado
 
+@st.cache_data
 def busca_despesas_drive():
+    print("Buscando despesas no drive...")
     url_despesas = "https://drive.google.com/uc?id=1jBGtNAQEVI6lVslyEJkPfXZpesm39193"
     try:
         df_despesas = pd.read_csv(url_despesas, delimiter=',', encoding='utf-8')
+        print("Despesas baixadas com sucesso.")
         return df_despesas
     except Exception as e:
-        print(f"Erro ao ler o arquivo do Drive: {e}")
+        print(f"Erro ao ler o arquivo de despesas do Drive: {e}")
         return pd.DataFrame()
     
 def busca_dados_despesas(cpf_alvo, nome):
