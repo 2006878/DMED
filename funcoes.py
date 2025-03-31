@@ -4,7 +4,6 @@ import os
 from fpdf import FPDF
 import re
 import requests
-from bs4 import BeautifulSoup
 from io import BytesIO
 import streamlit as st
 
