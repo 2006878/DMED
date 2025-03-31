@@ -424,7 +424,8 @@ def busca_mensalidades_drive():
         return pd.DataFrame()
     
 def busca_dados_mensalidades(cpf_alvo):
-    df_filtrado = busca_mensalidades_drive()
+    df_filtrado = processa_mensalidades()
+    # df_filtrado = busca_mensalidades_drive()
     if not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
