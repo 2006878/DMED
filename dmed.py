@@ -34,13 +34,8 @@ st.markdown("""
 # Estilos personalizados
 st.markdown("""
     <style>
-    /* Ajuste da largura do input CPF */
-    [data-testid="stTextInput"] {
-        max-width: 300px;
-        margin: 0 auto;
-    }
     /* Centralizar títulos */
-    h1, h3 {
+    h1, h2, h3 {
         text-align: center;
     }
     /* Centralizar botão de download */
@@ -80,6 +75,23 @@ st.markdown("""
     img {
         max-width: 100%;
         height: auto;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Add custom CSS for centered expander content
+st.markdown("""
+    <style>
+    .streamlit-expanderContent {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    .streamlit-expanderContent div {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -169,6 +181,11 @@ with col4:
                     st.error("Erro ao processar os dados.")
             except Exception as e:
                 st.error(f"Ocorreu um erro ao processar os dados: {str(e)}")
+
+with st.expander("Manual de regras", expanded=False):
+    with open('manual.md', 'r', encoding='utf-8') as file:
+        manual_content = file.read()
+    st.markdown(manual_content)
 
 # Footer
 st.markdown("""
