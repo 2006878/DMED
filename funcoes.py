@@ -46,7 +46,9 @@ def normalize_name(name):
 
 def create_dmed_content():
     start = datetime.now()
-    df_filtrado = busca_mensalidades_drive()
+    df_filtrado = processa_mensalidades()
+    processa_descontos()
+    processa_despesas()
     # Format Total column correctly
     df_filtrado['Total'] = df_filtrado['Total'].round(2).apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
     df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
@@ -354,8 +356,7 @@ def processa_despesas():
             df = pd.read_csv(BytesIO(response.content), encoding='latin1', sep=';',
                            usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
             df_despesas = pd.concat([df_despesas, df], ignore_index=True)
-            print(f'Processando o arquivo {url}')
-
+            
         df_despesas["VALOR_DO_SERVICO"] = pd.to_numeric(df_despesas["VALOR_DO_SERVICO"], errors="coerce").fillna(0).round(2)
         df_despesas = df_despesas.groupby("BENEFICIARIO").agg({
             'CPF_DO_RESPONSAVEL': 'first',
@@ -424,11 +425,19 @@ def busca_descontos_drive():
     
 def busca_dados_descontos(cpf_alvo):
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
-    df_descontos = busca_descontos_drive()
-    total_descontos = 0
+    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
+    if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
+        processa_descontos()
+    try:
+        df_descontos = pd.read_csv(descontos_file)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de descontos: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
 
+
+    total_descontos = 0
     if not df_descontos.empty:
-        if not df_filtrado.empty:
+        if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
             for _, row in df_filtrado.iterrows():
                 nome = str(row['Nome']).strip()
                 if nome:
@@ -437,7 +446,7 @@ def busca_dados_descontos(cpf_alvo):
                     pattern = str(nome)
                     matches = df_descontos[df_descontos['Nome'].str.contains(pattern, case=False, na=False, regex=False)]
                     if not matches.empty:
-                        total_descontos += matches["Total de Descontos"].iloc[0]
+                        total_descontos += float(matches["Total de Descontos"].iloc[0])
 
     return total_descontos
 
@@ -454,8 +463,17 @@ def busca_mensalidades_drive():
         return pd.DataFrame()
     
 def busca_dados_mensalidades(cpf_alvo):
-    df_filtrado = busca_mensalidades_drive()
-    if not df_filtrado.empty:
+    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
+    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+        processa_mensalidades()
+    try:
+        df_filtrado = pd.read_csv(mensalidades_file)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de mensalidades: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+    
+    # Verificar se df_filtrado é um DataFrame válido
+    if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
 
@@ -478,12 +496,8 @@ def busca_dados_mensalidades(cpf_alvo):
             total_esperado = float(df_filtrado[df_filtrado["Ordem"] == 0]["Total 2024"].iloc[0])
             soma_atual = df_filtrado["Total"].sum()
             
-            #print(f"Total esperado: {total_esperado}")
-            #print(f"Soma atual: {soma_atual}")
-            
             if abs(soma_atual - total_esperado) >= 0.01:  # Tolerância para comparação de float
                 diferenca = total_esperado - soma_atual
-                #print(f"Diferença a ajustar: {diferenca}")
                 
                 # Ajustando o primeiro registro com Total > 0
                 mask = df_filtrado["Total"] > 0
@@ -510,7 +524,15 @@ def busca_despesas_drive():
         return pd.DataFrame()
     
 def busca_dados_despesas(cpf_alvo, nome):
-    df_despesas = busca_despesas_drive()
+    despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
+    if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
+        processa_despesas()
+    try:
+        df_despesas = pd.read_csv(despesas_file)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de despesas: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+    
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
@@ -647,7 +669,7 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     pdf.ln(10)
 
     # 1. DADOS CADASTRAIS
-    titular = df_mensalidades.iloc[0]['Nome'] if not df_mensalidades.empty else "N/A"
+    titular = df_mensalidades.iloc[0]['Nome'] if isinstance(df_mensalidades, pd.DataFrame) and not df_mensalidades.empty else "N/A"
     draw_section('1 - DADOS CADASTRAIS', [f"Titular: {titular} - CPF: {cpf}"])
 
     # 2. IDENTIFICAÇÃO DA FONTE PAGADORA
@@ -660,7 +682,7 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
 
     # 3. INFORMAÇÕES PLANO DE SAÚDE
     info_plano = ["Mensalidade Plano de Saúde:"]
-    if not df_mensalidades.empty:
+    if isinstance(df_mensalidades, pd.DataFrame) and not df_mensalidades.empty:
         for _, row in df_mensalidades.iterrows():
             nome = row['Nome'] if 'Nome' in row else "N/A"
             valor = row['Valor'] if 'Valor' in row else "R$ 0,00"
