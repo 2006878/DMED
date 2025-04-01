@@ -46,11 +46,32 @@ def normalize_name(name):
 
 def create_dmed_content():
     start = datetime.now()
-    df_filtrado = processa_mensalidades()
+    processa_mensalidades()
+    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
+    try:
+        df_filtrado = pd.read_csv(mensalidades_file)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de mensalidades: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+    
     processa_descontos()
+
     processa_despesas()
+    despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
+    try:
+        df_despesas = pd.read_csv(despesas_file)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de despesas: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+
+    print("Iniciando criação do DMed...")
     # Format Total column correctly
-    df_filtrado['Total'] = df_filtrado['Total'].round(2).apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    # Certifique-se de que a coluna 'Total' contém apenas valores numéricos
+    df_filtrado['Total'] = pd.to_numeric(df_filtrado['Total'], errors='coerce').fillna(0)
+    # Arredonde os valores e aplique a formatação
+    df_filtrado['Total'] = df_filtrado['Total'].round(2).apply(
+        lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
     df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
 
     cpf_respostavel = "59374705672"
@@ -299,13 +320,14 @@ def processa_mensalidades():
         mensalidades_file = 'mensalidade_file.csv'
         # Salvar dados processados
         df_mensalidades.to_csv(mensalidades_file, index=False)
-        print(f"Arquivo de mensalidades criado com sucesso!")
+        print(f"Arquivo de mensalidades atualizado com sucesso!")
         return mensalidades_file
     except Exception as e:
         print(f"Erro ao baixar ou processar o arquivo do Google Drive: {e}")
         return None
     
 def processa_despesas():
+    print("Processando despesas...")
     try:
         # Direct download URLs for each CSV file
         csv_urls = [
@@ -366,6 +388,7 @@ def processa_despesas():
         
         despesas_file = 'despesas_file.csv'
         df_despesas.to_csv(despesas_file, index=False)
+        print(f"Arquivo de despesas atualizado com sucesso!")
         return despesas_file
     
     except Exception as e:
@@ -405,7 +428,7 @@ def processa_descontos():
         descontos_file = 'descontos_file.csv'
         # Save the updated base file
         df_descontos.to_csv(descontos_file, index=False)
-        print(f"Arquivo de descontos criado com sucesso")
+        print(f"Arquivo de descontos atualizado com sucesso!")
         return descontos_file
     except Exception as e:  
         print(f"Erro ao baixar ou processar o arquivo do Google Drive: {e}")
@@ -433,7 +456,6 @@ def busca_dados_descontos(cpf_alvo):
     except Exception as e:
         print(f"Erro ao ler o arquivo de descontos: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
-
 
     total_descontos = 0
     if not df_descontos.empty:

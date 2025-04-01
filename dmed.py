@@ -96,7 +96,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h3 style='font-size: 24px;'>Clique no botão abaixo pra processar e baixar o arquivo DMED:</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='font-size: 24px;'>Baixe o arquivo de importação DMED:</h3>", unsafe_allow_html=True)
 
 if st.button("📥 Processar e criar arquivo DMED"):
     with st.spinner("Processando os dados e criando arquivo DMED..."):
@@ -114,7 +114,6 @@ if st.button("📥 Processar e criar arquivo DMED"):
                 st.error("Erro ao processar os dados.")
         except Exception as e:
             st.error(f"Ocorreu um erro ao processar os dados: {str(e)}")
- 
 
 with st.expander("Manual de regras", expanded=False):
     with open('manual.md', 'r', encoding='utf-8') as file:
