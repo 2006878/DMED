@@ -328,56 +328,73 @@ def processa_mensalidades():
     
 def processa_despesas():
     print("Processando despesas...")
-    try:
-        # Direct download URLs for each CSV file
-        csv_urls = [
-            "https://drive.google.com/uc?id=1Z5pfvRtS8yqXVf8u867BDmgN4BiHhPKs",
-            "https://drive.google.com/uc?id=1sHdItzuc6srIbM11a255DSy_xIJGEpsy",
-            "https://drive.google.com/uc?id=1d3oN54IUvfJKoakIC4X2AypDWSkDrBrR",
-            "https://drive.google.com/uc?id=1B-4TwpLRHMlxVjQco21BIaFPepvd1Le1",
-            "https://drive.google.com/uc?id=1Pq_o57GAohLgpcqBe8A4iHeNIUgS5pwh",
-            "https://drive.google.com/uc?id=1YQWTcyZT7Z7nlC3xVluA7K7liKNlxIYK",
-            "https://drive.google.com/uc?id=1MCgApVa45epiFX5mvUEAJFmXEahe3bxW",
-            "https://drive.google.com/uc?id=1ujLQQL12rZ6giicEL25EK2t60n8zuRnY",
-            "https://drive.google.com/uc?id=1gI8JE9KMP2hII2J4I8CzEAANImiVy9_e",
-            "https://drive.google.com/uc?id=1Yz2MLHBi1MLrDglu18s18vGmUqaPZuBe",
-            "https://drive.google.com/uc?id=1yXn_HleVD0lZ_1kA2exTQUK8OrrsEuKJ",
-            "https://drive.google.com/uc?id=1m-kEXJl2hjfxkYahHRiWYxbDerieKULx",
-            "https://drive.google.com/uc?id=1IhJoaM-rzk5PxAllmiOixCJy43I5JywP",
-            "https://drive.google.com/uc?id=14KQMu3DGf487Lac_KQgb6G8t6pMe1XXu",
-            "https://drive.google.com/uc?id=1W-PfFd9QEbs5qO9Z0teq2th2hn35_0Tq",
-            "https://drive.google.com/uc?id=1j0GLvhXqNgmYWOQi8kHCnFbGHd7lS4Q7",
-            "https://drive.google.com/uc?id=10nmuCaNHdXCALwTMKlCqBwtVnEwgjET0",
-            "https://drive.google.com/uc?id=1QME2XU1NNhYcDZhkU03ExOXAJSKHw4du",
-            "https://drive.google.com/uc?id=1u_TEEOdEPBGBqWWMcjmYGYgh0UBZ07-c",
-            "https://drive.google.com/uc?id=16xlx0fiEW3cxLI42pxjoTFw7FAdGy_hP",
-            "https://drive.google.com/uc?id=17TzbF1SLlwD7a6Kn2xATO32a2XMwnGKp",
-            "https://drive.google.com/uc?id=1w-CDOzq5h6Q0VI8Leu14XIX_ZhsKVaah",
-            "https://drive.google.com/uc?id=1MKUWXU1IZyHKvTpuHH3eZZE-AgX6Nysv",
-            "https://drive.google.com/uc?id=1qlAGVHPVdPTre4pj3dlXO88Xxa5VGNXE",
-            "https://drive.google.com/uc?id=1AD_AXTQoBBYMszNrZhUidjVuasQ8IQy9",
-            "https://drive.google.com/uc?id=1JnXLFUbZCAAJgaBF4EIA6sFhqbCpRtOd",
-            "https://drive.google.com/uc?id=1OVg4IMe-j0P8eKRPujsyv9RV8PTfKAMh",
-            "https://drive.google.com/uc?id=1eP5HfqthGyfKlbWxcEFyLrSmsfWRO7Hx",
-            "https://drive.google.com/uc?id=1tlLfCci_Yo0ty0QR1u1KLedH19xBBJNK",
-            "https://drive.google.com/uc?id=1Fdn8ePUM1CVk7dHuw9VGjA-DZR57bMWq",
-            "https://drive.google.com/uc?id=1bOIsE182VieY5Xt-Dmlt96m72oaMNT92",
-            "https://drive.google.com/uc?id=1yEDq1VNrPTJLp00ogKdLvfCKTIZRU1I3",
-            "https://drive.google.com/uc?id=1nhF-NvJIB61pUjI1XdCIrD1LS7wT68Dq",
-            "https://drive.google.com/uc?id=1qQ1JYJmMh7zhNqfXThWC1SpdxP7EoZdD",
-            "https://drive.google.com/uc?id=1_WV2At8dOh4hCW9sdo6Y_JnYtyukOiDh",
-            "https://drive.google.com/uc?id=1k6QX0qDeT4VSTXLTuNQxd6PSj7AkQtS1",
-        ]
+    # try:
+    #     # Direct download URLs for each CSV file
+    #     csv_urls = [
+    #         "https://drive.google.com/uc?id=1Z5pfvRtS8yqXVf8u867BDmgN4BiHhPKs",
+    #         "https://drive.google.com/uc?id=1sHdItzuc6srIbM11a255DSy_xIJGEpsy",
+    #         "https://drive.google.com/uc?id=1d3oN54IUvfJKoakIC4X2AypDWSkDrBrR",
+    #         "https://drive.google.com/uc?id=1B-4TwpLRHMlxVjQco21BIaFPepvd1Le1",
+    #         "https://drive.google.com/uc?id=1Pq_o57GAohLgpcqBe8A4iHeNIUgS5pwh",
+    #         "https://drive.google.com/uc?id=1YQWTcyZT7Z7nlC3xVluA7K7liKNlxIYK",
+    #         "https://drive.google.com/uc?id=1MCgApVa45epiFX5mvUEAJFmXEahe3bxW",
+    #         "https://drive.google.com/uc?id=1ujLQQL12rZ6giicEL25EK2t60n8zuRnY",
+    #         "https://drive.google.com/uc?id=1gI8JE9KMP2hII2J4I8CzEAANImiVy9_e",
+    #         "https://drive.google.com/uc?id=1Yz2MLHBi1MLrDglu18s18vGmUqaPZuBe",
+    #         "https://drive.google.com/uc?id=1yXn_HleVD0lZ_1kA2exTQUK8OrrsEuKJ",
+    #         "https://drive.google.com/uc?id=1m-kEXJl2hjfxkYahHRiWYxbDerieKULx",
+    #         "https://drive.google.com/uc?id=1IhJoaM-rzk5PxAllmiOixCJy43I5JywP",
+    #         "https://drive.google.com/uc?id=14KQMu3DGf487Lac_KQgb6G8t6pMe1XXu",
+    #         "https://drive.google.com/uc?id=1W-PfFd9QEbs5qO9Z0teq2th2hn35_0Tq",
+    #         "https://drive.google.com/uc?id=1j0GLvhXqNgmYWOQi8kHCnFbGHd7lS4Q7",
+    #         "https://drive.google.com/uc?id=10nmuCaNHdXCALwTMKlCqBwtVnEwgjET0",
+    #         "https://drive.google.com/uc?id=1QME2XU1NNhYcDZhkU03ExOXAJSKHw4du",
+    #         "https://drive.google.com/uc?id=1u_TEEOdEPBGBqWWMcjmYGYgh0UBZ07-c",
+    #         "https://drive.google.com/uc?id=16xlx0fiEW3cxLI42pxjoTFw7FAdGy_hP",
+    #         "https://drive.google.com/uc?id=17TzbF1SLlwD7a6Kn2xATO32a2XMwnGKp",
+    #         "https://drive.google.com/uc?id=1w-CDOzq5h6Q0VI8Leu14XIX_ZhsKVaah",
+    #         "https://drive.google.com/uc?id=1MKUWXU1IZyHKvTpuHH3eZZE-AgX6Nysv",
+    #         "https://drive.google.com/uc?id=1qlAGVHPVdPTre4pj3dlXO88Xxa5VGNXE",
+    #         "https://drive.google.com/uc?id=1AD_AXTQoBBYMszNrZhUidjVuasQ8IQy9",
+    #         "https://drive.google.com/uc?id=1JnXLFUbZCAAJgaBF4EIA6sFhqbCpRtOd",
+    #         "https://drive.google.com/uc?id=1OVg4IMe-j0P8eKRPujsyv9RV8PTfKAMh",
+    #         "https://drive.google.com/uc?id=1eP5HfqthGyfKlbWxcEFyLrSmsfWRO7Hx",
+    #         "https://drive.google.com/uc?id=1tlLfCci_Yo0ty0QR1u1KLedH19xBBJNK",
+    #         "https://drive.google.com/uc?id=1Fdn8ePUM1CVk7dHuw9VGjA-DZR57bMWq",
+    #         "https://drive.google.com/uc?id=1bOIsE182VieY5Xt-Dmlt96m72oaMNT92",
+    #         "https://drive.google.com/uc?id=1yEDq1VNrPTJLp00ogKdLvfCKTIZRU1I3",
+    #         "https://drive.google.com/uc?id=1nhF-NvJIB61pUjI1XdCIrD1LS7wT68Dq",
+    #         "https://drive.google.com/uc?id=1qQ1JYJmMh7zhNqfXThWC1SpdxP7EoZdD",
+    #         "https://drive.google.com/uc?id=1_WV2At8dOh4hCW9sdo6Y_JnYtyukOiDh",
+    #         "https://drive.google.com/uc?id=1k6QX0qDeT4VSTXLTuNQxd6PSj7AkQtS1",
+    #     ]
         
-        df_despesas = pd.DataFrame()
+    #     df_despesas = pd.DataFrame()
 
-        for url in csv_urls:
-            response = requests.get(url)
-            response.raise_for_status()
+    #     for url in csv_urls:
+    #         response = requests.get(url)
+    #         response.raise_for_status()
             
-            df = pd.read_csv(BytesIO(response.content), encoding='latin1', sep=';',
-                           usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
-            df_despesas = pd.concat([df_despesas, df], ignore_index=True)
+    #         df = pd.read_csv(BytesIO(response.content), encoding='latin1', sep=';',
+    #                        usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
+    #         df_despesas = pd.concat([df_despesas, df], ignore_index=True)
+    
+    try:
+        # Caminho da pasta de dados
+        data_folder = os.path.join(os.getcwd(), 'despesas_nova')
+        
+        # Initialize empty DataFrame
+        df_despesas = pd.DataFrame()
+        #print("DataFrame df_despesas inicializado.")
+
+        # Iterate through files in data folder 
+        for filename in os.listdir(data_folder):
+            file_path = os.path.join(data_folder, filename)
+            if os.path.isfile(file_path) and filename.endswith('.csv'):
+                # Read only specified columns
+                df = pd.read_csv(file_path, encoding='latin1', sep=';', 
+                    usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
+                df_despesas = pd.concat([df_despesas, df], ignore_index=True)
             
         df_despesas["VALOR_DO_SERVICO"] = pd.to_numeric(df_despesas["VALOR_DO_SERVICO"], errors="coerce").fillna(0).round(2)
         df_despesas = df_despesas.groupby("BENEFICIARIO").agg({
