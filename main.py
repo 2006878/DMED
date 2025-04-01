@@ -88,15 +88,15 @@ cpf_alvo = format_cpf(st.text_input("Digite o CPF do Titular aqui.", label_visib
 if cpf_alvo:
     with st.spinner("Buscando dados de mensalidades..."):
         df_filtrado = busca_dados_mensalidades(cpf_alvo)
-        nome = df_filtrado["Nome"].iloc[0] if not df_filtrado.empty else ""
+        nome = df_filtrado["Nome"].iloc[0] if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty else ""
     with st.spinner("Buscando dados de descontos..."):
         descontos = busca_dados_descontos(cpf_alvo)
     with st.spinner("Buscando dados de despesas..."):
         df_despesas = busca_dados_despesas(cpf_alvo, nome)
-
+    
     descontos = f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    if not df_filtrado.empty or not df_despesas.empty:
+    if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty or not df_despesas.empty:
         pdf_data = generate_pdf(df_filtrado, df_despesas, descontos, cpf_alvo)
         st.download_button(
             label="📥 Download PDF",
@@ -111,17 +111,24 @@ if cpf_alvo:
         st.markdown("### 📊 Mensalidade Plano de Saúde")
         if not df_filtrado.empty:
             for _, row in df_filtrado.iterrows():
-                valor = row.iloc[1]
-                valor_formatado = f"{float(valor):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                valor = row["Valor"]  # Acessa a coluna 'Valor' diretamente
+                # Remover "R$" e ajustar o formato numérico
+                valor = str(valor).replace("R$", "").replace(".", "", valor.count(".") - 1).replace(",", ".").strip()
+                try:
+                    # Converter para float e formatar corretamente
+                    valor_float = float(valor)
+                    valor_formatado = f"{valor_float:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                except ValueError:
+                    valor_formatado = "Valor inválido"
                 st.markdown(f"""
                     <div class='info-container'>
-                        <h4>{row.iloc[0]}</h4>
+                        <h4>{row['Nome']}</h4>
                         <p>Valor: <strong>R$ {valor_formatado}</strong></p>
                     </div>
                 """, unsafe_allow_html=True)
         else:
             st.info("Não existem registros de mensalidades para o CPF informado.")
-
+    
     with col2:
         st.markdown("### 💉 Procedimentos co-participativos")
         if not df_despesas.empty:
@@ -143,12 +150,41 @@ if cpf_alvo:
         if descontos and descontos != "R$ 0,00":
             st.markdown(f"""
                 <div class='info-container'>
-                    <h4>{nome}</h4>
-                    <p>Valor: <strong>{descontos}</strong></p>
+                    <p>Total de descontos: <strong>{descontos}</strong></p>
                 </div>
             """, unsafe_allow_html=True)
         else:
             st.info("Não existem registros de descontos para o CPF informado.")
+
+# Botão discreto para processar os dados no canto superior direito
+st.markdown("""
+    <style>
+    .expander-container {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: auto; /* Ajusta a largura automaticamente ao conteúdo */
+        z-index: 1000;
+    }
+    .streamlit-expander {
+        width: auto !important; /* Ajusta a largura do expander */
+        display: inline-block; /* Garante que o expander ocupe apenas o espaço necessário */
+    }
+    </style>
+    <div class="expander-container">
+""", unsafe_allow_html=True)
+
+with st.expander("⚙️ Opções avançadas"):
+    if st.button("Reprocessar dados"):
+        with st.spinner("Processando mensalidades..."):
+            processa_mensalidades()
+        with st.spinner("Processando descontos..."):
+            processa_descontos()
+        with st.spinner("Processando despesas..."):
+            processa_despesas()
+        st.success("Reprocessamento concluído!")
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
 st.markdown("""
