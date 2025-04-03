@@ -1,7 +1,6 @@
 /venv/
 /anexos/
 /despesas/
-/despesas_nova/
 /mensalidades/
 /descontos/
 app.py
