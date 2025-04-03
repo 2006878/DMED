@@ -653,6 +653,20 @@ def busca_dados_despesas(cpf_alvo, nome):
                 df_despesas["BENEFICIARIO"] = nome
             elif len(df_despesas) == 1:
                 df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
+
+        # Identificar registros com valores negativos
+        negativos_mask = df_despesas["VALOR_DO_SERVICO"] < 0
+        negativos_total = df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"].sum()
+        
+        if negativos_total < 0:
+            # Encontrar o primeiro índice com um valor positivo
+            primeiro_positivo_idx = df_despesas[df_despesas["VALOR_DO_SERVICO"] > 0].index.min()
+            
+            if pd.notna(primeiro_positivo_idx):  # Se existir pelo menos um registro positivo
+                df_despesas.at[primeiro_positivo_idx, "VALOR_DO_SERVICO"] += negativos_total
+        
+            # Zeramos os valores negativos para não gerar inconsistências
+            df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"] = 0
         
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
             lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
