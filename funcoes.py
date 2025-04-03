@@ -590,9 +590,7 @@ def busca_dados_despesas(cpf_alvo, nome):
 
         # Aplicar a máscara para encontrar o nome
         pattern = re.escape(nome_normalizado)  # Escapar caracteres especiais no nome
-        mask = df_despesas["BENEFICIARIO"] == pattern
-        # mask = df_despesas["BENEFICIARIO"].str.contains(pattern, case=False, na=False)
-
+        mask = df_despesas["BENEFICIARIO"] == nome_normalizado
         #print(f"Nome fornecido: {nome_normalizado}")
         #print(f"Nomes no DataFrame: {df_despesas['BENEFICIARIO'].unique()}")
         #print(f"Máscara gerada: {mask}")
