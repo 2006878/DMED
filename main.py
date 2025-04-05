@@ -176,12 +176,16 @@ st.markdown("""
 
 with st.expander("⚙️ Opções avançadas"):
     if st.button("Reprocessar dados"):
+        bar=st.progress(0)
         with st.spinner("Processando mensalidades..."):
             processa_mensalidades()
+            bar.progress(40)
         with st.spinner("Processando descontos..."):
             processa_descontos()
+            bar.progress(80)
         with st.spinner("Processando despesas..."):
             processa_despesas()
+            bar.progress(100)
         st.success("Reprocessamento concluído!")
 
 st.markdown("</div>", unsafe_allow_html=True)

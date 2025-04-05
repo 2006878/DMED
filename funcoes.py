@@ -46,7 +46,6 @@ def normalize_name(name):
 
 def create_dmed_content():
     start = datetime.now()
-    processa_mensalidades()
     mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
     try:
         df_filtrado = pd.read_csv(mensalidades_file)
@@ -54,9 +53,6 @@ def create_dmed_content():
         print(f"Erro ao ler o arquivo de mensalidades: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
     
-    processa_descontos()
-
-    processa_despesas()
     despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
     try:
         df_despesas = pd.read_csv(despesas_file)
