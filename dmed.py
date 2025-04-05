@@ -99,9 +99,20 @@ st.markdown("""
 st.markdown("<h3 style='font-size: 24px;'>Baixe o arquivo de importação DMED:</h3>", unsafe_allow_html=True)
 
 if st.button("📥 Processar e criar arquivo DMED"):
-    with st.spinner("Processando os dados e criando arquivo DMED..."):
+    bar = st.progress(0)
+    with st.spinner("Processando mensalidades..."):
+        processa_mensalidades()
+        bar.progress(25)
+    with st.spinner("Processando despesas..."):
+        processa_despesas()
+        bar.progress(50)
+    with st.spinner("Processando descontos..."):
+        processa_descontos()
+    bar.progress(75)
+    with st.spinner("Criando arquivo DMED..."):
         try:
             dmed_content = create_dmed_content()
+            bar.progress(100)
             st.success("Arquivo DMED gerado com sucesso!")
             if dmed_content:
                 st.download_button(
