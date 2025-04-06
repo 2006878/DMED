@@ -6,7 +6,28 @@ import base64
 favicon = "icone.jpeg"
 
 # Configuração da página
-st.set_page_config(page_title=f"IRPF {ano_anterior} - COSEMI", page_icon=favicon, layout="wide")
+st.set_page_config(page_title=f"IRPF {ano_anterior} - COSEMI", page_icon=favicon, initial_sidebar_state="collapsed", layout="wide")
+
+# Ocultar completamente o menu lateral original
+st.markdown("""
+    <style>
+    /* Oculta todos os elementos de navegação */
+    section[data-testid="stSidebar"] ul {
+        display: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Criar seu próprio menu lateral
+with st.sidebar:
+    st.title("Menu COSEMI")
+    
+    # Botão para a página atual (Home)
+    st.button("🏠 Home", disabled=True)
+    
+    # Botão para a página DMED
+    if st.button("⚙️ DMED"):
+        st.switch_page("pages/2_⚙️_DMED.py")
 
 # Ocultar elementos desnecessários da interface
 st.markdown("""
@@ -187,6 +208,11 @@ with st.expander("⚙️ Opções avançadas"):
             processa_despesas()
             bar.progress(100)
         st.success("Reprocessamento concluído!")
+
+    # Adicionar link para a página DMED
+    st.markdown("""
+        <a href="/dmed.py" target="_self" class="admin-link">Acessar DMED (Área Restrita)</a>
+    """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
