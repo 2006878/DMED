@@ -4,6 +4,44 @@ import base64
 import pandas as pd
 from datetime import datetime
 
+# Carreguando o ícone da aba
+favicon = "icone.jpeg"
+
+# Streamlit page configuration
+st.set_page_config(page_title=f"ARQUIVO DMED - COSEMI", page_icon=favicon, initial_sidebar_state="collapsed", layout="wide")
+
+# Display logo
+with open('logo.png', 'rb') as f:
+    image_data = base64.b64encode(f.read()).decode()
+
+st.markdown(f"""
+    <div style="display: flex; justify-content: center; margin: 1em 0;">
+        <img src="data:image/png;base64,{image_data}" style="max-width: 300px; width: 100%; height: auto;">
+    </div>
+""", unsafe_allow_html=True)
+
+
+# Ocultar completamente o menu lateral original
+st.markdown("""
+    <style>
+    /* Oculta todos os elementos de navegação */
+    section[data-testid="stSidebar"] ul {
+        display: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Criar seu próprio menu lateral
+with st.sidebar:
+    st.title("Menu COSEMI")
+    
+    # Botão para voltar à página inicial
+    if st.button("🏠 Home"):
+        st.switch_page("main.py")
+    
+    # Botão para a página atual (DMED)
+    st.button("⚙️ DMED", disabled=True)
+
 # Configuração de autenticação
 def check_password():
     """Retorna `True` se o usuário tiver a senha correta."""
@@ -35,22 +73,6 @@ def check_password():
 
 # Início da aplicação
 if check_password():
-
-    # Carreguando o ícone da aba
-    favicon = "icone.jpeg"
-
-    # Streamlit page configuration
-    st.set_page_config(page_title=f"ARQUIVO DMED - COSEMI", page_icon=favicon, layout="wide")
-
-    # Display logo
-    with open('logo.png', 'rb') as f:
-        image_data = base64.b64encode(f.read()).decode()
-
-    st.markdown(f"""
-        <div style="display: flex; justify-content: center; margin: 1em 0;">
-            <img src="data:image/png;base64,{image_data}" style="max-width: 300px; width: 100%; height: auto;">
-        </div>
-    """, unsafe_allow_html=True)
 
     st.title(f"DOWNLOAD ARQUIVO DMED - COSEMI")
 
