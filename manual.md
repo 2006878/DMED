@@ -133,38 +133,37 @@
 
 ## BUSCA DESPESAS
 
-### Processo de Busca
-- Localiza despesas por CPF e nome.
-- Verifica todos os registros associados.
-- Considera descontos relacionados.
+### Verificação e Carregamento de Dados
+- Verifica a existência do arquivo de despesas processadas
+- Se não existir ou estiver vazio, gera um novo arquivo a partir dos dados brutos
+- Carrega os dados em um DataFrame para manipulação
 
-### Distribuição de Valores
-- Calcula diferença entre descontos e despesas.
-- Distribui valores entre beneficiários quando necessário.
-- Ajusta valores conforme regras específicas:
-  - Se há descontos maiores que despesas.
-  - Se há despesas sem descontos correspondentes.
-  - Se há beneficiários sem registros.
+### Filtragem e Normalização
+- Filtra o DataFrame para obter apenas os registros associados ao CPF informado
+- Padroniza os nomes para maiúsculas e remove espaços extras
+- Separa os registros em dois grupos: titular e dependentes
 
-### Ajustes Automáticos
-- Distribui diferenças proporcionalmente.
-- Trata casos de valores insuficientes.
-- Ajusta registros individuais quando necessário.
-- Garante que soma total esteja correta.
+### Cálculo e Distribuição de Valores
+- Obtém o valor total de descontos associados ao CPF
+- Calcula a diferença entre o total de descontos e a soma das despesas
+- Distribui esta diferença seguindo regras específicas:
+  - Se encontrou o titular, adiciona a diferença ao valor dele
+  - Se não encontrou o titular mas há dependentes, distribui a diferença entre eles
+  - Se há apenas um registro, atribui toda a diferença a ele
+  - Ajusta valores caso algum dependente não tenha saldo suficiente
 
-### Formatação Final
-- Apresenta valores em formato monetário brasileiro.
-- Organiza por nome do beneficiário.
-- Inclui todos os valores relacionados.
-- Mantém rastreabilidade dos dados.
+### Formatação e Retorno
+- Formata os valores monetários no padrão brasileiro (R$ X.XXX,XX)
+- Organiza os dados em um DataFrame com duas colunas: "Nome" e "Valor"
+- Retorna o DataFrame formatado ou vazio se não houver registros nem descontos
 
 #### Benefícios do Sistema:
-- Precisão nos valores processados.
-- Distribuição equitativa de ajustes.
-- Rastreamento completo de despesas.
-- Integração com sistema de descontos.
-- Rapidez nas consultas.
-- Consistência nos dados.
+- Precisão nos valores processados
+- Distribuição equitativa de ajustes
+- Rastreamento completo de despesas
+- Integração com sistema de descontos
+- Rapidez nas consultas
+- Consistência nos dados
 
 ---
 
@@ -232,6 +231,6 @@ Valores em centavos
 CPFs com 11 dígitos
 Nomes padronizados
 Códigos de relação específicos
-O sistema mantém consistência matemática e segue rigorosamente as regras da Receita Federal para declaração DMED.
+O sistema mantém consistência matemática e segue as regras da Receita Federal para declaração DMED, mas não remove ou insere qualquer dado adicional, não sendo responsável por erros de digitação ou inconsistências contidas nos arquivos de origem dos dados.
 
 O sistema garante que todas as despesas sejam corretamente processadas e distribuídas, mantendo a integridade dos dados e a transparência necessária para o negócio.
