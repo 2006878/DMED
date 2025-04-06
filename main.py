@@ -208,12 +208,6 @@ with st.expander("⚙️ Opções avançadas"):
             processa_despesas()
             bar.progress(100)
         st.success("Reprocessamento concluído!")
-
-    # Adicionar link para a página DMED
-    st.markdown("""
-        <a href="/dmed.py" target="_self" class="admin-link">Acessar DMED (Área Restrita)</a>
-    """, unsafe_allow_html=True)
-
 st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer

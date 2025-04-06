@@ -73,39 +73,45 @@ deactivate
 
 
 
-### Opção 2: Usando Docker
+### Opção 2: Usando Docker Compose
 
-Se você preferir usar Docker, siga estas instruções para criar e executar um container com a aplicação.
+Se você preferir usar Docker Compose, siga estas instruções para criar e executar os serviços da aplicação.
 
 #### Pré-requisitos
-- Docker instalado em seu sistema ([Instruções de instalação](https://docs.docker.com/get-docker/))
+- Docker e Docker Compose instalados em seu sistema ([Instruções de instalação](https://docs.docker.com/get-docker/))
 
-#### 🐳 Construindo a imagem Docker
+#### 🐳 Criando o arquivo `docker-compose.yml`
 
-1. Navegue até o diretório raiz do projeto (onde está o arquivo `Dockerfile`)
-2. Execute o comando para construir a imagem:
+Certifique-se de que o arquivo `docker-compose.yml` esteja no diretório raiz do projeto com o seguinte conteúdo:
 
-```sh
-docker build -t cosemi .
+```yaml
+version: '3'
+services:
+  app:
+    image: cosemi
+    container_name: cosemi-container
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    environment:
+      - STREAMLIT_SERVER_RUN_ON_SAVE=true
+      - WATCHDOG_TIMEOUT=10
 ```
 
+#### 🚀 Executando os serviços
 
-#### 🚀 Executando o container
-
-
-Após a construção da imagem, execute o container com:
-
+1. Navegue até o diretório raiz do projeto (onde está o arquivo `docker-compose.yml`).
+2. Execute o seguinte comando para iniciar os serviços:
 
 ```sh
-docker run -p 8501:8501 --name cosemi-container cosemi
+docker-compose up
 ```
 
-
-Para executar o container em segundo plano (modo detached):
+Para executar os serviços em segundo plano (modo detached):
 
 ```sh
-
-docker run -d -p 8501:8501 --name cosemi-container cosemi
+docker-compose up -d
 ```
 
 #### 🌐 Acessando a aplicação
@@ -115,42 +121,41 @@ Abra seu navegador e acesse:
 http://localhost:8501
 ```
 
-#### ⚙️ Gerenciando o container
+#### ⚙️ Gerenciando os serviços
 
-Para parar o container:
+Para parar os serviços:
 ```sh
-docker stop cosemi-container
+docker-compose down
 ```
 
-Para iniciar um container que foi parado:
+Para reiniciar os serviços:
 ```sh
-docker start cosemi-container
+docker-compose restart
 ```
 
-Para remover o container:
+Para visualizar os logs:
 ```sh
-docker rm cosemi-container
+docker-compose logs
 ```
 
 ---
 
 ## 🛠 Solução de Problemas
 
-1. **Streamlit não encontrado?**
-   - Certifique-se de que o ambiente virtual está ativado.
-   - Reinstale as dependências com `pip install -r requirements.txt`.
+1. **Porta 8501 já em uso?**
+   - Altere a porta no arquivo `docker-compose.yml`:
+     ```yaml
+     ports:
+       - "8502:8501"
+     ```
+   - Em seguida, acesse a aplicação em `http://localhost:8502`.
 
-2. **Erro de permissão em macOS/Linux?**
-   - Tente `chmod +x venv/bin/activate` e execute `source venv/bin/activate` novamente.
+2. **Erro ao construir a imagem?**
+   - Certifique-se de que o arquivo `Dockerfile` está no diretório correto e que não há erros de sintaxe.
 
-3. **Porta 8501 já em uso?**
-   - Rode o Streamlit em outra porta: `streamlit run main.py --server.port 8502`
-   - Ou, se estiver usando Docker: `docker run -p 8502:8501 --name cosemi-container cosemi`
-
-4. **Não consegue acessar a aplicação no Docker?**
-   - Certifique-se de acessar `http://localhost:8501` (não `0.0.0.0:8501`)
-   - Verifique se o container está rodando com `docker ps`
-   - Verifique os logs com `docker logs cosemi-container`
+3. **Não consegue acessar a aplicação?**
+   - Verifique se os serviços estão rodando com `docker-compose ps`.
+   - Verifique os logs com `docker-compose logs`.
 
 Se o problema persistir, crie uma issue no repositório! 🚀
 
