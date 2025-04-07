@@ -150,9 +150,49 @@ if check_password():
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("<h3 style='font-size: 24px;'>Baixe o arquivo de importação DMED:</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size: 24px;'>Insira as informações abaixo para processar e criar o arquivo:</h3>", unsafe_allow_html=True)
 
-    if st.button("📥 Processar e criar arquivo DMED"):
+    col1, col2 = st.columns(2)
+    with col1:
+        # Replace the current number_input with this code
+        cpf_input = st.text_input(
+            "Digite o CPF do Responsável aqui (apenas números):",
+            max_chars=11,
+            help="Digite apenas os 11 números do CPF, sem pontos ou traços"
+        )
+
+        # Validate the CPF input
+        if cpf_input:
+            # Remove any non-digit characters
+            cpf_digits = ''.join(filter(str.isdigit, cpf_input))
+            
+            # Validate length
+            if len(cpf_digits) != 11:
+                st.error("CPF deve conter exatamente 11 dígitos e sem pontos ou traços.")
+            else:
+                # Format for display (optional)
+                formatted_cpf = f"{cpf_digits[:3]}.{cpf_digits[3:6]}.{cpf_digits[6:9]}-{cpf_digits[9:]}"
+                # Store the clean CPF value for processing
+                cpf_responsavel = cpf_digits
+        else:
+            cpf_responsavel = ""
+
+        nome_respostavel = st.text_input("Digite o nome do Responsável aqui.")
+    
+    with col2:
+        ddd_input = st.text_input(
+        "Digite o DDD do telefone do Responsável aqui (apenas números):",
+        max_chars=2,
+        help="Digite apenas os 2 números, sem pontos ou traços"
+        )
+
+        telefone_input = st.text_input(
+            "Digite o telefone do Responsável aqui (apenas números):",
+            max_chars=9,
+            help="Digite apenas os números do telefone, sem pontos ou traços"
+        )
+
+    if cpf_responsavel != "" and nome_respostavel != "" and ddd_input != "" and telefone_input != "" and st.button("📥 Processar e criar arquivo DMED"):
         bar = st.progress(0)
         with st.spinner("Processando mensalidades..."):
             processa_mensalidades()
@@ -165,7 +205,7 @@ if check_password():
         bar.progress(75)
         with st.spinner("Criando arquivo DMED..."):
             try:
-                dmed_content = create_dmed_content()
+                dmed_content = create_dmed_content(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
                 bar.progress(100)
                 st.success("Arquivo DMED gerado com sucesso!")
                 if dmed_content:
