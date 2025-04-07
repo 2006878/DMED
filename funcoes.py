@@ -44,7 +44,7 @@ def normalize_name(name):
     normalized = ''.join(c for c in normalized if c.isalnum() or c.isspace())
     return normalized
 
-def create_dmed_content():
+def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
     start = datetime.now()
     mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
     try:
@@ -69,15 +69,17 @@ def create_dmed_content():
         lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     )
     df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
-
-    cpf_respostavel = "59374705672"
-    nome_respostavel = "Paulo Alexandre da Silva"
+    
+    cpf_respostavel = responsavel_cpf
+    nome_respostavel = responsavel_nome
+    ddd = ddd_responsavel
+    telefone = telefone_responsavel
     cnpj_empresa = "16651002000180"
     nome_empresa = "COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI"
 
     content = [
         f"DMED|{ano_atual}|{ano_anterior}|N|||",
-        f"RESPO|{cpf_respostavel}|{nome_respostavel}||||||",
+        f"RESPO|{cpf_respostavel}|{nome_respostavel}|{ddd}|{telefone}||||",
         f"DECPJ|{cnpj_empresa}|{nome_empresa}|2|419761||{cpf_respostavel}|N||S|",
         "OPPAS|"
     ]
