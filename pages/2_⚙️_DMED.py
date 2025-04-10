@@ -231,7 +231,7 @@ if check_password():
         <div style='text-align: center;'>
             Desenvolvido por 
             <a href='https://www.linkedin.com/in/tairone-amaral/' target='_blank'>
-                Tairone Leandro do Amaral
+                Tairone Amaral
             </a>
         </div>
     """, unsafe_allow_html=True)
