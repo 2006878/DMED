@@ -13,12 +13,15 @@ ano_atual = pd.Timestamp.now().year
 def format_cpf(cpf):
     if pd.isna(cpf) or str(cpf).strip() == '' or str(cpf).strip() == '0':
         return ''
-    return str(cpf).strip().replace(' ', '').replace('.', '').replace('-', '').zfill(11)
-
+    # Remove todos os caracteres não numéricos manualmente
+    cpf_str = str(cpf).strip()
+    caracteres = [' ', '.', '-', '/', '\\', '(', ')', '_', ',', '*']
+    for char in caracteres:
+        cpf_str = cpf_str.replace(char, '')
+    return cpf_str.zfill(11)
+    
 def format_valor(valor_str):
     try:
-        if pd.isna(valor_str):
-            return ""
         # Remove currency symbol and standardize decimal separator
         valor = str(valor_str).replace("R$", "").strip()
         # Handle different decimal formats
@@ -26,6 +29,8 @@ def format_valor(valor_str):
             valor = valor.replace(".", "").replace(",", ".")
         # Convert to float and round to 2 decimal places
         valor_float = round(float(valor), 2)
+        if valor_float == 0  or pd.isna(valor_float):
+            valor_float = 0.01
         # Convert to cents without decimal point
         valor_cents = int(valor_float * 100)
         return f"{valor_cents:09d}"
@@ -64,10 +69,7 @@ def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, tele
     # Format Total column correctly
     # Certifique-se de que a coluna 'Total' contém apenas valores numéricos
     df_filtrado['Total'] = pd.to_numeric(df_filtrado['Total'], errors='coerce').fillna(0)
-    # Arredonde os valores e aplique a formatação
-    df_filtrado['Total'] = df_filtrado['Total'].round(2).apply(
-        lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    )
+    df_filtrado['Total'] = df_filtrado['Total'].round(2)
     df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
     
     cpf_respostavel = responsavel_cpf
@@ -86,6 +88,15 @@ def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, tele
     
     # First sort by titular CPF
     for titular_cpf, grupo in sorted(df_filtrado.groupby("Titular_CPF")):
+        # Group by Nome, sum Total, and keep other columns
+        grupo = grupo.groupby("Nome").agg({
+            'Total': 'sum',
+            # Keep the first occurrence of other columns
+            'Titular_CPF': 'first',
+            'Relação': 'first',
+            'CPF': 'first',
+            # Add any other columns you need to preserve
+        }).reset_index()
 
         # Create sorting key and sort the dataframe
         df_filtrado['CPF_Sort'] = df_filtrado['Titular_CPF']
@@ -102,7 +113,7 @@ def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, tele
             df_despesas = busca_dados_despesas(titular_cpf, titular['Nome'])
             
             # Get titular value from both sources
-            valor_mensalidade = pd.to_numeric(str(titular["Total"]).replace("R$", "").replace(".", "").replace(",", ".").strip(), errors='coerce')
+            valor_mensalidade = pd.to_numeric(titular["Total"]).round(2)
 
             valor_despesas = float(str(df_despesas[df_despesas['Nome'] == nome_titular]['Valor'].iloc[0]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0) if not df_despesas.empty and nome_titular in df_despesas['Nome'].values else 0
             
@@ -124,7 +135,7 @@ def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, tele
             # For dependents, reuse the same df_despesas
             for _, dep in dependentes_sorted.iterrows():
                 nome_dep = normalize_name(dep['Nome'])
-                valor_mensalidade = pd.to_numeric(str(dep["Total"]).replace("R$", "").replace(".", "").replace(",", ".").strip(), errors='coerce')
+                valor_mensalidade = pd.to_numeric(dep["Total"])
                 valor_despesas = float(str(df_despesas[df_despesas['Nome'] == nome_dep]['Valor'].iloc[0]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0) if not df_despesas.empty and nome_dep in df_despesas['Nome'].values else 0
                 
                 valor_total = valor_mensalidade + valor_despesas
