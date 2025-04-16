@@ -49,101 +49,105 @@ def normalize_name(name):
     normalized = ''.join(c for c in normalized if c.isalnum() or c.isspace())
     return normalized
 
+@st.cache_data
+def load_data(file_path):
+    try:
+        return pd.read_csv(file_path)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo {file_path}: {e}")
+        return pd.DataFrame()
+    
+# Agrupar e processar dados de uma vez
+def process_group(grupo, titular_cpf, despesas_dict):
+    results = []
+    
+    # Processar titular
+    titular = grupo[grupo["Relação"] == "Titular"]
+    if not titular.empty:
+        titular = titular.iloc[0]
+        nome_titular = normalize_name(titular['Nome'])
+        
+        # Buscar valor de despesa do dicionário pré-calculado
+        valor_despesas = despesas_dict.get(titular_cpf, {}).get(nome_titular, 0)
+        valor_titular = pd.to_numeric(titular["Total"]).round(2) + valor_despesas
+        
+        if valor_titular <= 0:
+            valor_titular = 0.01
+            
+        results.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{format_valor(valor_titular)}|")
+    
+    # Processar dependentes
+    dependentes = grupo[grupo["Relação"] != "Titular"].copy()
+    if not dependentes.empty:
+        dependentes['CPF'] = dependentes['CPF'].apply(format_cpf)
+        dependentes_sorted = dependentes.sort_values(['CPF'])
+        
+        for _, dep in dependentes_sorted.iterrows():
+            nome_dep = normalize_name(dep['Nome'])
+            valor_mensalidade = pd.to_numeric(dep["Total"])
+            valor_despesas = despesas_dict.get(titular_cpf, {}).get(nome_dep, 0)
+            
+            valor_total = valor_mensalidade + valor_despesas
+            if valor_total <= 0:
+                valor_total = 0.01
+                
+            results.append(f"DTOP|{format_cpf(dep['CPF'])}||{nome_dep}|{get_dependent_code(dep['Relação'])}|{format_valor(str(valor_total))}|")
+    
+    return results
+
 def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
     start = datetime.now()
-    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
-    try:
-        df_filtrado = pd.read_csv(mensalidades_file)
-    except Exception as e:
-        print(f"Erro ao ler o arquivo de mensalidades: {e}")
-        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
     
-    despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
-    try:
-        df_despesas = pd.read_csv(despesas_file)
-    except Exception as e:
-        print(f"Erro ao ler o arquivo de despesas: {e}")
-        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+    # Carregar dados com cache
+    df_filtrado = load_data(os.path.join(os.getcwd(), 'mensalidade_file.csv'))
+    if df_filtrado.empty:
+        return ""
+        
+    df_despesas_raw = load_data(os.path.join(os.getcwd(), 'despesas_file.csv'))
+    if df_despesas_raw.empty:
+        return ""
 
-    print("Iniciando criação do DMed...")
-    # Format Total column correctly
-    # Certifique-se de que a coluna 'Total' contém apenas valores numéricos
-    df_filtrado['Total'] = pd.to_numeric(df_filtrado['Total'], errors='coerce').fillna(0)
-    df_filtrado['Total'] = df_filtrado['Total'].round(2)
+    print("Criando arquivo DMed...")
+    
+    # Pré-processar dados
+    df_filtrado['Total'] = pd.to_numeric(df_filtrado['Total'], errors='coerce').fillna(0).round(2)
     df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
     
-    cpf_respostavel = responsavel_cpf
-    nome_respostavel = responsavel_nome
-    ddd = ddd_responsavel
-    telefone = telefone_responsavel
-    cnpj_empresa = "16651002000180"
-    nome_empresa = "COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI"
-
+    # Cabeçalho do DMED
     content = [
         f"DMED|{ano_atual}|{ano_anterior}|N|||",
-        f"RESPO|{cpf_respostavel}|{nome_respostavel}|{ddd}|{telefone}||||",
-        f"DECPJ|{cnpj_empresa}|{nome_empresa}|2|419761||{cpf_respostavel}|N||S|",
+        f"RESPO|{responsavel_cpf}|{responsavel_nome}|{ddd_responsavel}|{telefone_responsavel}||||",
+        f"DECPJ|16651002000180|COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI|2|419761||{responsavel_cpf}|N||S|",
         "OPPAS|"
     ]
     
-    # First sort by titular CPF
-    for titular_cpf, grupo in sorted(df_filtrado.groupby("Titular_CPF")):
-        # Group by Nome, sum Total, and keep other columns
-        grupo = grupo.groupby("Nome").agg({
-            'Total': 'sum',
-            # Keep the first occurrence of other columns
-            'Titular_CPF': 'first',
-            'Relação': 'first',
-            'CPF': 'first',
-            # Add any other columns you need to preserve
-        }).reset_index()
-
-        # Create sorting key and sort the dataframe
-        df_filtrado['CPF_Sort'] = df_filtrado['Titular_CPF']
-        df_filtrado = df_filtrado.sort_values(['CPF_Sort', 'Relação'], ascending=[True, False])
-
-        # Remove temporary sorting column
-        df_filtrado = df_filtrado.drop('CPF_Sort', axis=1)
-
-        if pd.notna(titular_cpf):
-            titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
-            nome_titular = normalize_name(titular['Nome'])
+    # Pré-calcular despesas para todos os titulares
+    despesas_dict = {}
+    for cpf in df_filtrado['Titular_CPF'].unique():
+        if pd.notna(cpf):
+            titular_nome = df_filtrado[df_filtrado['Titular_CPF'] == cpf]['Nome'].iloc[0]
+            df_desp = busca_dados_despesas(cpf, titular_nome)
+            
+            # Criar dicionário para lookup rápido
+            despesas_dict[cpf] = {}
+            for _, row in df_desp.iterrows():
+                nome_norm = normalize_name(row['Nome'])
+                valor_str = str(row['Valor']).replace("R$", "").replace(".", "").replace(",", ".").strip()
+                despesas_dict[cpf][nome_norm] = float(valor_str or 0)
     
-            # Get all family expenses at once
-            df_despesas = busca_dados_despesas(titular_cpf, titular['Nome'])
-            
-            # Get titular value from both sources
-            valor_mensalidade = pd.to_numeric(titular["Total"]).round(2)
-
-            valor_despesas = float(str(df_despesas[df_despesas['Nome'] == nome_titular]['Valor'].iloc[0]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0) if not df_despesas.empty and nome_titular in df_despesas['Nome'].values else 0
-            
-            valor_titular = valor_mensalidade + valor_despesas
-            
-            valor_titular_fmt = format_valor(valor_titular)
-            
-            content.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{valor_titular_fmt}|")
-            
-            # Get dependents and ensure CPF is properly formatted for sorting
-            # print(grupo)
-            dependentes = grupo[grupo["Relação"] != "Titular"].copy()
-            # print(len(dependentes))
-            dependentes['CPF'] = dependentes['CPF'].apply(format_cpf)
-            
-            # Sort dependents by formatted CPF and birth date
-            dependentes_sorted = dependentes.sort_values(['CPF'])
-            
-            # For dependents, reuse the same df_despesas
-            for _, dep in dependentes_sorted.iterrows():
-                nome_dep = normalize_name(dep['Nome'])
-                valor_mensalidade = pd.to_numeric(dep["Total"])
-                valor_despesas = float(str(df_despesas[df_despesas['Nome'] == nome_dep]['Valor'].iloc[0]).replace("R$", "").replace(".", "").replace(",", ".").strip() or 0) if not df_despesas.empty and nome_dep in df_despesas['Nome'].values else 0
-                
-                valor_total = valor_mensalidade + valor_despesas
-                valor_dep = format_valor(str(valor_total))
-                codigo_dep = get_dependent_code(dep["Relação"])
-                data_nasc = ""
-                
-                content.append(f"DTOP|{format_cpf(dep['CPF'])}|{data_nasc}|{nome_dep}|{codigo_dep}|{valor_dep}|")
+    # Agrupar dados por Nome para evitar duplicatas
+    df_grouped = df_filtrado.groupby(['Titular_CPF', 'Nome']).agg({
+        'Total': 'sum',
+        'Relação': 'first',
+        'CPF': 'first'
+    }).reset_index()
+    
+    # Processar cada grupo de titular
+    for titular_cpf, grupo in df_grouped.groupby('Titular_CPF'):
+        if pd.notna(titular_cpf):
+            # Processar o grupo e adicionar resultados ao content
+            results = process_group(grupo, titular_cpf, despesas_dict)
+            content.extend(results)
     
     content.append("FIMDmed|")
     end = datetime.now()
