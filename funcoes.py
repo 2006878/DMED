@@ -583,113 +583,123 @@ def busca_dados_despesas(cpf_alvo, nome):
     except Exception as e:
         print(f"Erro ao ler o arquivo de despesas: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+    try:
+        descontos = float(busca_dados_descontos(cpf_alvo))
+    except Exception as e:
+        print(f"Erro ao calcular descontos: {e}")
+        descontos = 0
     
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
         total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
         #print(f"Total de despesas: {total_despesas}")
-        
-        descontos = float(busca_dados_descontos(cpf_alvo))
-        #print(f"Descontos: {descontos}")
-        diferenca = descontos - total_despesas
-        #print(f"Diferença: {diferenca}")
-
-        # Normalizar os nomes no DataFrame
-        df_despesas["BENEFICIARIO"] = df_despesas["BENEFICIARIO"].str.strip().str.upper()
-
-        # Normalizar o nome fornecido
-        nome_normalizado = nome.strip().upper()
-
-        # Aplicar a máscara para encontrar o nome
-        pattern = re.escape(nome_normalizado)  # Escapar caracteres especiais no nome
-        mask = df_despesas["BENEFICIARIO"] == nome_normalizado
-        #print(f"Nome fornecido: {nome_normalizado}")
-        #print(f"Nomes no DataFrame: {df_despesas['BENEFICIARIO'].unique()}")
-        #print(f"Máscara gerada: {mask}")
-
-        # Verificar se há correspondências
-        if mask.any():
-            # Create a sorting column (True values will come first)
-            df_despesas['sort_order'] = mask
             
-            # Sort by the new column and drop it
-            df_despesas = df_despesas.sort_values('sort_order', ascending=False).drop('sort_order', axis=1)
-        
-        remaining_mask = ~mask
-        remaining_count = remaining_mask.sum()
-        total_remaining_mask = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"].sum()
-        #print(f"Total do valor dos dependentes: {total_remaining_mask}")
-        #print(f"Quantidade de dependentes: {remaining_count}")
+        if not df_despesas.empty:
+            diferenca = descontos - total_despesas
+            #print(f"Diferença: {diferenca}")
 
-        if descontos > 0 and mask is True:
-            df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
-            
-        elif diferenca != 0:  # Only process if there's a difference to distribute
-            if remaining_count > 0 and total_remaining_mask >= abs(diferenca) or remaining_count > 0 and total_remaining_mask < abs(diferenca) and diferenca > 0:
-                value_per_record = abs(diferenca) / remaining_count
+            # Normalizar os nomes no DataFrame
+            df_despesas["BENEFICIARIO"] = df_despesas["BENEFICIARIO"].str.strip().str.upper()
+
+            # Normalizar o nome fornecido
+            nome_normalizado = nome.strip().upper()
+
+            # Aplicar a máscara para encontrar o nome
+            pattern = re.escape(nome_normalizado)  # Escapar caracteres especiais no nome
+            mask = df_despesas["BENEFICIARIO"] == nome_normalizado
+            #print(f"Nome fornecido: {nome_normalizado}")
+            #print(f"Nomes no DataFrame: {df_despesas['BENEFICIARIO'].unique()}")
+            #print(f"Máscara gerada: {mask}")
+
+            # Verificar se há correspondências
+            if mask.any():
+                # Create a sorting column (True values will come first)
+                df_despesas['sort_order'] = mask
                 
-                # Initialize insufficient_mask before the conditional blocks
-                insufficient_mask = pd.Series(False, index=df_despesas.index)
-                # Handle records with insufficient values
-                if diferenca < 0:
-                    insufficient_mask = remaining_mask & (df_despesas["VALOR_DO_SERVICO"] < value_per_record)
+                # Sort by the new column and drop it
+                df_despesas = df_despesas.sort_values('sort_order', ascending=False).drop('sort_order', axis=1)
+            
+            remaining_mask = ~mask
+            remaining_count = remaining_mask.sum()
+            total_remaining_mask = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"].sum()
+            #print(f"Total do valor dos dependentes: {total_remaining_mask}")
+            #print(f"Quantidade de dependentes: {remaining_count}")
 
-                if insufficient_mask.any():
-                    insufficient_values = df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"]
-                    df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"] = 0
-                    diferenca += insufficient_values.sum()
+            if descontos > 0 and mask is True:
+                df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
+                
+            elif diferenca != 0:  # Only process if there's a difference to distribute
+                if remaining_count > 0 and total_remaining_mask >= abs(diferenca) or remaining_count > 0 and total_remaining_mask < abs(diferenca) and diferenca > 0:
+                    value_per_record = abs(diferenca) / remaining_count
                     
-                    # Update remaining records
-                    remaining_mask = remaining_mask & ~insufficient_mask
-                    remaining_count = remaining_mask.sum()
-                    
-                    # Recalculate value_per_record only if there are remaining records
-                    if remaining_count > 0:
-                        value_per_record = abs(diferenca) / remaining_count
-                        
-                # Process remaining records with sufficient values
-                if remaining_count > 0:
+                    # Initialize insufficient_mask before the conditional blocks
+                    insufficient_mask = pd.Series(False, index=df_despesas.index)
+                    # Handle records with insufficient values
                     if diferenca < 0:
-                        df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
-                    else:
-                        df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] += value_per_record
-            
-            if remaining_count > 0 and total_remaining_mask < abs(diferenca) and diferenca < 0:
-                df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] = 0
-                # df_despesas.loc[mask, "VALOR_DO_SERVICO"] == descontos
-                df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
+                        insufficient_mask = remaining_mask & (df_despesas["VALOR_DO_SERVICO"] < value_per_record)
 
-            elif df_despesas.empty:
-                df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})
-            
-            elif len(df_despesas) == 1:
-                df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
+                    if insufficient_mask.any():
+                        insufficient_values = df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"]
+                        df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"] = 0
+                        diferenca += insufficient_values.sum()
+                        
+                        # Update remaining records
+                        remaining_mask = remaining_mask & ~insufficient_mask
+                        remaining_count = remaining_mask.sum()
+                        
+                        # Recalculate value_per_record only if there are remaining records
+                        if remaining_count > 0:
+                            value_per_record = abs(diferenca) / remaining_count
+                            
+                    # Process remaining records with sufficient values
+                    if remaining_count > 0:
+                        if diferenca < 0:
+                            df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
+                        else:
+                            df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] += value_per_record
+                
+                if remaining_count > 0 and total_remaining_mask < abs(diferenca) and diferenca < 0:
+                    df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] = 0
+                    # df_despesas.loc[mask, "VALOR_DO_SERVICO"] == descontos
+                    df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
 
-        # Identificar registros com valores negativos
-        negativos_mask = df_despesas["VALOR_DO_SERVICO"] < 0
-        negativos_total = df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"].sum()
-        
-        if negativos_total < 0:
-            # Encontrar o primeiro índice com um valor positivo
-            primeiro_positivo_idx = df_despesas[df_despesas["VALOR_DO_SERVICO"] > 0].index.min()
+                elif df_despesas.empty:
+                    df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})
+                
+                elif len(df_despesas) == 1:
+                    df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
+
+            # Identificar registros com valores negativos
+            negativos_mask = df_despesas["VALOR_DO_SERVICO"] < 0
+            negativos_total = df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"].sum()
             
-            if pd.notna(primeiro_positivo_idx):  # Se existir pelo menos um registro positivo
-                df_despesas.at[primeiro_positivo_idx, "VALOR_DO_SERVICO"] += negativos_total
-        
-            # Zeramos os valores negativos para não gerar inconsistências
-            df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"] = 0
-        
-        df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
-            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        )
-        df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(
-            columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'}
-        )
-        
-        if df_despesas.empty and descontos == 0:
-            return pd.DataFrame(columns=['Nome', 'Valor'])
+            if negativos_total < 0:
+                # Encontrar o primeiro índice com um valor positivo
+                primeiro_positivo_idx = df_despesas[df_despesas["VALOR_DO_SERVICO"] > 0].index.min()
+                
+                if pd.notna(primeiro_positivo_idx):  # Se existir pelo menos um registro positivo
+                    df_despesas.at[primeiro_positivo_idx, "VALOR_DO_SERVICO"] += negativos_total
             
+                # Zeramos os valores negativos para não gerar inconsistências
+                df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"] = 0
+        
+        else:
+            df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})
+
+    if df_despesas.empty:
+        df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})        
+    
+    if df_despesas.empty and descontos == 0:
+        return pd.DataFrame(columns=['Nome', 'Valor'])
+           
+    df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
+        lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
+    df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(
+        columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'}
+    )
+     
     return df_despesas
 
 def format_currency(value):
