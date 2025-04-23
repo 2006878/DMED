@@ -661,9 +661,8 @@ def busca_dados_despesas(cpf_alvo, nome):
                 df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
 
             elif df_despesas.empty:
-                df_despesas = pd.DataFrame(columns=['BENEFICIARIO', 'VALOR_DO_SERVICO'])
-                df_despesas["VALOR_DO_SERVICO"] = descontos
-                df_despesas["BENEFICIARIO"] = nome
+                df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})
+            
             elif len(df_despesas) == 1:
                 df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
 
