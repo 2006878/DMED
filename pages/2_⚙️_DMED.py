@@ -178,6 +178,9 @@ if check_password():
             cpf_responsavel = ""
 
         nome_respostavel = st.text_input("Digite o nome do Responsável aqui.")
+        st.selectbox("Selecione como deseja processar o arquivo:", ["Titulares e Dependentes", "somente Titulares"], key="processamento")
+        st.write(f"Com a seleção atual o arquivo terá os dados informados incluindo ", st.session_state.processamento)
+
     
     with col2:
         ddd_input = st.text_input(
@@ -205,9 +208,19 @@ if check_password():
         bar.progress(75)
         with st.spinner("Criando arquivo DMED..."):
             try:
-                dmed_content = create_dmed_content(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
-                bar.progress(100)
-                st.success("Arquivo DMED gerado com sucesso!")
+                # Inicializar dmed_content como None para evitar o erro
+                dmed_content = None
+                if st.session_state.processamento == "Titulares e Dependentes":
+                    dmed_content = create_dmed_content(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
+                    bar.progress(100)
+                    st.success("Arquivo DMED gerado com sucesso!")
+                elif st.session_state.processamento == "somente Titulares":
+                    dmed_content = create_dmed_content_titular(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
+                    bar.progress(100)
+                    st.success("Arquivo DMED gerado com sucesso!")
+                else:
+                    st.error("Opção de processamento inválida.")
+
                 if dmed_content:
                     st.download_button(
                         label="📥 Download DMED",
