@@ -56,7 +56,99 @@ def load_data(file_path):
     except Exception as e:
         print(f"Erro ao ler o arquivo {file_path}: {e}")
         return pd.DataFrame()
+
+# Agrupar e processar dados de uma vez
+def process_group_titular(grupo, titular_cpf, despesas_dict):
+    results = []
     
+    # Processar titular
+    titular = grupo[grupo["Relação"] == "Titular"]
+    if not titular.empty:
+        titular = titular.iloc[0]
+        nome_titular = normalize_name(titular['Nome'])
+        
+        # Calcular o valor total do grupo familiar (titular + dependentes)
+        valor_mensalidade_total = pd.to_numeric(grupo["Total"]).sum().round(2)
+        
+        # Somar todas as despesas do grupo familiar
+        valor_despesas_total = 0
+        for _, row in grupo.iterrows():
+            nome_norm = normalize_name(row['Nome'])
+            valor_despesas_total += despesas_dict.get(titular_cpf, {}).get(nome_norm, 0)
+        
+        # Atribuir todo o valor ao titular
+        valor_titular = valor_mensalidade_total + valor_despesas_total
+        
+        if valor_titular <= 0:
+            valor_titular = 0.01
+            
+        results.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{format_valor(valor_titular)}|")
+    
+    # Não adicionar dependentes ao arquivo DMED, já que todos os valores foram atribuídos ao titular
+    
+    return results
+
+def create_dmed_content_titular(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
+    start = datetime.now()
+    
+    # Carregar dados com cache
+    df_filtrado = load_data(os.path.join(os.getcwd(), 'mensalidade_file.csv'))
+    if df_filtrado.empty:
+        return ""
+        
+    df_despesas_raw = load_data(os.path.join(os.getcwd(), 'despesas_file.csv'))
+    if df_despesas_raw.empty:
+        return ""
+
+    print("Criando arquivo DMed...")
+    
+    # Pré-processar dados
+    df_filtrado['Total'] = pd.to_numeric(df_filtrado['Total'], errors='coerce').fillna(0).round(2)
+    df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
+    
+    # Cabeçalho do DMED
+    content = [
+        f"DMED|{ano_atual}|{ano_anterior}|N|||",
+        f"RESPO|{responsavel_cpf}|{responsavel_nome}|{ddd_responsavel}|{telefone_responsavel}||||",
+        f"DECPJ|16651002000180|COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI|2|419761||{responsavel_cpf}|N||S|",
+        "OPPAS|"
+    ]
+    
+    # Pré-calcular despesas para todos os titulares
+    despesas_dict = {}
+    for cpf in df_filtrado['Titular_CPF'].unique():
+        if pd.notna(cpf):
+            titular_nome = str(df_filtrado[df_filtrado['Titular_CPF'] == cpf]['Nome'].iloc[0]).strip()
+            df_desp = busca_dados_despesas(cpf, titular_nome)
+            
+            # Criar dicionário para lookup rápido
+            despesas_dict[cpf] = {}
+            for _, row in df_desp.iterrows():
+                nome_norm = normalize_name(row['Nome'])
+                valor_str = str(row['Valor']).replace("R$", "").replace(".", "").replace(",", ".").strip()
+                despesas_dict[cpf][nome_norm] = float(valor_str or 0)
+    
+    # Agrupar dados por Titular_CPF para processar cada grupo familiar
+    df_grouped = df_filtrado.groupby(['Titular_CPF']).agg({
+        'Nome': 'first',  # Pegar o nome do primeiro registro (que deve ser o titular)
+        'Relação': 'first',
+        'CPF': 'first'
+    }).reset_index()
+    
+    # Processar cada grupo de titular
+    for titular_cpf in df_grouped['Titular_CPF'].unique():
+        if pd.notna(titular_cpf):
+            # Obter todos os registros do grupo familiar
+            grupo = df_filtrado[df_filtrado['Titular_CPF'] == titular_cpf]
+            # Processar o grupo e adicionar resultados ao content
+            results = process_group_titular(grupo, titular_cpf, despesas_dict)
+            content.extend(results)
+    
+    content.append("FIMDmed|")
+    end = datetime.now()
+    print(f"Tempo total de execução: {end - start}")
+    return "\n".join(content)
+
 # Agrupar e processar dados de uma vez
 def process_group(grupo, titular_cpf, despesas_dict):
     results = []
