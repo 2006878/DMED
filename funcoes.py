@@ -87,8 +87,8 @@ def process_group_titular(grupo, titular_cpf):
             
         results.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{format_valor(valor_titular)}|")
 
-        if titular_cpf == '02650137630':
-            print(valor_titular)
+        # if titular_cpf == '02650137630':
+        #     print(valor_titular)
     # Não adicionar dependentes ao arquivo DMED, já que todos os valores foram atribuídos ao titular
     
     return results
@@ -96,10 +96,14 @@ def process_group_titular(grupo, titular_cpf):
 def create_dmed_content_titular(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
     start = datetime.now()
     
-    # Carregar dados com cache
-    df_filtrado = load_data(os.path.join(os.getcwd(), 'mensalidade_file.csv'))
-    if df_filtrado.empty:
-        return ""
+    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
+    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+        processa_mensalidades()
+    try:
+        df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de mensalidades: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
         
     # df_despesas_raw = load_data(os.path.join(os.getcwd(), 'despesas_file.csv'))
     # if df_despesas_raw.empty:
@@ -125,16 +129,21 @@ def create_dmed_content_titular(responsavel_cpf, responsavel_nome, ddd_responsav
         'Relação': 'first',
         'CPF': 'first'
     }).reset_index()
-    
+    # print(df_grouped['Titular_CPF'].unique())
     # Processar cada grupo de titular
     for titular_cpf in df_grouped['Titular_CPF'].unique():
         if pd.notna(titular_cpf):
             # Obter todos os registros do grupo familiar
             # grupo = df_filtrado[df_filtrado['Titular_CPF'] == titular_cpf]
             grupo = busca_dados_mensalidades(titular_cpf)
-            # Processar o grupo e adicionar resultados ao content
-            results = process_group_titular(grupo, titular_cpf)
-            content.extend(results)
+            # grupo  = df_filtrado[df_filtrado['Titular_CPF'] == titular_cpf]
+            if grupo.empty:
+                print(f"Grupo vazio para titular CPF: {titular_cpf}")
+                continue
+            else:
+                # Processar o grupo e adicionar resultados ao content
+                results = process_group_titular(grupo, titular_cpf)
+                content.extend(results)
     
     content.append("FIMDmed|")
     end = datetime.now()
@@ -182,10 +191,14 @@ def process_group(grupo, titular_cpf, despesas_dict):
 def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
     start = datetime.now()
     
-    # Carregar dados com cache
-    df_filtrado = load_data(os.path.join(os.getcwd(), 'mensalidade_file.csv'))
-    if df_filtrado.empty:
-        return ""
+    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
+    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+        processa_mensalidades()
+    try:
+        df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de mensalidades: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
         
     df_despesas_raw = load_data(os.path.join(os.getcwd(), 'despesas_file.csv'))
     if df_despesas_raw.empty:
@@ -815,7 +828,6 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)  # Quebra de página automática
     pdf.add_page()
-    
     # Função para formatar títulos de seções
     def draw_section(title, content_lines):
         """ Cria uma seção com um título sublinhado e uma borda ao redor do conteúdo. """
@@ -847,6 +859,7 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     pdf.ln(10)
 
     # 1. DADOS CADASTRAIS
+
     titular = df_mensalidades.iloc[0]['Nome'] if isinstance(df_mensalidades, pd.DataFrame) and not df_mensalidades.empty else "N/A"
     draw_section('1 - DADOS CADASTRAIS', [f"Titular: {titular} - CPF: {cpf}"])
 
