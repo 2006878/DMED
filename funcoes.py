@@ -602,7 +602,7 @@ def busca_dados_mensalidades(cpf_alvo):
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
         processa_mensalidades()
     try:
-        df_filtrado = pd.read_csv(mensalidades_file)
+        df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
     except Exception as e:
         print(f"Erro ao ler o arquivo de mensalidades: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
@@ -611,6 +611,14 @@ def busca_dados_mensalidades(cpf_alvo):
     if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
+         # Converter colunas numéricas para float ANTES de qualquer cálculo
+        colunas_numericas = ['Total', 'Total 2024', 'Valor']
+        for col in colunas_numericas:
+            if col in df_filtrado.columns:
+                df_filtrado[col] = pd.to_numeric(
+                    df_filtrado[col].astype(str).str.replace(',', '.'),
+                    errors='coerce'
+                ).fillna(0)
 
         # Criando a coluna auxiliar para priorizar o Titular
         df_filtrado["Ordem"] = (df_filtrado["Relação"] != "Titular").astype(int)
