@@ -842,7 +842,7 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     pdf.cell(0, 10, 'INFORME PLANO DE SAÚDE', ln=True, align='C')
     pdf.ln(3)
     pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 8, 'ANO - CALENDÁRIO DE 2024', ln=True, align='C')
+    pdf.cell(0, 8, 'ANO - CALENDÁRIO DE 2025', ln=True, align='C')
     pdf.cell(0, 8, 'IMPOSTO DE RENDA - PESSOA FÍSICA', ln=True, align='C')
     pdf.ln(10)
 
