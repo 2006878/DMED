@@ -367,7 +367,13 @@ def processa_mensalidades():
             # Dentro do loop que processa os grupos:
             for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
                 if pd.notna(cpf_titular):
-                    titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
+                    titulares = grupo[grupo["Relação"] == "Titular"]
+
+                    if titulares.empty:
+                        print(f"Grupo sem titular ignorado: {cpf_titular}")
+                        continue
+
+                    titular = titulares.iloc[0]
                     is_camara = titular['is_camara']
 
                     # Get total value from "Total 2024" column
