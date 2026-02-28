@@ -607,6 +607,10 @@ def busca_dados_mensalidades(cpf_alvo):
         print(f"Erro ao ler o arquivo de mensalidades: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
     
+    if df_filtrado.empty:
+        st.error("Erro ao processar mensalidades — verifique o arquivo do Google Drive")
+        st.stop()
+
     # Verificar se df_filtrado é um DataFrame válido
     if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
