@@ -87,8 +87,8 @@ def process_group_titular(grupo, titular_cpf):
             
         results.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{format_valor(valor_titular)}|")
 
-        if titular_cpf == '02650137630':
-            print(valor_titular)
+        # if titular_cpf == '02650137630':
+        #     print(valor_titular)
     # Não adicionar dependentes ao arquivo DMED, já que todos os valores foram atribuídos ao titular
     
     return results
@@ -96,14 +96,31 @@ def process_group_titular(grupo, titular_cpf):
 def create_dmed_content_titular(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
     start = datetime.now()
     
-    # Carregar dados com cache
-    df_filtrado = load_data(os.path.join(os.getcwd(), 'mensalidade_file.csv'))
+    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
+    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+        processa_mensalidades()
+    try:
+        df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
+    except Exception as e:
+        print(f"Erro ao ler o arquivo de mensalidades: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+    
     if df_filtrado.empty:
-        return ""
-        
-    # df_despesas_raw = load_data(os.path.join(os.getcwd(), 'despesas_file.csv'))
-    # if df_despesas_raw.empty:
-    #     return ""
+        st.error("Erro ao processar mensalidades — verifique o arquivo do Google Drive")
+        st.stop()
+
+    # Verificar se df_filtrado é um DataFrame válido
+    if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
+        df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
+        df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == responsavel_cpf]
+         # Converter colunas numéricas para float ANTES de qualquer cálculo
+        colunas_numericas = ['Total', 'Total 2024', 'Valor']
+        for col in colunas_numericas:
+            if col in df_filtrado.columns:
+                df_filtrado[col] = pd.to_numeric(
+                    df_filtrado[col].astype(str).str.replace(',', '.'),
+                    errors='coerce'
+                ).fillna(0)
 
     print("Criando arquivo DMed...")
     
@@ -367,7 +384,18 @@ def processa_mensalidades():
             # Dentro do loop que processa os grupos:
             for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
                 if pd.notna(cpf_titular):
-                    titular = grupo[grupo["Relação"] == "Titular"].iloc[0]
+                    titulares = grupo[grupo["Relação"] == "Titular"]
+
+                    if titulares.empty:
+                        print(f"Grupo sem titular ignorado: {cpf_titular}")
+                        continue
+
+                    try:
+                        titular = titulares.iloc[0]
+                    except IndexError:
+                        print(f"Erro ao acessar titular do grupo: {cpf_titular}")
+                        continue
+
                     is_camara = titular['is_camara']
 
                     # Get total value from "Total 2024" column
@@ -602,10 +630,27 @@ def busca_dados_mensalidades(cpf_alvo):
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
         processa_mensalidades()
     try:
-        df_filtrado = pd.read_csv(mensalidades_file)
+        df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
     except Exception as e:
         print(f"Erro ao ler o arquivo de mensalidades: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+    
+    if df_filtrado.empty:
+        st.error("Erro ao processar mensalidades — verifique o arquivo do Google Drive")
+        st.stop()
+
+    # Verificar se df_filtrado é um DataFrame válido
+    if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
+        df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
+        df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
+         # Converter colunas numéricas para float ANTES de qualquer cálculo
+        colunas_numericas = ['Total', 'Total 2024', 'Valor']
+        for col in colunas_numericas:
+            if col in df_filtrado.columns:
+                df_filtrado[col] = pd.to_numeric(
+                    df_filtrado[col].astype(str).str.replace(',', '.'),
+                    errors='coerce'
+                ).fillna(0)
     
     # Verificar se df_filtrado é um DataFrame válido
     if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
@@ -824,7 +869,7 @@ def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     pdf.cell(0, 10, 'INFORME PLANO DE SAÚDE', ln=True, align='C')
     pdf.ln(3)
     pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 8, 'ANO - CALENDÁRIO DE 2024', ln=True, align='C')
+    pdf.cell(0, 8, 'ANO - CALENDÁRIO DE 2025', ln=True, align='C')
     pdf.cell(0, 8, 'IMPOSTO DE RENDA - PESSOA FÍSICA', ln=True, align='C')
     pdf.ln(10)
 
