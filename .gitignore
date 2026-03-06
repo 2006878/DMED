@@ -2,7 +2,6 @@
 /anexos/
 /despesas/
 /mensalidades/
-/descontos/
 app.py
 /__pycache__/
 .env
