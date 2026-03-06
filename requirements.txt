@@ -23,7 +23,6 @@ numpy
 openpyxl==3.1.5
 packaging==24.2
 pandas>=2.3.0,<2.4
-pillow==11.1.0
 proto-plus==1.26.1
 protobuf==5.29.3
 pyasn1==0.6.1
@@ -38,7 +37,6 @@ referencing==0.36.2
 requests==2.32.3
 requests-oauthlib==2.0.0
 rich==13.9.4
-rpds-py==0.22.3
 rsa==4.9
 six==1.17.0
 smmap==5.0.2
