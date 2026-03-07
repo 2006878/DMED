@@ -45,6 +45,25 @@ def format_valor(valor_str):
     except:
         return ""
 
+def parse_valor_monetario(valor):
+    if pd.isna(valor):
+        return 0.0
+    valor_str = str(valor).replace("R$", "").strip()
+    if not valor_str:
+        return 0.0
+
+    # Quando há vírgula, assume formato brasileiro (milhar com ponto e decimal com vírgula).
+    if "," in valor_str:
+        valor_str = valor_str.replace(".", "").replace(",", ".")
+    else:
+        # Sem vírgula, mantém ponto como separador decimal e remove lixo textual.
+        valor_str = re.sub(r"[^0-9.\-]", "", valor_str)
+
+    try:
+        return round(float(valor_str), 2)
+    except (ValueError, TypeError):
+        return 0.0
+
 def normalize_name(name):
     import unicodedata
     # Convert to uppercase and normalize
@@ -451,87 +470,157 @@ def processa_mensalidades():
         return None
     
 def processa_despesas():
+    import unicodedata
+
     print("Processando despesas...")
-    # try:
-    #     # Direct download URLs for each CSV file
-    #     csv_urls = [
-    #         "https://drive.google.com/uc?id=1Z5pfvRtS8yqXVf8u867BDmgN4BiHhPKs",
-    #         "https://drive.google.com/uc?id=1sHdItzuc6srIbM11a255DSy_xIJGEpsy",
-    #         "https://drive.google.com/uc?id=1d3oN54IUvfJKoakIC4X2AypDWSkDrBrR",
-    #         "https://drive.google.com/uc?id=1B-4TwpLRHMlxVjQco21BIaFPepvd1Le1",
-    #         "https://drive.google.com/uc?id=1Pq_o57GAohLgpcqBe8A4iHeNIUgS5pwh",
-    #         "https://drive.google.com/uc?id=1YQWTcyZT7Z7nlC3xVluA7K7liKNlxIYK",
-    #         "https://drive.google.com/uc?id=1MCgApVa45epiFX5mvUEAJFmXEahe3bxW",
-    #         "https://drive.google.com/uc?id=1ujLQQL12rZ6giicEL25EK2t60n8zuRnY",
-    #         "https://drive.google.com/uc?id=1gI8JE9KMP2hII2J4I8CzEAANImiVy9_e",
-    #         "https://drive.google.com/uc?id=1Yz2MLHBi1MLrDglu18s18vGmUqaPZuBe",
-    #         "https://drive.google.com/uc?id=1yXn_HleVD0lZ_1kA2exTQUK8OrrsEuKJ",
-    #         "https://drive.google.com/uc?id=1m-kEXJl2hjfxkYahHRiWYxbDerieKULx",
-    #         "https://drive.google.com/uc?id=1IhJoaM-rzk5PxAllmiOixCJy43I5JywP",
-    #         "https://drive.google.com/uc?id=14KQMu3DGf487Lac_KQgb6G8t6pMe1XXu",
-    #         "https://drive.google.com/uc?id=1W-PfFd9QEbs5qO9Z0teq2th2hn35_0Tq",
-    #         "https://drive.google.com/uc?id=1j0GLvhXqNgmYWOQi8kHCnFbGHd7lS4Q7",
-    #         "https://drive.google.com/uc?id=10nmuCaNHdXCALwTMKlCqBwtVnEwgjET0",
-    #         "https://drive.google.com/uc?id=1QME2XU1NNhYcDZhkU03ExOXAJSKHw4du",
-    #         "https://drive.google.com/uc?id=1u_TEEOdEPBGBqWWMcjmYGYgh0UBZ07-c",
-    #         "https://drive.google.com/uc?id=16xlx0fiEW3cxLI42pxjoTFw7FAdGy_hP",
-    #         "https://drive.google.com/uc?id=17TzbF1SLlwD7a6Kn2xATO32a2XMwnGKp",
-    #         "https://drive.google.com/uc?id=1w-CDOzq5h6Q0VI8Leu14XIX_ZhsKVaah",
-    #         "https://drive.google.com/uc?id=1MKUWXU1IZyHKvTpuHH3eZZE-AgX6Nysv",
-    #         "https://drive.google.com/uc?id=1qlAGVHPVdPTre4pj3dlXO88Xxa5VGNXE",
-    #         "https://drive.google.com/uc?id=1AD_AXTQoBBYMszNrZhUidjVuasQ8IQy9",
-    #         "https://drive.google.com/uc?id=1JnXLFUbZCAAJgaBF4EIA6sFhqbCpRtOd",
-    #         "https://drive.google.com/uc?id=1OVg4IMe-j0P8eKRPujsyv9RV8PTfKAMh",
-    #         "https://drive.google.com/uc?id=1eP5HfqthGyfKlbWxcEFyLrSmsfWRO7Hx",
-    #         "https://drive.google.com/uc?id=1tlLfCci_Yo0ty0QR1u1KLedH19xBBJNK",
-    #         "https://drive.google.com/uc?id=1Fdn8ePUM1CVk7dHuw9VGjA-DZR57bMWq",
-    #         "https://drive.google.com/uc?id=1bOIsE182VieY5Xt-Dmlt96m72oaMNT92",
-    #         "https://drive.google.com/uc?id=1yEDq1VNrPTJLp00ogKdLvfCKTIZRU1I3",
-    #         "https://drive.google.com/uc?id=1nhF-NvJIB61pUjI1XdCIrD1LS7wT68Dq",
-    #         "https://drive.google.com/uc?id=1qQ1JYJmMh7zhNqfXThWC1SpdxP7EoZdD",
-    #         "https://drive.google.com/uc?id=1_WV2At8dOh4hCW9sdo6Y_JnYtyukOiDh",
-    #         "https://drive.google.com/uc?id=1k6QX0qDeT4VSTXLTuNQxd6PSj7AkQtS1",
-    #     ]
-        
-    #     df_despesas = pd.DataFrame()
 
-    #     for url in csv_urls:
-    #         response = requests.get(url)
-    #         response.raise_for_status()
-            
-    #         df = pd.read_csv(BytesIO(response.content), encoding='latin1', sep=';',
-    #                        usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
-    #         df_despesas = pd.concat([df_despesas, df], ignore_index=True)
-    
+    def normaliza_coluna(col):
+        base = unicodedata.normalize("NFKD", str(col))
+        base = "".join(c for c in base if not unicodedata.combining(c))
+        base = re.sub(r"\s+", " ", base).strip().upper()
+        return base
+
+    def padroniza_df(df):
+        if df is None or df.empty:
+            return pd.DataFrame(columns=["Nome", "CPF", "Valor a Pagar"])
+
+        col_map = {c: normaliza_coluna(c) for c in df.columns}
+        nome_col = next((orig for orig, norm in col_map.items() if norm in {"NOME", "BENEFICIARIO"}), None)
+        cpf_col = next((orig for orig, norm in col_map.items() if norm in {"CPF", "CPF DO RESPONSAVEL", "CPF_DO_RESPONSAVEL"}), None)
+        valor_col = next((
+            orig for orig, norm in col_map.items()
+            if norm in {"VALOR A PAGAR", "VALOR_DO_SERVICO", "VALOR DO SERVICO", "VALOR"}
+        ), None)
+
+        if not nome_col or not valor_col:
+            return pd.DataFrame(columns=["Nome", "CPF", "Valor a Pagar"])
+
+        if not cpf_col:
+            df["CPF_AUSENTE"] = ""
+            cpf_col = "CPF_AUSENTE"
+
+        out = df[[nome_col, cpf_col, valor_col]].copy()
+        out.columns = ["Nome", "CPF", "Valor a Pagar"]
+        return out
+
     try:
-        # Caminho da pasta de dados
-        data_folder = os.path.join(os.getcwd(), 'despesas_nova')
-        
-        # Initialize empty DataFrame
-        df_despesas = pd.DataFrame()
-        #print("DataFrame df_despesas inicializado.")
+        data_folder = os.path.join(os.getcwd(), "despesas_nova")
+        if not os.path.isdir(data_folder):
+            print("Pasta despesas_nova não encontrada.")
+            return None
 
-        # Iterate through files in data folder 
+        frames = []
         for filename in os.listdir(data_folder):
             file_path = os.path.join(data_folder, filename)
-            if os.path.isfile(file_path) and filename.endswith('.csv'):
-                # Read only specified columns
-                df = pd.read_csv(file_path, encoding='latin1', sep=';', 
-                    usecols=['CPF_DO_RESPONSAVEL', 'BENEFICIARIO', 'VALOR_DO_SERVICO'])
-                df_despesas = pd.concat([df_despesas, df], ignore_index=True)
-            
-        df_despesas["VALOR_DO_SERVICO"] = pd.to_numeric(df_despesas["VALOR_DO_SERVICO"], errors="coerce").fillna(0).round(2)
-        df_despesas = df_despesas.groupby("BENEFICIARIO").agg({
-            'CPF_DO_RESPONSAVEL': 'first',
-            'VALOR_DO_SERVICO': 'sum'
-        }).reset_index()
-        df_despesas['CPF_DO_RESPONSAVEL'] = df_despesas['CPF_DO_RESPONSAVEL'].apply(format_cpf)
-        
-        despesas_file = 'despesas_file.csv'
+            if not os.path.isfile(file_path):
+                continue
+
+            lower = filename.lower()
+            if lower.endswith((".xlsx", ".xlsm", ".xls")):
+                excel = pd.ExcelFile(file_path, engine="openpyxl")
+                for sheet_name in excel.sheet_names:
+                    df_sheet = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
+                    frames.append(padroniza_df(df_sheet))
+            elif lower.endswith(".csv"):
+                df_csv = None
+                for encoding in ("latin1", "utf-8"):
+                    for sep in (";", ",", None):
+                        try:
+                            kwargs = {"encoding": encoding}
+                            if sep is None:
+                                kwargs.update({"sep": None, "engine": "python"})
+                            else:
+                                kwargs["sep"] = sep
+                            df_csv = pd.read_csv(file_path, **kwargs)
+                            break
+                        except Exception:
+                            continue
+                    if df_csv is not None:
+                        break
+                frames.append(padroniza_df(df_csv))
+
+        if not frames:
+            print("Nenhum arquivo de despesas válido encontrado.")
+            return None
+
+        df_despesas = pd.concat(frames, ignore_index=True)
+        df_despesas["Nome"] = df_despesas["Nome"].fillna("").astype(str).str.strip().str.upper()
+        df_despesas["CPF"] = df_despesas["CPF"].apply(format_cpf)
+        df_despesas["Valor a Pagar"] = df_despesas["Valor a Pagar"].apply(parse_valor_monetario)
+        nome_valido = df_despesas["Nome"].str.contains(r"[A-Z0-9]", regex=True, na=False)
+        df_despesas = df_despesas[
+            (df_despesas["CPF"] != "") | ((df_despesas["Nome"] != "") & nome_valido)
+        ]
+        df_despesas = df_despesas[~((df_despesas["CPF"] == "") & (df_despesas["Valor a Pagar"] <= 0))]
+
+        if df_despesas.empty:
+            print("Nenhum registro de despesas após limpeza.")
+            return None
+
+        df_despesas["Chave_Agrupamento"] = df_despesas.apply(
+            lambda row: row["CPF"] if row["CPF"] else row["Nome"],
+            axis=1
+        )
+        df_despesas = df_despesas.groupby("Chave_Agrupamento", as_index=False).agg({
+            "Nome": "first",
+            "CPF": "first",
+            "Valor a Pagar": "sum"
+        })
+        df_despesas["Valor a Pagar"] = df_despesas["Valor a Pagar"].round(2)
+        df_despesas = df_despesas.drop(columns=["Chave_Agrupamento"])
+        df_despesas["CPF"] = df_despesas["CPF"].fillna("").astype(str)
+
+        # Mapear CPF do responsável para o Titular_CPF das mensalidades.
+        cpf_para_titular = {}
+        nome_para_titular = {}
+        mensalidades_file = os.path.join(os.getcwd(), "mensalidade_file.csv")
+        if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+            processa_mensalidades()
+        try:
+            df_mens = pd.read_csv(mensalidades_file, dtype=str)
+            if not df_mens.empty and "Titular_CPF" in df_mens.columns:
+                df_mens["Titular_CPF"] = df_mens["Titular_CPF"].apply(format_cpf)
+                if "CPF" in df_mens.columns:
+                    df_mens["CPF"] = df_mens["CPF"].apply(format_cpf)
+                else:
+                    df_mens["CPF"] = ""
+                if "Nome" in df_mens.columns:
+                    df_mens["Nome"] = df_mens["Nome"].fillna("").astype(str).str.strip().str.upper()
+                else:
+                    df_mens["Nome"] = ""
+
+                for _, row in df_mens.iterrows():
+                    titular = row["Titular_CPF"]
+                    if not titular:
+                        continue
+                    cpf_benef = row["CPF"]
+                    nome_benef = row["Nome"]
+                    if cpf_benef and cpf_benef not in cpf_para_titular:
+                        cpf_para_titular[cpf_benef] = titular
+                    if nome_benef and nome_benef not in nome_para_titular:
+                        nome_para_titular[nome_benef] = titular
+        except Exception as e:
+            print(f"Erro ao mapear Titular_CPF das mensalidades: {e}")
+
+        df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas.apply(
+            lambda row: (
+                cpf_para_titular.get(row["CPF"])
+                or nome_para_titular.get(row["Nome"])
+                or row["CPF"]
+            ),
+            axis=1
+        )
+        df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
+
+        # Mantém compatibilidade com o restante do fluxo atual.
+        df_despesas["BENEFICIARIO"] = df_despesas["Nome"]
+        df_despesas["VALOR_DO_SERVICO"] = df_despesas["Valor a Pagar"]
+
+        despesas_file = "despesas_file.csv"
         df_despesas.to_csv(despesas_file, index=False)
-        print(f"Arquivo de despesas atualizado com sucesso!")
+        print("Arquivo de despesas atualizado com sucesso!")
         return despesas_file
-    
+
     except Exception as e:
         print(f"Error processing expenses: {e}")
         return None
@@ -541,44 +630,56 @@ def processa_descontos():
 
     try:
         print("Processando descontos...")
-        data_folder = os.path.join(os.getcwd(), 'descontos')
+        data_folder = os.path.join(os.getcwd(), "descontos")
 
-        for filename in os.listdir(data_folder):
-            file_path = os.path.join(data_folder, filename)
-            if not (os.path.isfile(file_path) and filename.lower().endswith('.xlsx')):
-                continue
+        if os.path.isdir(data_folder):
+            for filename in os.listdir(data_folder):
+                file_path = os.path.join(data_folder, filename)
+                if not (os.path.isfile(file_path) and filename.lower().endswith(".xlsx")):
+                    continue
 
-            excel = pd.ExcelFile(file_path, engine="openpyxl")
+                excel = pd.ExcelFile(file_path, engine="openpyxl")
+                for sheet_name in excel.sheet_names:
+                    df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
+                    if df.empty:
+                        continue
+
+                    df.columns = [str(col).strip() for col in df.columns]
+                    if "Nome" not in df.columns or "Total de Descontos" not in df.columns:
+                        continue
+                    if "CPF" not in df.columns:
+                        df["CPF"] = ""
+
+                    df = df[["Nome", "CPF", "Total de Descontos"]]
+                    df_descontos = pd.concat([df_descontos, df], ignore_index=True)
+        else:
+            url_excel_file = "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
+            response = requests.get(url_excel_file)
+            response.raise_for_status()
+            excel = pd.ExcelFile(BytesIO(response.content), engine="openpyxl")
             for sheet_name in excel.sheet_names:
-                df = pd.read_excel(
-                    excel,
-                    sheet_name=sheet_name,
-                    engine="openpyxl",
-                    dtype={"Nome": str, "CPF": str, "Valor a Pagar": str},
-                    usecols=["Nome", "CPF", "Valor a Pagar"]
-                )
+                df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
+                if df.empty:
+                    continue
+
+                df.columns = [str(col).strip() for col in df.columns]
+                if "Nome" not in df.columns or "Total de Descontos" not in df.columns:
+                    continue
+                if "CPF" not in df.columns:
+                    df["CPF"] = ""
+
+                df = df[["Nome", "CPF", "Total de Descontos"]]
                 df_descontos = pd.concat([df_descontos, df], ignore_index=True)
 
         if df_descontos.empty:
-            print("Nenhum desconto encontrado na pasta descontos.")
+            print("Nenhum desconto encontrado para processar.")
             return None
 
         df_descontos["Nome"] = df_descontos["Nome"].fillna("").astype(str).str.strip().str.upper()
         df_descontos["CPF"] = df_descontos["CPF"].apply(format_cpf)
-        df_descontos["Valor a Pagar"] = pd.to_numeric(
-            df_descontos["Valor a Pagar"]
-            .astype(str)
-            .str.replace(".", "", regex=False)
-            .str.replace(",", ".", regex=False),
-            errors="coerce"
-        ).fillna(0).round(2)
+        df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(parse_valor_monetario)
+        df_descontos = df_descontos[(df_descontos["CPF"] != "") | (df_descontos["Nome"] != "")]
 
-        # Remove linhas sem identificador e sem valor.
-        df_descontos = df_descontos[
-            (df_descontos["CPF"] != "") | (df_descontos["Nome"] != "")
-        ]
-
-        # Prioriza agrupamento por CPF; quando não houver CPF válido, usa Nome.
         df_descontos["Chave_Agrupamento"] = df_descontos.apply(
             lambda row: row["CPF"] if row["CPF"] else row["Nome"],
             axis=1
@@ -586,17 +687,17 @@ def processa_descontos():
         df_descontos = df_descontos.groupby("Chave_Agrupamento", as_index=False).agg({
             "Nome": "first",
             "CPF": "first",
-            "Valor a Pagar": "sum"
+            "Total de Descontos": "sum"
         })
-        df_descontos["Valor a Pagar"] = df_descontos["Valor a Pagar"].round(2)
+        df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].round(2)
         df_descontos = df_descontos.drop(columns=["Chave_Agrupamento"])
 
-        descontos_file = 'descontos_file.csv'
+        descontos_file = "descontos_file.csv"
         df_descontos.to_csv(descontos_file, index=False)
-        print(f"Arquivo de descontos atualizado com sucesso!")
+        print("Arquivo de descontos atualizado com sucesso!")
         return descontos_file
-    except Exception as e:  
-        print(f"Erro ao baixar ou processar o arquivo do Google Drive: {e}")
+    except Exception as e:
+        print(f"Erro ao processar o arquivo de descontos: {e}")
         return None
 
 @st.cache_data    
@@ -620,28 +721,37 @@ def busca_dados_descontos(cpf_alvo):
         df_descontos = pd.read_csv(descontos_file)
     except Exception as e:
         print(f"Erro ao ler o arquivo de descontos: {e}")
-        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+        return 0.0
 
     total_descontos = 0.0
     if df_descontos.empty:
         return total_descontos
 
-    df_descontos["CPF"] = df_descontos["CPF"].apply(format_cpf)
+    if "Total de Descontos" not in df_descontos.columns and "Valor a Pagar" in df_descontos.columns:
+        df_descontos["Total de Descontos"] = df_descontos["Valor a Pagar"]
+    if "Total de Descontos" not in df_descontos.columns:
+        return total_descontos
+    if "Nome" not in df_descontos.columns:
+        return total_descontos
+
+    if "CPF" in df_descontos.columns:
+        df_descontos["CPF"] = df_descontos["CPF"].apply(format_cpf)
     df_descontos["Nome"] = df_descontos["Nome"].astype(str).str.strip().str.upper()
-    df_descontos["Valor a Pagar"] = pd.to_numeric(df_descontos["Valor a Pagar"], errors="coerce").fillna(0)
+    df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(parse_valor_monetario)
 
     cpf_alvo_formatado = format_cpf(cpf_alvo)
-    if cpf_alvo_formatado:
+    if cpf_alvo_formatado and "CPF" in df_descontos.columns:
         matches_cpf = df_descontos[df_descontos["CPF"] == cpf_alvo_formatado]
+        print(matches_cpf)
         if not matches_cpf.empty:
-            return float(matches_cpf["Valor a Pagar"].sum())
+            return float(matches_cpf["Total de Descontos"].sum())
 
     if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
         nome = str(df_filtrado["Nome"].iloc[0]).strip().upper()
         if nome:
             matches_nome = df_descontos[df_descontos["Nome"] == nome]
             if not matches_nome.empty:
-                total_descontos += float(matches_nome["Valor a Pagar"].sum())
+                total_descontos += float(matches_nome["Total de Descontos"].sum())
 
     return total_descontos
 
@@ -741,6 +851,7 @@ def busca_dados_despesas(cpf_alvo, nome):
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
     try:
         descontos = float(busca_dados_descontos(cpf_alvo))
+        print(f"Descontos encontrados para CPF {cpf_alvo}: {descontos}")
     except Exception as e:
         print(f"Erro ao calcular descontos: {e}")
         descontos = 0
@@ -748,6 +859,7 @@ def busca_dados_despesas(cpf_alvo, nome):
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
+        print(f"Despesas encontradas para CPF {cpf_alvo}: {df_despesas}")
         total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
         #print(f"Total de despesas: {total_despesas}")
             

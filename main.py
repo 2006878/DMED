@@ -114,7 +114,12 @@ if cpf_alvo:
         descontos = busca_dados_descontos(cpf_alvo)
     with st.spinner("Buscando dados de despesas..."):
         df_despesas = busca_dados_despesas(cpf_alvo, nome)
-    
+
+    if isinstance(descontos, pd.DataFrame):
+        descontos = 0.0
+    else:
+        descontos = parse_valor_monetario(descontos)
+
     descontos = f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
     if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty or not df_despesas.empty:
