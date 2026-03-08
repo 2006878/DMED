@@ -4,6 +4,7 @@
 /mensalidades/
 app.py
 /__pycache__/
+**/__pycache__/
 .env
 MENSALIDADES.xlsx
 DESCONTOS.xlsx

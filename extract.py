@@ -1,7 +1,18 @@
-from funcoes import processa_descontos, processa_despesas, processa_mensalidades, busca_dados_mensalidades
+from funcoes import (
+    busca_dados_mensalidades,
+    processa_descontos,
+    processa_despesas,
+    processa_mensalidades,
+)
 
-# Criar os arquivos base se não existir
-# processa_mensalidades()
-# processa_descontos()
-# processa_despesas()
-busca_dados_mensalidades("90782429653")
+
+def main():
+    # Criar os arquivos base se não existir
+    # processa_mensalidades()
+    # processa_descontos()
+    # processa_despesas()
+    busca_dados_mensalidades("90782429653")
+
+
+if __name__ == "__main__":
+    main()

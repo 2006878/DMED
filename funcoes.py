@@ -6,9 +6,24 @@ import re
 import requests
 from io import BytesIO
 import streamlit as st
+from app_config import (
+    DESCONTOS_DIR,
+    DESCONTOS_FILE,
+    DESPESAS_DIR,
+    DESPESAS_FILE,
+    MENSALIDADES_FILE,
+    build_path,
+)
 
 ano_anterior = pd.Timestamp.now().year - 1
 ano_atual = pd.Timestamp.now().year
+
+
+def ensure_processed_file(file_name, processor):
+    file_path = build_path(file_name)
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        processor()
+    return file_path
 
 def format_cpf(cpf):
     if pd.isna(cpf) or str(cpf).strip() == '' or str(cpf).strip() == '0':
@@ -123,9 +138,7 @@ def process_group_titular(grupo, titular_cpf):
 def create_dmed_content_titular(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
     start = datetime.now()
     
-    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
-    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-        processa_mensalidades()
+    mensalidades_file = ensure_processed_file(MENSALIDADES_FILE, processa_mensalidades)
     try:
         df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
     except Exception as e:
@@ -218,16 +231,14 @@ def process_group(grupo, titular_cpf, despesas_dict):
 def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
     start = datetime.now()
     
-    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
-    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-        processa_mensalidades()
+    mensalidades_file = ensure_processed_file(MENSALIDADES_FILE, processa_mensalidades)
     try:
         df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
     except Exception as e:
         print(f"Erro ao ler o arquivo de mensalidades: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
         
-    df_despesas_raw = load_data(os.path.join(os.getcwd(), 'despesas_file.csv'))
+    df_despesas_raw = load_data(build_path(DESPESAS_FILE))
     if df_despesas_raw.empty:
         return ""
 
@@ -460,7 +471,7 @@ def processa_mensalidades():
                     # Adicionar os registros ao DataFrame df_mensalidades
                     df_mensalidades = pd.concat([df_mensalidades, grupo], ignore_index=True)
         
-        mensalidades_file = 'mensalidade_file.csv'
+        mensalidades_file = MENSALIDADES_FILE
         # Salvar dados processados
         df_mensalidades.to_csv(mensalidades_file, index=False)
         print(f"Arquivo de mensalidades atualizado com sucesso!")
@@ -504,7 +515,7 @@ def processa_despesas():
         return out
 
     try:
-        data_folder = os.path.join(os.getcwd(), "despesas_nova")
+        data_folder = build_path(DESPESAS_DIR)
         if not os.path.isdir(data_folder):
             print("Pasta despesas_nova não encontrada.")
             return None
@@ -573,9 +584,7 @@ def processa_despesas():
         # Mapear CPF do responsável para o Titular_CPF das mensalidades.
         cpf_para_titular = {}
         nome_para_titular = {}
-        mensalidades_file = os.path.join(os.getcwd(), "mensalidade_file.csv")
-        if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-            processa_mensalidades()
+        mensalidades_file = ensure_processed_file(MENSALIDADES_FILE, processa_mensalidades)
         try:
             df_mens = pd.read_csv(mensalidades_file, dtype=str)
             if not df_mens.empty and "Titular_CPF" in df_mens.columns:
@@ -616,7 +625,7 @@ def processa_despesas():
         df_despesas["BENEFICIARIO"] = df_despesas["Nome"]
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["Valor a Pagar"]
 
-        despesas_file = "despesas_file.csv"
+        despesas_file = DESPESAS_FILE
         df_despesas.to_csv(despesas_file, index=False)
         print("Arquivo de despesas atualizado com sucesso!")
         return despesas_file
@@ -630,7 +639,7 @@ def processa_descontos():
 
     try:
         print("Processando descontos...")
-        data_folder = os.path.join(os.getcwd(), "descontos")
+        data_folder = build_path(DESCONTOS_DIR)
 
         if os.path.isdir(data_folder):
             for filename in os.listdir(data_folder):
@@ -692,7 +701,7 @@ def processa_descontos():
         df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].round(2)
         df_descontos = df_descontos.drop(columns=["Chave_Agrupamento"])
 
-        descontos_file = "descontos_file.csv"
+        descontos_file = DESCONTOS_FILE
         df_descontos.to_csv(descontos_file, index=False)
         print("Arquivo de descontos atualizado com sucesso!")
         return descontos_file
@@ -714,9 +723,7 @@ def busca_descontos_drive():
     
 def busca_dados_descontos(cpf_alvo):
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
-    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
-    if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
-        processa_descontos()
+    descontos_file = ensure_processed_file(DESCONTOS_FILE, processa_descontos)
     try:
         df_descontos = pd.read_csv(descontos_file)
     except Exception as e:
@@ -768,9 +775,7 @@ def busca_mensalidades_drive():
         return pd.DataFrame()
     
 def busca_dados_mensalidades(cpf_alvo):
-    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
-    if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-        processa_mensalidades()
+    mensalidades_file = ensure_processed_file(MENSALIDADES_FILE, processa_mensalidades)
     try:
         df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
     except Exception as e:

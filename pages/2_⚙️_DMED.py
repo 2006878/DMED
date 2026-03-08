@@ -1,8 +1,14 @@
 import streamlit as st
-from funcoes import *
 import base64
 import pandas as pd
 from datetime import datetime
+from funcoes import (
+    create_dmed_content,
+    create_dmed_content_titular,
+    processa_descontos,
+    processa_despesas,
+    processa_mensalidades,
+)
 
 # Carreguando o ícone da aba
 favicon = "icone.jpeg"

@@ -1,6 +1,18 @@
 import streamlit as st
-from funcoes import *
 import base64
+import pandas as pd
+from funcoes import (
+    ano_anterior,
+    busca_dados_descontos,
+    busca_dados_despesas,
+    busca_dados_mensalidades,
+    format_cpf,
+    generate_pdf,
+    parse_valor_monetario,
+    processa_descontos,
+    processa_despesas,
+    processa_mensalidades,
+)
 
 # Carreguando o ícone da aba
 favicon = "icone.jpeg"
