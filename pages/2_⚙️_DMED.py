@@ -8,7 +8,7 @@ from datetime import datetime
 favicon = "icone.jpeg"
 
 # Streamlit page configuration
-st.set_page_config(page_title=f"ARQUIVO DMED - COSEMI", page_icon=favicon, initial_sidebar_state="collapsed", layout="wide")
+st.set_page_config(page_title=f"ARQUIVO DMED - COSEMI", page_icon=favicon, initial_sidebar_state="expanded", layout="wide")
 
 # Display logo
 with open('logo.png', 'rb') as f:

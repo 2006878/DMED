@@ -6,7 +6,7 @@ import base64
 favicon = "icone.jpeg"
 
 # Configuração da página
-st.set_page_config(page_title=f"IRPF {ano_anterior} - COSEMI", page_icon=favicon, initial_sidebar_state="collapsed", layout="wide")
+st.set_page_config(page_title=f"IRPF {ano_anterior} - COSEMI", page_icon=favicon, initial_sidebar_state="expanded", layout="wide")
 
 # Ocultar completamente o menu lateral original
 st.markdown("""
