@@ -557,10 +557,7 @@ def processa_despesas():
             print("Nenhum registro de despesas após limpeza.")
             return None
 
-        df_despesas["Chave_Agrupamento"] = df_despesas.apply(
-            lambda row: row["CPF"] if row["CPF"] else row["Nome"],
-            axis=1
-        )
+        df_despesas["Chave_Agrupamento"] = df_despesas["CPF"]
         df_despesas = df_despesas.groupby("Chave_Agrupamento", as_index=False).agg({
             "Nome": "first",
             "CPF": "first",
