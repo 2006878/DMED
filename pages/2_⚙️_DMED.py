@@ -1,9 +1,11 @@
 import streamlit as st
 import sys
+import os
 from pathlib import Path
 import base64
 import pandas as pd
 from datetime import datetime
+import traceback
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -11,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from funcoes import *
 
-# Carreguando o ícone da aba
+# Carregando o ícone da aba
 favicon = "icone.jpeg"
 
 # Streamlit page configuration
@@ -120,29 +122,7 @@ if check_password():
             font-size: 18px;
             margin: 5px 0;
         }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Adicionar logo com estilo responsivo
-    st.markdown("""
-        <style>
-        .container {
-            display: flex;
-            justify-content: center;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 10px;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Add custom CSS for centered expander content
-    st.markdown("""
-        <style>
+        /* Ajuste do Expander */
         .streamlit-expanderContent {
             display: flex;
             justify-content: center;
@@ -161,25 +141,17 @@ if check_password():
 
     col1, col2 = st.columns(2)
     with col1:
-        # Replace the current number_input with this code
         cpf_input = st.text_input(
             "Digite o CPF do Responsável aqui (apenas números):",
             max_chars=11,
             help="Digite apenas os 11 números do CPF, sem pontos ou traços"
         )
 
-        # Validate the CPF input
         if cpf_input:
-            # Remove any non-digit characters
             cpf_digits = ''.join(filter(str.isdigit, cpf_input))
-            
-            # Validate length
             if len(cpf_digits) != 11:
                 st.error("CPF deve conter exatamente 11 dígitos e sem pontos ou traços.")
             else:
-                # Format for display (optional)
-                formatted_cpf = f"{cpf_digits[:3]}.{cpf_digits[3:6]}.{cpf_digits[6:9]}-{cpf_digits[9:]}"
-                # Store the clean CPF value for processing
                 cpf_responsavel = cpf_digits
         else:
             cpf_responsavel = ""
@@ -188,7 +160,6 @@ if check_password():
         st.selectbox("Selecione como deseja processar o arquivo:", ["Titulares e Dependentes", "somente Titulares"], key="processamento")
         st.write(f"Com a seleção atual o arquivo terá os dados informados incluindo ", st.session_state.processamento)
 
-    
     with col2:
         ddd_input = st.text_input(
         "Digite o DDD do telefone do Responsável aqui (apenas números):",
@@ -202,43 +173,97 @@ if check_password():
             help="Digite apenas os números do telefone, sem pontos ou traços"
         )
 
+    # =========================================================================
+    # LÓGICA DE PROCESSAMENTO E EMISSÃO DE ARQUIVOS
+    # =========================================================================
     if cpf_responsavel != "" and nome_respostavel != "" and ddd_input != "" and telefone_input != "" and st.button("📥 Processar e criar arquivo DMED"):
-        bar = st.progress(0)
-        with st.spinner("Processando mensalidades..."):
-            processa_mensalidades()
-            bar.progress(25)
-        with st.spinner("Processando despesas..."):
-            processa_despesas()
-            bar.progress(50)
-        with st.spinner("Processando descontos..."):
-            processa_descontos()
-        bar.progress(75)
-        with st.spinner("Criando arquivo DMED..."):
+        
+        # 1. Limpar arquivos locais antigos para garantir o download de dados frescos
+        arquivos_temp = ['mensalidade_file.csv', 'despesas_file.csv', 'descontos_file.csv']
+        for f in arquivos_temp:
+            if os.path.exists(os.path.join(os.getcwd(), f)):
+                os.remove(os.path.join(os.getcwd(), f))
+
+        with st.spinner("Analisando planilhas, validando regras e gerando arquivo... (Isso pode levar alguns instantes)"):
             try:
-                # Inicializar dmed_content como None para evitar o erro
                 dmed_content = None
+                lista_erros = []
+
                 if st.session_state.processamento == "Titulares e Dependentes":
-                    dmed_content = create_dmed_content(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
-                    bar.progress(100)
-                    st.success("Arquivo DMED gerado com sucesso!")
-                elif st.session_state.processamento == "somente Titulares":
-                    dmed_content = create_dmed_content_titular(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
-                    bar.progress(100)
-                    st.success("Arquivo DMED gerado com sucesso!")
+                    # A função main agora retorna o conteúdo E a lista de erros
+                    dmed_content, lista_erros = create_dmed_content(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
+                
+                # elif st.session_state.processamento == "somente Titulares":
+                #     dmed_content, lista_erros = create_dmed_content_titular(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
+                
                 else:
                     st.error("Opção de processamento inválida.")
 
-                if dmed_content:
+                # =============================================================
+                # VERIFICAÇÃO DE ERROS E GERAÇÃO DE BOTÕES (ATUALIZADO)
+                # =============================================================
+                tem_erro_fatal = any("🛑" in erro or "❌" in erro for erro in lista_erros)
+
+                # Cenário 1: Gerou o DMED, mas tem erros
+                if tem_erro_fatal and dmed_content:
+                    st.warning("⚠️ **ATENÇÃO:** O arquivo DMED foi gerado conforme solicitado, mas **existem dados obrigatórios em branco** nas planilhas originais!")
+                    st.info("Recomendamos baixar o Relatório de Erros e fazer a correção antes de enviar à Receita Federal.")
+                    
+                    # Formatar o texto do log para download
+                    txt_erros = "========================================================\n"
+                    txt_erros += f"RELATORIO DE INCONSISTENCIAS - COSEMI DMED\n"
+                    txt_erros += f"Gerado em: {datetime.now().strftime('%d/%m/%Y as %H:%M:%S')}\n"
+                    txt_erros += "========================================================\n\n"
+                    txt_erros += "Por favor, corrija as linhas listadas abaixo nas planilhas originais:\n\n"
+                    txt_erros += "\n".join(lista_erros)
+
+                    # Colocar os botões lado a lado para o cliente
+                    col_btn1, col_btn2 = st.columns(2)
+                    
+                    with col_btn1:
+                        st.download_button(
+                            label="📥 BAIXAR RELATÓRIO DE ERROS (.txt)",
+                            data=txt_erros.encode('utf-8'),
+                            file_name=f"Erros_Planilhas_{datetime.now().strftime('%Y%m%d')}.txt",
+                            mime="text/plain",
+                            type="primary" # Destaca o botão em vermelho/primário no Streamlit
+                        )
+                    with col_btn2:
+                        st.download_button(
+                            label="📥 BAIXAR DMED (COM ERROS) (.DEC)",
+                            data=dmed_content.encode('utf-8'),
+                            file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
+                            mime="text/plain"
+                        )
+                
+                # Cenário 2: Sucesso Total (Pode ter avisos amarelos, mas nada fatal)
+                elif dmed_content and not tem_erro_fatal:
+                    st.success("✅ Arquivo DMED gerado e validado com sucesso!")
+                    
+                    # Se houver apenas avisos (bolinha amarela), mostramos sutilmente
+                    if lista_erros:
+                        with st.expander("⚠️ Avisos do Processamento (Não Impeditivos)"):
+                            for aviso in lista_erros:
+                                st.write(aviso)
+
                     st.download_button(
-                        label="📥 Download DMED",
+                        label="📥 BAIXAR ARQUIVO DMED (.DEC)",
                         data=dmed_content.encode('utf-8'),
                         file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
-                        mime="text/plain"
+                        mime="text/plain",
+                        type="primary"
                     )
+                
+                # Cenário 3: Falha Crítica (Não conseguiu gerar a string do DMED)
                 else:
-                    st.error("Erro ao processar os dados.")
+                    st.error("Falha Crítica. O sistema não conseguiu montar o arquivo DMED.")
+                    if lista_erros:
+                        for erro in lista_erros:
+                            st.write(erro)
+
             except Exception as e:
-                st.error(f"Ocorreu um erro ao processar os dados: {str(e)}")
+                st.error(f"Ocorreu um erro crítico no sistema: {str(e)}")
+                traceback.print_exc()
 
     with st.expander("Manual de regras", expanded=False):
         with open('manual.md', 'r', encoding='utf-8') as file:
