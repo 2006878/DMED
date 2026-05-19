@@ -6,6 +6,5 @@ app.py
 /__pycache__/
 .env
 MENSALIDADES.xlsx
-DESCONTOS.xlsx
 .~lock.*
 *_file.csv
