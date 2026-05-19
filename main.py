@@ -208,27 +208,31 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 with st.expander("⚙️ Opções avançadas"):
-    if st.button("Reprocessar dados"):
-        bar=st.progress(0)
-        with st.spinner("Processando mensalidades..."):
+    if st.button("🔄 Reprocessar dados"):
+        bar = st.progress(0)
+        
+        # 1. NOVO: Baixa a planilha de descontos mais recente do Google Drive
+        with st.spinner("Baixando base de descontos atualizada..."):
+            sucesso, msg = baixar_e_atualizar_descontos()
+            if not sucesso:
+                st.error(msg)
+            bar.progress(15)
+
+        # 2. Processa as Mensalidades (Aba de Dependentes/Câmara/Complemento)
+        with st.spinner("Processando regras de mensalidades..."):
             processa_mensalidades()
-            bar.progress(40)
-        with st.spinner("Processando descontos..."):
+            bar.progress(45)
+            
+        # 3. Processa os Descontos recém-baixados
+        with st.spinner("Validando base de descontos..."):
             processa_descontos()
-            bar.progress(80)
+            bar.progress(75)
+            
+        # 4. Processa as Despesas Médicas
         with st.spinner("Processando despesas..."):
             processa_despesas()
             bar.progress(100)
-        st.success("Reprocessamento concluído!")
-st.markdown("</div>", unsafe_allow_html=True)
+            
+        st.success("Bases atualizadas e reprocessamento concluído!")
 
-# Footer
-st.markdown("""
-    <hr style='border:1px solid #e3e3e3;margin-top:40px'>
-    <div style='text-align: center;'>
-        Desenvolvido por 
-        <a href='https://www.linkedin.com/in/tairone-amaral/' target='_blank'>
-            Tairone Amaral
-        </a>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)

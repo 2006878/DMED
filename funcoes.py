@@ -745,6 +745,46 @@ def processa_despesas():
         print(erro_critico)
         return None, [erro_critico]
 
+def baixar_e_atualizar_descontos():
+    """
+    Baixa a planilha de descontos atualizada do Google Drive,
+    limpa o arquivo antigo da pasta local e garante a gravação
+    do novo arquivo como 'DESCONTOS.xlsx'.
+    """
+    print("Iniciando download da planilha de descontos do Google Drive...")
+    url_excel_file = "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
+    data_folder = os.path.join(os.getcwd(), "descontos")
+    
+    # 1. Garante que a pasta 'descontos' existe no diretório raiz
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
+        print(f"Pasta '{data_folder}' criada.")
+
+    target_file_path = os.path.join(data_folder, "DESCONTOS.xlsx")
+
+    # 2. Remove o arquivo antigo se ele existir para evitar conflitos
+    if os.path.exists(target_file_path):
+        try:
+            os.remove(target_file_path)
+            print("Arquivo antigo 'DESCONTOS.xlsx' removido com sucesso.")
+        except Exception as e:
+            print(f"Aviso ao tentar remover o arquivo antigo: {e}")
+
+    # 3. Faz o download do arquivo atualizado e salva localmente
+    try:
+        response = requests.get(url_excel_file)
+        response.raise_for_status()
+        
+        with open(target_file_path, "wb") as f:
+            f.write(response.content)
+            
+        print("Nova planilha 'DESCONTOS.xlsx' salva com sucesso na pasta!")
+        return True, "Planilha de descontos baixada e atualizada localmente!"
+    except Exception as e:
+        erro_msg = f"❌ Erro ao atualizar o arquivo físico de descontos: {e}"
+        print(erro_msg)
+        return False, erro_msg
+
 def processa_descontos():
     print("Processando descontos...")
     
@@ -886,7 +926,6 @@ def processa_descontos():
         erro_critico = f"❌ [DESCONTOS] Erro crítico ao processar o arquivo de descontos: {e}"
         print(erro_critico)
         return None, [erro_critico]
-
 
 
 
