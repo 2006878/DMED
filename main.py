@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-# Carreguando o ícone da aba
+# Carregando o ícone da aba
 favicon = "icone.jpeg"
 
 # Configuração da página
@@ -143,11 +143,9 @@ if cpf_alvo:
         st.markdown("### 📊 Mensalidade Plano de Saúde")
         if not df_filtrado.empty:
             for _, row in df_filtrado.iterrows():
-                valor = row["Valor"]  # Acessa a coluna 'Valor' diretamente
-                # Remover "R$" e ajustar o formato numérico
+                valor = row["Valor"]
                 valor = str(valor).replace("R$", "").replace(".", "", valor.count(".") - 1).replace(",", ".").strip()
                 try:
-                    # Converter para float e formatar corretamente
                     valor_float = float(valor)
                     valor_formatado = f"{valor_float:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
                 except ValueError:
@@ -177,7 +175,6 @@ if cpf_alvo:
             st.info("Não existem registros de despesas para o CPF informado.")
 
     with col3:
-
         st.markdown("### 💰 Descontos ")
         if descontos and descontos != "R$ 0,00":
             st.markdown(f"""
@@ -210,29 +207,39 @@ with st.expander("⚙️ Opções avançadas"):
     if st.button("🔄 Reprocessar dados"):
         bar = st.progress(0)
         
-        # 1. NOVO: Baixa a planilha de descontos mais recente do Google Drive
-        with st.spinner("Baixando base de descontos atualizada..."):
-            sucesso, msg = baixar_e_atualizar_descontos()
+        # 1. Atualizado para baixar Mensalidades e Descontos simultaneamente
+        with st.spinner("Baixando bases atualizadas do Google Drive..."):
+            sucesso, msg = baixar_e_atualizar_planilhas()
             if not sucesso:
                 st.error(msg)
-            bar.progress(15)
+            bar.progress(25)
 
-        # 2. Processa as Mensalidades (Aba de Dependentes/Câmara/Complemento)
+        # 2. Processa as Mensalidades locais atualizadas
         with st.spinner("Processando regras de mensalidades..."):
             processa_mensalidades()
-            bar.progress(45)
+            bar.progress(50)
             
-        # 3. Processa os Descontos recém-baixados
+        # 3. Processa os Descontos locais atualizados
         with st.spinner("Validando base de descontos..."):
             processa_descontos()
             bar.progress(75)
             
-        # 4. Processa as Despesas Médicas
+        # 4. Processa as Despesas Médicas locais
         with st.spinner("Processando despesas..."):
             processa_despesas()
             bar.progress(100)
             
-        st.success("Bases atualizadas e reprocessamento concluído!")
+        st.success("Bases atualizadas e reprocessamento concluído com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True)
-# hm,
+
+# Footer
+st.markdown("""
+    <hr style='border:1px solid #e3e3e3;margin-top:40px'>
+    <div style='text-align: center;'>
+        Desenvolvido por 
+        <a href='https://www.linkedin.com/in/tairone-amaral/' target='_blank'>
+            Tairone Amaral
+        </a>
+    </div>
+""", unsafe_allow_html=True)

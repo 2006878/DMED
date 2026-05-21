@@ -361,17 +361,72 @@ def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, tele
 
 
 
+def baixar_e_atualizar_planilhas():
+    """
+    Baixa as planilhas de Descontos e Mensalidades do Google Drive,
+    limpa os arquivos antigos e garante a gravação dos novos.
+    """
+    print("Iniciando download das planilhas do Google Drive...")
+    
+    # URLs do Drive
+    url_descontos = "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
+    url_mensalidades = "https://drive.google.com/uc?id=1NEqJ7VaM_dICfTPpSSVIkwwfSLCaOTcE"
+    
+    # Mapeamento de Pastas e Arquivos
+    pastas_arquivos = {
+        "descontos": {"url": url_descontos, "arquivo": "DESCONTOS.xlsx"},
+        "mensalidades": {"url": url_mensalidades, "arquivo": "MENSALIDADES.xlsx"}
+    }
+    
+    try:
+        for pasta, dados in pastas_arquivos.items():
+            caminho_pasta = os.path.join(os.getcwd(), pasta)
+            caminho_arquivo = os.path.join(caminho_pasta, dados["arquivo"])
+            
+            # 1. Garante que a pasta existe
+            if not os.path.exists(caminho_pasta):
+                os.makedirs(caminho_pasta)
+                print(f"Pasta '{caminho_pasta}' criada.")
+                
+            # 2. Remove o arquivo antigo
+            if os.path.exists(caminho_arquivo):
+                try:
+                    os.remove(caminho_arquivo)
+                    print(f"Arquivo antigo '{dados['arquivo']}' removido com sucesso.")
+                except Exception as e:
+                    print(f"Aviso ao tentar remover o arquivo antigo {dados['arquivo']}: {e}")
+                    
+            # 3. Download do novo arquivo
+            response = requests.get(dados["url"])
+            response.raise_for_status()
+            
+            with open(caminho_arquivo, "wb") as f:
+                f.write(response.content)
+            print(f"Nova planilha '{dados['arquivo']}' salva com sucesso!")
+            
+        return True, "Planilhas de Descontos e Mensalidades baixadas e atualizadas!"
+        
+    except Exception as e:
+        erro_msg = f"❌ Erro ao atualizar os arquivos físicos: {e}"
+        print(erro_msg)
+        return False, erro_msg
+
 def processa_mensalidades():
-    url_excel_file = "https://drive.google.com/uc?id=1NEqJ7VaM_dICfTPpSSVIkwwfSLCaOTcE"
     df_mensalidades = pd.DataFrame()
     erros_relatados = []
     
     try:
-        response = requests.get(url_excel_file)
-        response.raise_for_status()
-        excel = pd.ExcelFile(BytesIO(response.content), engine="openpyxl")
+        arquivo_mensalidades = os.path.join(os.getcwd(), "mensalidades", "MENSALIDADES.xlsx")
         
+        # Trava de segurança: Verifica se o arquivo local existe antes de processar
+        if not os.path.exists(arquivo_mensalidades):
+            erro = "❌ [MENSALIDADES] Arquivo local MENSALIDADES.xlsx não encontrado. Baixe as planilhas primeiro."
+            erros_relatados.append(erro)
+            return None, erros_relatados
+
+        excel = pd.ExcelFile(arquivo_mensalidades, engine="openpyxl")
         print("Processando mensalidades...")
+        
         for sheet_name in excel.sheet_names:
             df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
             df['Planilha_Origem'] = sheet_name
@@ -476,15 +531,10 @@ def processa_mensalidades():
 
                     # 1. Definir o Total de Meses Válidos para o Rateio
                     if is_camara:
-                        # Câmara: Ignora o titular (idx 0), soma meses apenas dos dependentes
                         total_meses_validos = sum(len(m["Meses Ativos"]) for i, (_, m) in enumerate(grupo.iterrows()) if i > 0)
-                    
                     elif is_complemento:
-                        # Complemento: Rateio entre TODOS os membros (titular + todos os dependentes)
                         total_meses_validos = sum(len(m["Meses Ativos"]) for _, m in grupo.iterrows())
-                    
                     else:
-                        # Padrão: Rateio apenas entre os 4 primeiros (titular + 3)
                         total_meses_validos = sum(len(m["Meses Ativos"]) for i, (_, m) in enumerate(grupo.iterrows()) if i < 4)
 
                     valor_por_mes = valor_total_anual / total_meses_validos if total_meses_validos > 0 else 0
@@ -497,13 +547,9 @@ def processa_mensalidades():
                                 grupo.at[idx, "Total"] = 0
                             else:
                                 grupo.at[idx, "Total"] = valor_por_mes * len(member["Meses Ativos"])
-                        
                         elif is_complemento:
-                            # Complemento: Todos pagam proporcionalmente aos seus meses ativos
                             grupo.at[idx, "Total"] = valor_por_mes * len(member["Meses Ativos"])
-                        
                         else:
-                            # Padrão: Apenas os 4 primeiros pagam
                             if idx < 4:
                                 grupo.at[idx, "Total"] = valor_por_mes * len(member["Meses Ativos"])
                             else:
@@ -518,11 +564,6 @@ def processa_mensalidades():
         
     except Exception as e:
         erro_critico = f"❌ Erro crítico ao processar mensalidades: {e}"
-        return None, [erro_critico]
-    
-    except Exception as e:
-        erro_critico = f"❌ Erro crítico ao processar mensalidades: {e}"
-        # Se quebrar de vez, retorna None no arquivo e o erro na lista
         return None, [erro_critico]
     
 def processa_despesas():
@@ -744,46 +785,6 @@ def processa_despesas():
         erro_critico = f"❌ [DESPESAS] Erro crítico ao processar despesas: {e}"
         print(erro_critico)
         return None, [erro_critico]
-
-def baixar_e_atualizar_descontos():
-    """
-    Baixa a planilha de descontos atualizada do Google Drive,
-    limpa o arquivo antigo da pasta local e garante a gravação
-    do novo arquivo como 'DESCONTOS.xlsx'.
-    """
-    print("Iniciando download da planilha de descontos do Google Drive...")
-    url_excel_file = "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
-    data_folder = os.path.join(os.getcwd(), "descontos")
-    
-    # 1. Garante que a pasta 'descontos' existe no diretório raiz
-    if not os.path.exists(data_folder):
-        os.makedirs(data_folder)
-        print(f"Pasta '{data_folder}' criada.")
-
-    target_file_path = os.path.join(data_folder, "DESCONTOS.xlsx")
-
-    # 2. Remove o arquivo antigo se ele existir para evitar conflitos
-    if os.path.exists(target_file_path):
-        try:
-            os.remove(target_file_path)
-            print("Arquivo antigo 'DESCONTOS.xlsx' removido com sucesso.")
-        except Exception as e:
-            print(f"Aviso ao tentar remover o arquivo antigo: {e}")
-
-    # 3. Faz o download do arquivo atualizado e salva localmente
-    try:
-        response = requests.get(url_excel_file)
-        response.raise_for_status()
-        
-        with open(target_file_path, "wb") as f:
-            f.write(response.content)
-            
-        print("Nova planilha 'DESCONTOS.xlsx' salva com sucesso na pasta!")
-        return True, "Planilha de descontos baixada e atualizada localmente!"
-    except Exception as e:
-        erro_msg = f"❌ Erro ao atualizar o arquivo físico de descontos: {e}"
-        print(erro_msg)
-        return False, erro_msg
 
 def processa_descontos():
     print("Processando descontos...")
