@@ -420,9 +420,11 @@ def processa_mensalidades():
         
         # Trava de segurança: Verifica se o arquivo local existe antes de processar
         if not os.path.exists(arquivo_mensalidades):
-            erro = "❌ [MENSALIDADES] Arquivo local MENSALIDADES.xlsx não encontrado. Baixe as planilhas primeiro."
-            erros_relatados.append(erro)
-            return None, erros_relatados
+            try:
+                baixar_e_atualizar_planilhas()  # Tenta baixar as planilhas antes de falhar
+            except Exception as e:
+                print(f"❌ Erro ao baixar as planilhas: {e}")
+                return None, erros_relatados
 
         excel = pd.ExcelFile(arquivo_mensalidades, engine="openpyxl")
         print("Processando mensalidades...")
