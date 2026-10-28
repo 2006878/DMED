@@ -14,13 +14,13 @@ if str(PROJECT_ROOT) not in sys.path:
 from dmed.funcoes import create_dmed_content
 
 # Carregando o ícone da aba
-favicon = "icone.jpeg"
+favicon = "assets/favicon.jpeg"
 
 # Streamlit page configuration
 st.set_page_config(page_title=f"ARQUIVO DMED - COSEMI", page_icon=favicon, initial_sidebar_state="expanded", layout="wide")
 
 # Display logo
-with open('logo.png', 'rb') as f:
+with open('assets/logo.png', 'rb') as f:
     image_data = base64.b64encode(f.read()).decode()
 
 st.markdown(f"""
@@ -263,7 +263,7 @@ if check_password():
                 traceback.print_exc()
 
     with st.expander("Manual de regras", expanded=False):
-        with open('manual.md', 'r', encoding='utf-8') as file:
+        with open('docs/manual.md', 'r', encoding='utf-8') as file:
             manual_content = file.read()
         st.markdown(manual_content)
 

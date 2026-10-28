@@ -22,7 +22,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # Carregando o ícone da aba
-favicon = "icone.jpeg"
+favicon = "assets/favicon.jpeg"
 
 # Configuração da página
 st.set_page_config(page_title=f"IRPF {ano_anterior} - COSEMI", page_icon=favicon, initial_sidebar_state="expanded", layout="wide")
@@ -111,7 +111,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Display logo
-with open('logo.png', 'rb') as f:
+with open('assets/logo.png', 'rb') as f:
     image_data = base64.b64encode(f.read()).decode()
 
 st.markdown(f"""

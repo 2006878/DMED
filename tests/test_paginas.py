@@ -97,7 +97,7 @@ def test_dmed_exibe_formulario_e_manual() -> None:
 
     assert not at.exception
     assert [t.value for t in at.main.title] == ["DOWNLOAD ARQUIVO DMED - COSEMI"]
-    manual = (RAIZ / "manual.md").read_text(encoding="utf-8")
+    manual = (RAIZ / "docs" / "manual.md").read_text(encoding="utf-8")
     assert any(m.value == manual.strip() for m in at.markdown)
 
 

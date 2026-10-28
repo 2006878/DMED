@@ -19,7 +19,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 ESPERADO = FIXTURES / "esperado"
 
 # Onde o app espera cada arquivo, relativo à pasta de execução.
-ASSETS = ["logo.png", "icone.jpeg", "manual.md"]
+ASSETS = ["assets/logo.png", "assets/favicon.jpeg", "docs/manual.md"]
 PASTA_MENSALIDADES = Path("mensalidades")
 PASTA_DESPESAS = Path("despesas_nova")
 PASTA_DESCONTOS = Path("descontos")
