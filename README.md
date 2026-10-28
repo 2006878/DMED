@@ -38,8 +38,6 @@ uv run mypy                            # tipos
 uv run pre-commit run --all-files      # todos os hooks do pre-commit
 ```
 
-O GitHub Actions roda lint, tipos e testes em cada push na `main` e na `develop` e em cada pull request (`.github/workflows/ci.yml`).
-
 Os testes rodam sobre planilhas fictícias (`tests/fixtures/`) e comparam as saídas com as referências em `tests/fixtures/esperado/`. Quando uma mudança de comportamento for intencional, regrave as referências com `uv run pytest --atualizar-esperado` e revise o diff antes do commit.
 
 ## Estrutura
@@ -71,7 +69,7 @@ tests/                      testes e fixtures fictícias
 graphify-out/               grafo de conhecimento do código (graphify)
 ```
 
-Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.streamlit/` (Streamlit), `.pre-commit-config.yaml` (pre-commit), `.github/` (GitHub Actions), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
+Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.streamlit/` (Streamlit), `.pre-commit-config.yaml` (pre-commit), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
 
 ## Dados
 
