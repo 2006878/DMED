@@ -1,25 +1,21 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
+
+COPY --from=ghcr.io/astral-sh/uv:0.12.18 /uv /uvx /bin/
+
+# O ambiente fica fora de /app para não ser escondido pelo volume do compose.
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
-# Instalar dependências do sistema necessárias
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    software-properties-common \
-    && rm -rf /var/lib/apt/lists/*
+# Dependências antes do código, para aproveitar o cache de camadas.
+COPY pyproject.toml uv.lock .python-version ./
+RUN uv sync --locked --no-dev
 
-# Copiar os arquivos de requisitos primeiro
-COPY requirements.txt .
-
-# Instalar dependências Python
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copiar o código da aplicação
 COPY . .
 
-# Expor a porta que o Streamlit usa
 EXPOSE 8501
 
-# Comando para executar a aplicação
 CMD ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"]
