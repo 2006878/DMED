@@ -77,14 +77,6 @@ def normalize_name(name):
     normalized = ''.join(c for c in normalized if c.isalnum() or c.isspace())
     return normalized
 
-@st.cache_data
-def load_data(file_path):
-    try:
-        return pd.read_csv(file_path)
-    except Exception as e:
-        print(f"Erro ao ler o arquivo {file_path}: {e}")
-        return pd.DataFrame()
-
 def format_currency(value):
     try:
         value = float(value)  # Converte para número caso seja string
@@ -212,11 +204,6 @@ def calculate_active_months(admission, termination=None):
         return [month for month in range(1, 13)]  # Returns [1,2,3,4,5,6,7,8,9,10,11,12]
     
     return []
-
-def format_date(date):
-    if pd.isna(date):
-        return ''
-    return pd.to_datetime(date).strftime('%Y%m%d')
 
 # Agrupar e processar dados de uma vez
 def process_group(grupo, titular_cpf, despesas_dict):
@@ -931,19 +918,6 @@ def processa_descontos():
         return None, [erro_critico]
 
 
-
-@st.cache_data    
-def busca_descontos_drive():
-    print("Buscando descontos no drive...")
-    url_descontos = "https://drive.google.com/uc?id=1UR7B8kd1B_-Y-bVf1eNaMThDThQ56ui8"
-    try:
-        df_descontos = pd.read_csv(url_descontos, delimiter=',', encoding='utf-8')
-        print("Descontos baixado com sucesso.")
-        return df_descontos
-    except Exception as e:
-        print(f"Erro ao ler o arquivo de desontos do Drive: {e}")
-        return pd.DataFrame()
-    
 def busca_dados_descontos(cpf_alvo):
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
     descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
@@ -974,7 +948,6 @@ def busca_dados_descontos(cpf_alvo):
     cpf_alvo_formatado = format_cpf(cpf_alvo)
     if cpf_alvo_formatado and "CPF" in df_descontos.columns:
         matches_cpf = df_descontos[df_descontos["CPF"] == cpf_alvo_formatado]
-        # print(matches_cpf)
         if not matches_cpf.empty:
             return float(matches_cpf["Total de Descontos"].sum())
 
@@ -988,19 +961,6 @@ def busca_dados_descontos(cpf_alvo):
     return total_descontos
 
 
-
-@st.cache_data
-def busca_mensalidades_drive():
-    print("Buscando mensalidades no drive...")
-    url_mensalidades = "https://drive.google.com/uc?id=1t4h1Y2OmvZiYTrmHkBRBmVAP3GC4KYdM"
-    try:
-        df_mensalidades = pd.read_csv(url_mensalidades, delimiter=',', encoding='utf-8')
-        print("Mensalidades baixadas com sucesso.")
-        return df_mensalidades
-    except Exception as e:
-        print(f"Erro ao ler o arquivo de mensalidades do Drive: {e}")
-        return pd.DataFrame()
-    
 def busca_dados_mensalidades(cpf_alvo):
     mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
@@ -1030,8 +990,6 @@ def busca_dados_mensalidades(cpf_alvo):
 
         # Criando a coluna auxiliar para priorizar o Titular
         df_filtrado["Ordem"] = (df_filtrado["Relação"] != "Titular").astype(int)
-
-        # print(df_filtrado[["Nome", "Relação", "Total", "Ordem"]])
 
         # Aplicando groupby mantendo "Ordem"
         df_filtrado = df_filtrado.groupby(["Nome", "Ordem"], as_index=False).agg({
@@ -1067,19 +1025,6 @@ def busca_dados_mensalidades(cpf_alvo):
     return df_filtrado
 
 
-
-@st.cache_data
-def busca_despesas_drive():
-    print("Buscando despesas no drive...")
-    url_despesas = "https://drive.google.com/uc?id=1jBGtNAQEVI6lVslyEJkPfXZpesm39193"
-    try:
-        df_despesas = pd.read_csv(url_despesas, delimiter=',', encoding='utf-8')
-        print("Despesas baixadas com sucesso.")
-        return df_despesas
-    except Exception as e:
-        print(f"Erro ao ler o arquivo de despesas do Drive: {e}")
-        return pd.DataFrame()
-    
 def busca_dados_despesas(cpf_alvo, nome):
     despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
     if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
@@ -1091,7 +1036,6 @@ def busca_dados_despesas(cpf_alvo, nome):
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
     try:
         descontos = float(busca_dados_descontos(cpf_alvo))
-        # print(f"Descontos encontrados para CPF {cpf_alvo}: {descontos}")
     except Exception as e:
         print(f"Erro ao calcular descontos: {e}")
         descontos = 0
@@ -1099,13 +1043,10 @@ def busca_dados_despesas(cpf_alvo, nome):
     if not df_despesas.empty:
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
-        # print(f"Despesas encontradas para CPF {cpf_alvo}: {df_despesas}")
         total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
-        #print(f"Total de despesas: {total_despesas}")
-            
+
         if not df_despesas.empty:
             diferenca = descontos - total_despesas
-            #print(f"Diferença: {diferenca}")
 
             # Normalizar os nomes no DataFrame
             df_despesas["BENEFICIARIO"] = df_despesas["BENEFICIARIO"].str.strip().str.upper()
@@ -1116,9 +1057,6 @@ def busca_dados_despesas(cpf_alvo, nome):
             # Aplicar a máscara para encontrar o nome
             pattern = re.escape(nome_normalizado)  # Escapar caracteres especiais no nome
             mask = df_despesas["BENEFICIARIO"] == nome_normalizado
-            #print(f"Nome fornecido: {nome_normalizado}")
-            #print(f"Nomes no DataFrame: {df_despesas['BENEFICIARIO'].unique()}")
-            #print(f"Máscara gerada: {mask}")
 
             # Verificar se há correspondências
             if mask.any():
@@ -1131,8 +1069,6 @@ def busca_dados_despesas(cpf_alvo, nome):
             remaining_mask = ~mask
             remaining_count = remaining_mask.sum()
             total_remaining_mask = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"].sum()
-            #print(f"Total do valor dos dependentes: {total_remaining_mask}")
-            #print(f"Quantidade de dependentes: {remaining_count}")
 
             if descontos > 0 and mask is True:
                 df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
@@ -1169,7 +1105,6 @@ def busca_dados_despesas(cpf_alvo, nome):
                 
                 if remaining_count > 0 and total_remaining_mask < abs(diferenca) and diferenca < 0:
                     df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] = 0
-                    # df_despesas.loc[mask, "VALOR_DO_SERVICO"] == descontos
                     df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
 
                 elif df_despesas.empty:
@@ -1209,115 +1144,3 @@ def busca_dados_despesas(cpf_alvo, nome):
     )
      
     return df_despesas
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Agrupar e processar dados de uma vez
-# def process_group_titular(grupo, titular_cpf):
-#     results = []
-    
-#     # Processar titular
-#     titular = grupo.iloc[0]
-#     if not titular.empty:
-#         titular = titular.iloc[0]
-#         nome_titular = normalize_name(titular)
-        
-#         # Calcular o valor total do grupo familiar (titular + dependentes)
-#         # valor_mensalidade_total = pd.to_numeric(grupo["Total"]).sum().round(2)
-#         # valor_mensalidade_total = pd.to_numeric(grupo["Valor"]).sum().round(2)
-#         # Converter e somar diretamente
-#         valor_mensalidade_total = grupo["Valor"].apply(lambda x: 
-#             float(str(x).replace("R$", "").replace(".", "").replace(",", ".").strip()) 
-#             if pd.notna(x) else 0.0
-#         ).sum().round(2)
-
-#         # Somar todas as despesas do grupo familiar
-#         valor_despesas_total = busca_dados_descontos(titular_cpf)
-                
-#         # Atribuir todo o valor ao titular
-#         valor_titular = valor_mensalidade_total + valor_despesas_total
-        
-#         if valor_titular <= 0:
-#             valor_titular = 0.01
-            
-#         results.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{format_valor(valor_titular)}|")
-
-#         # if titular_cpf == '02650137630':
-#         #     print(valor_titular)
-#     # Não adicionar dependentes ao arquivo DMED, já que todos os valores foram atribuídos ao titular
-    
-#     return results
-
-# def create_dmed_content_titular(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
-#     start = datetime.now()
-    
-#     mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
-#     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
-#         processa_mensalidades()
-#     try:
-#         df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
-#     except Exception as e:
-#         print(f"Erro ao ler o arquivo de mensalidades: {e}")
-#         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
-        
-#     # df_despesas_raw = load_data(os.path.join(os.getcwd(), 'despesas_file.csv'))
-#     # if df_despesas_raw.empty:
-#     #     return ""
-
-#     print("Criando arquivo DMed...")
-    
-#     # Pré-processar dados
-#     df_filtrado['Total'] = pd.to_numeric(df_filtrado['Total'], errors='coerce').fillna(0).round(2)
-#     df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
-    
-#     # Cabeçalho do DMED
-#     content = [
-#         f"DMED|{ano_atual}|{ano_anterior}|N|||",
-#         f"RESPO|{responsavel_cpf}|{responsavel_nome}|{ddd_responsavel}|{telefone_responsavel}||||",
-#         f"DECPJ|16651002000180|COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI|2|419761||{responsavel_cpf}|N||S|",
-#         "OPPAS|"
-#     ]
-        
-#     # Agrupar dados por Titular_CPF para processar cada grupo familiar
-#     df_grouped = df_filtrado.groupby(['Titular_CPF']).agg({
-#         'Nome': 'first',  # Pegar o nome do primeiro registro (que deve ser o titular)
-#         'Relação': 'first',
-#         'CPF': 'first'
-#     }).reset_index()
-#     # print(df_grouped['Titular_CPF'].unique())
-#     # Processar cada grupo de titular
-#     for titular_cpf in df_grouped['Titular_CPF'].unique():
-#         if pd.notna(titular_cpf):
-#             # Obter todos os registros do grupo familiar
-#             # grupo = df_filtrado[df_filtrado['Titular_CPF'] == titular_cpf]
-#             grupo = busca_dados_mensalidades(titular_cpf)
-#             # grupo  = df_filtrado[df_filtrado['Titular_CPF'] == titular_cpf]
-#             if grupo.empty:
-#                 print(f"Grupo vazio para titular CPF: {titular_cpf}")
-#                 continue
-#             else:
-#                 # Processar o grupo e adicionar resultados ao content
-#                 results = process_group_titular(grupo, titular_cpf)
-#                 content.extend(results)
-    
-#     content.append("FIMDmed|")
-#     end = datetime.now()
-#     print(f"Tempo total de execução: {end - start}")
-#     return "\n".join(content)

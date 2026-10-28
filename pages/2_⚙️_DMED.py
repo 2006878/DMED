@@ -192,10 +192,7 @@ if check_password():
                 if st.session_state.processamento == "Titulares e Dependentes":
                     # A função main agora retorna o conteúdo E a lista de erros
                     dmed_content, lista_erros = create_dmed_content(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
-                
-                # elif st.session_state.processamento == "somente Titulares":
-                #     dmed_content, lista_erros = create_dmed_content_titular(cpf_responsavel, nome_respostavel, ddd_input, telefone_input)
-                
+
                 else:
                     st.error("Opção de processamento inválida.")
 
