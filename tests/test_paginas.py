@@ -4,10 +4,9 @@ planilhas fictícias do fixture `ambiente`."""
 from collections.abc import Callable
 
 import pytest
+from conftest import RAIZ
 from streamlit.testing.v1 import AppTest
 from streamlit.testing.v1.element_tree import Button, TextInput
-
-from conftest import RAIZ
 
 Esperado = Callable[[str, str], None]
 

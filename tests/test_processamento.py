@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from conftest import csv_texto, normaliza_pdf
 
 from dmed import funcoes
-from conftest import csv_texto, normaliza_pdf
 
 Esperado = Callable[[str, str], None]
 

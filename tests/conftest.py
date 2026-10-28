@@ -2,6 +2,7 @@
 ambiente de execução com planilhas fictícias montadas a partir de
 tests/fixtures/."""
 
+import contextlib
 import datetime as dt
 import re
 import shutil
@@ -113,10 +114,8 @@ def normaliza_pdf(pdf: bytes) -> str:
 
     def descomprime(m: re.Match[bytes]) -> bytes:
         dados = m.group(1)
-        try:
+        with contextlib.suppress(zlib.error):
             dados = zlib.decompress(dados)
-        except zlib.error:
-            pass
         return (
             b"stream\n"
             + re.sub(rb"\d{2}/\d{2}/\d{4}", b"<DATA>", dados)
