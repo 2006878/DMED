@@ -1,10 +1,26 @@
-/venv/
-/anexos/
-/despesas/
-/mensalidades/
-app.py
-/__pycache__/
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Ferramentas
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Segredos e configuração local
 .env
-MENSALIDADES.xlsx
-.~lock.*
+.streamlit/secrets.toml
+
+# Dados gerados em tempo de execução
+/mensalidades/
 *_file.csv
+.~lock.*
+
+# Notas locais
+/claude/
+/docs/PENDENCIAS.md
