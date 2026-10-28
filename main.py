@@ -2,7 +2,20 @@ import streamlit as st
 import sys
 from pathlib import Path
 import base64
-from funcoes import *
+import pandas as pd
+from dmed.funcoes import (
+    ano_anterior,
+    baixar_e_atualizar_planilhas,
+    busca_dados_descontos,
+    busca_dados_despesas,
+    busca_dados_mensalidades,
+    format_cpf,
+    generate_pdf,
+    parse_valor_monetario,
+    processa_descontos,
+    processa_despesas,
+    processa_mensalidades,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:

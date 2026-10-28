@@ -6,7 +6,7 @@ import math
 import pandas as pd
 import pytest
 
-import funcoes
+from dmed import funcoes
 
 T = pd.Timestamp
 
