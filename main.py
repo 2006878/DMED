@@ -46,7 +46,7 @@ with st.sidebar:
     
     # Botão para a página DMED
     if st.button("⚙️ DMED"):
-        st.switch_page("pages/2_⚙️_DMED.py")
+        st.switch_page("pages/2_DMED.py")
 
 # Ocultar elementos desnecessários da interface
 st.markdown("""

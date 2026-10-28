@@ -2,17 +2,17 @@
 planilhas fictícias do fixture `ambiente`."""
 
 from collections.abc import Callable
-from pathlib import Path
 
 import pytest
 from streamlit.testing.v1 import AppTest
+from streamlit.testing.v1.element_tree import Button, TextInput
 
 from conftest import RAIZ
 
 Esperado = Callable[[str, str], None]
 
 ENTRADA = RAIZ / "main.py"
-PAGINA_DMED = "pages/2_⚙️_DMED.py"
+PAGINA_DMED = "pages/2_DMED.py"
 SENHA = "senha-de-teste"
 pytestmark = pytest.mark.usefixtures("ambiente")
 
@@ -29,11 +29,11 @@ def abre_dmed_autenticado() -> AppTest:
     return at
 
 
-def botao(at: AppTest, rotulo: str):  # noqa: ANN201
+def botao(at: AppTest, rotulo: str) -> Button:
     return next(b for b in at.button if b.label == rotulo)
 
 
-def campo(at: AppTest, inicio_do_rotulo: str):  # noqa: ANN201
+def campo(at: AppTest, inicio_do_rotulo: str) -> TextInput:
     return next(t for t in at.text_input if t.label.startswith(inicio_do_rotulo))
 
 
