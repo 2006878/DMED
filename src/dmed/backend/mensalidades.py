@@ -20,10 +20,11 @@ TITULAR = "T."
 RELACOES = {
     "T.": "Titular",
     "T": "Titular",
-    "esp.": "Cônjuge",
+    "ESP.": "Cônjuge",
     "FIL.": "Filho(a)",
     "ENT.": "Enteado(a)",
     "MAE": "Pais",
+    "MÃE": "Pais",
     "PAI": "Pais",
 }
 MEMBROS_NO_RATEIO = 4  # planos comuns: só os 4 primeiros da família dividem o valor

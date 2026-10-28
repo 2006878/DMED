@@ -1,13 +1,13 @@
 Nome,CPF,Par.,Adm.,Deslig.,Total 2024,Planilha_Origem,Tipo de Plano,Titular_CPF,Relação,Total,Meses Ativos,is_camara,is_complemento
 GABRIELA MOTA,,T.,2020-01-01,,1500.0,Apartamento PMI,Apartamento,,Titular,1500.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 ANA SOUZA,10000000001,T.,2015-02-01,,3600.0,Apartamento PMI,Apartamento,10000000001,Titular,1200.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
-BRUNO SOUZA,10000000002,ESP.,2015-02-01,,,Apartamento PMI,Apartamento,10000000001,Outros,1200.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
+BRUNO SOUZA,10000000002,ESP.,2015-02-01,,,Apartamento PMI,Apartamento,10000000001,Cônjuge,1200.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 CAIO SOUZA,10000000003,FIL.,2018-05-10,,,Apartamento PMI,Apartamento,10000000001,Filho(a),1200.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 DEBORA LIMA,10000000004,T.,2010-01-01,2025-06-30,1200.5,Apartamento PMI,Apartamento,10000000004,Titular,257.25,"[1, 2, 3, 4, 5, 6]",False,False
 EDUARDO LIMA,10000000005,FIL.,2025-03-01,,,Apartamento PMI,Apartamento,10000000004,Filho(a),428.75,"[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 ,10000000017,FIL.,2025-01-01,,,Apartamento PMI,Apartamento,10000000004,Filho(a),514.5,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 HELENA DIAS,10000000007,T.,2016-01-01,,6000.0,Apartamento PMI,Apartamento,10000000007,Titular,1500.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
-IGOR DIAS,10000000008,esp.,2016-01-01,,,Apartamento PMI,Apartamento,10000000007,Outros,1500.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
+IGOR DIAS,10000000008,esp.,2016-01-01,,,Apartamento PMI,Apartamento,10000000007,Cônjuge,1500.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 JULIA DIAS,10000000009,FIL.,2017-01-01,,,Apartamento PMI,Apartamento,10000000007,Filho(a),1500.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 KAUA DIAS,10000000010,FIL.,2019-01-01,,,Apartamento PMI,Apartamento,10000000007,Filho(a),1500.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
 LARA DIAS,10000000011,ENT.,2020-01-01,,,Apartamento PMI,Apartamento,10000000007,Enteado(a),0.0,"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",False,False
