@@ -1,0 +1,28 @@
+<div class='info-container'>
+    <h4>ANA SOUZA</h4>
+    <p>Valor: <strong>R$ 1.200,00</strong></p>
+</div>
+
+<div class='info-container'>
+    <h4>BRUNO SOUZA</h4>
+    <p>Valor: <strong>R$ 1.200,00</strong></p>
+</div>
+
+<div class='info-container'>
+    <h4>CAIO SOUZA</h4>
+    <p>Valor: <strong>R$ 1.200,00</strong></p>
+</div>
+
+<div class='info-container'>
+    <h4>ANA SOUZA</h4>
+    <p>Valor: <strong>R$ 120,50</strong></p>
+</div>
+
+<div class='info-container'>
+    <h4>CAIO SOUZA</h4>
+    <p>Valor: <strong>R$ 0,00</strong></p>
+</div>
+
+<div class='info-container'>
+    <p>Total de descontos: <strong>R$ 120,50</strong></p>
+</div>

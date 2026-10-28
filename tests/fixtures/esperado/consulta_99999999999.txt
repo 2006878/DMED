@@ -1,0 +1,10 @@
+descontos: R$ 0,00
+mensalidades:
+Nome,Valor
+
+despesas:
+Nome,Valor
+,"R$ 0,00"
+
+mensalidades depois do PDF:
+Nome,Valor

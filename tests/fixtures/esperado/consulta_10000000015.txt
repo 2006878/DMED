@@ -1,0 +1,14 @@
+descontos: R$ 0,00
+mensalidades:
+Nome,Valor
+PAULA REIS,"R$ 385,71"
+RAFAEL REIS,"R$ 514,29"
+
+despesas:
+Nome,Valor
+PAULA REIS,"R$ 0,00"
+
+mensalidades depois do PDF:
+Nome,Valor
+PAULA REIS,385.71
+RAFAEL REIS,514.29

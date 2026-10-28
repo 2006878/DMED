@@ -24,3 +24,8 @@ dev = [
     "time-machine>=3.6.0",
     "types-requests>=2.33.0.20261006",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-ra", "--strict-markers"]

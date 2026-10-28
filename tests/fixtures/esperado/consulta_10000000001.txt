@@ -1,0 +1,17 @@
+descontos: R$ 120,50
+mensalidades:
+Nome,Valor
+ANA SOUZA,"R$ 1.200,00"
+BRUNO SOUZA,"R$ 1.200,00"
+CAIO SOUZA,"R$ 1.200,00"
+
+despesas:
+Nome,Valor
+ANA SOUZA,"R$ 120,50"
+CAIO SOUZA,"R$ 0,00"
+
+mensalidades depois do PDF:
+Nome,Valor
+ANA SOUZA,1200.00
+BRUNO SOUZA,1200.00
+CAIO SOUZA,1200.00

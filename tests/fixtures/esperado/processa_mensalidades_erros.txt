@@ -1,0 +1,2 @@
+⚠️ [MENSALIDADES | Aba: Apartamento PMI] Linha 7 | Faltando: NOME | Dados: Nome: 'nan', CPF: '10000000017.0', Par: 'FIL.'
+⚠️ [MENSALIDADES | Aba: Apartamento PMI] Linha 9 | Faltando: CPF | Dados: Nome: 'GABRIELA MOTA', CPF: 'nan', Par: 'T.'

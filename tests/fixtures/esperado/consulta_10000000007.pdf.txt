@@ -1,0 +1,130 @@
+%PDF-1.3
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/Contents 4 0 R>>
+endobj
+4 0 obj
+<</Filter /FlateDecode /Length X>>
+stream
+2 J
+0.57 w
+BT /F1 16.00 Tf ET
+BT 186.97 794.57 Td (INFORME PLANO DE SAÚDE) Tj ET
+BT /F1 14.00 Tf ET
+BT 200.02 761.15 Td (ANO - CALENDÁRIO DE 2025) Tj ET
+BT 166.56 738.47 Td (IMPOSTO DE RENDA - PESSOA FÍSICA) Tj ET
+BT /F1 12.00 Tf ET
+BT 31.19 688.05 Td (1 - DADOS CADASTRAIS) Tj ET
+0.000 G
+28.35 680.31 m 566.93 680.31 l S
+BT /F2 12.00 Tf ET
+BT 31.19 656.87 Td (Titular: HELENA DIAS - CPF: 10000000007) Tj ET
+28.35 702.99 538.58 -56.69 re S
+BT /F1 12.00 Tf ET
+BT 31.19 620.02 Td (2 - IDENTIFICAÇÃO DA FONTE PAGADORA) Tj ET
+0.000 G
+28.35 612.28 m 566.93 612.28 l S
+BT /F2 12.00 Tf ET
+BT 31.19 588.84 Td (Nome empresarial: Cosemi - Cooperativa de Economia E Credito Mutuo dos) Tj ET
+BT 31.19 571.83 Td (Servidores Municipais de Itabira Ltda) Tj ET
+BT 31.19 554.82 Td (CNPJ: 16.651.002/0001-80) Tj ET
+28.35 634.96 538.58 -90.71 re S
+BT /F1 12.00 Tf ET
+BT 31.19 517.97 Td (3 - INFORMAÇÕES PLANO DE SAÚDE) Tj ET
+0.000 G
+28.35 510.23 m 566.93 510.23 l S
+BT /F2 12.00 Tf ET
+BT 31.19 486.79 Td (Mensalidade Plano de Saúde:) Tj ET
+BT 31.19 469.78 Td (Nome: HELENA DIAS - Valor: R$ 1.500,00) Tj ET
+BT 31.19 452.77 Td (Nome: IGOR DIAS - Valor: R$ 1.500,00) Tj ET
+BT 31.19 435.77 Td (Nome: JULIA DIAS - Valor: R$ 1.500,00) Tj ET
+BT 31.19 418.76 Td (Nome: KAUA DIAS - Valor: R$ 1.500,00) Tj ET
+BT 31.19 401.75 Td (Nome: LARA DIAS - Valor: R$ 0,00) Tj ET
+28.35 532.91 538.58 -141.73 re S
+BT /F1 12.00 Tf ET
+BT 31.19 364.90 Td (4 - INFORMAÇÕES DESPESAS) Tj ET
+0.000 G
+28.35 357.16 m 566.93 357.16 l S
+BT /F2 12.00 Tf ET
+BT 31.19 333.72 Td (Nome: HELENA DIAS - Valor: R$ 0,00) Tj ET
+BT 31.19 316.71 Td (Nome: IGOR DIAS - Valor: R$ 0,00) Tj ET
+28.35 379.84 538.58 -73.70 re S
+BT /F1 12.00 Tf ET
+BT 31.19 279.86 Td (5 - TOTAIS) Tj ET
+0.000 G
+28.35 272.12 m 566.93 272.12 l S
+BT /F2 12.00 Tf ET
+BT 31.19 248.68 Td (Total de Despesas: R$ 0,00) Tj ET
+BT 31.19 231.67 Td (Total de Mensalidades: R$ 6.000,00) Tj ET
+28.35 294.80 538.58 -73.70 re S
+BT 205.59 197.66 Td (Documento criado em: <DATA>) Tj ET
+
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R ]
+/Count 1
+/MediaBox [0 0 595.28 841.89]
+>>
+endobj
+5 0 obj
+<</Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+>>
+endobj
+6 0 obj
+<</Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 5 0 R
+/F2 6 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+7 0 obj
+<<
+/Producer (PyFPDF 1.7.2 http://pyfpdf.googlecode.com/)
+/CreationDate (D:X)
+>>
+endobj
+8 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 9
+X 
+X 
+X 
+X 
+X 
+X 
+X 
+X 
+X 
+trailer
+<<
+/Size 9
+/Root 8 0 R
+/Info 7 0 R
+>>
+startxref X
+%%EOF

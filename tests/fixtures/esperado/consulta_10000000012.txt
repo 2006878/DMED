@@ -1,0 +1,17 @@
+descontos: R$ 2.500,00
+mensalidades:
+Nome,Valor
+MARCOS PIRES,"R$ 0,00"
+NINA PIRES,"R$ 1.200,00"
+OTAVIO PIRES,"R$ 1.200,00"
+
+despesas:
+Nome,Valor
+MARCOS PIRES,"R$ 300,00"
+NINA PIRES,"R$ 2.200,00"
+
+mensalidades depois do PDF:
+Nome,Valor
+MARCOS PIRES,0.00
+NINA PIRES,1200.00
+OTAVIO PIRES,1200.00

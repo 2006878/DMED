@@ -1,0 +1,14 @@
+descontos: R$ 50,25
+mensalidades:
+Nome,Valor
+DEBORA LIMA,"R$ 257,25"
+EDUARDO LIMA,"R$ 428,75"
+
+despesas:
+Nome,Valor
+DEBORA LIMA,"R$ 50,25"
+
+mensalidades depois do PDF:
+Nome,Valor
+DEBORA LIMA,257.25
+EDUARDO LIMA,428.75

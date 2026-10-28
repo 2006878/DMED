@@ -1,0 +1,21 @@
+descontos: R$ 0,00
+mensalidades:
+Nome,Valor
+HELENA DIAS,"R$ 1.500,00"
+IGOR DIAS,"R$ 1.500,00"
+JULIA DIAS,"R$ 1.500,00"
+KAUA DIAS,"R$ 1.500,00"
+LARA DIAS,"R$ 0,00"
+
+despesas:
+Nome,Valor
+HELENA DIAS,"R$ 0,00"
+IGOR DIAS,"R$ 0,00"
+
+mensalidades depois do PDF:
+Nome,Valor
+HELENA DIAS,1500.00
+IGOR DIAS,1500.00
+JULIA DIAS,1500.00
+KAUA DIAS,1500.00
+LARA DIAS,0.00

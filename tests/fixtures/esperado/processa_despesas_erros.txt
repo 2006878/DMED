@@ -1,0 +1,7 @@
+⚠️ [DESPESAS | Origem: Faturamento 0001 Ano 2025.xlsx -> Aba: Mês 02] Colunas obrigatórias ausentes (Nome ou Valor).
+⚠️ [MENSALIDADES | Aba: Apartamento PMI] Linha 7 | Faltando: NOME | Dados: Nome: 'nan', CPF: '10000000017.0', Par: 'FIL.'
+⚠️ [MENSALIDADES | Aba: Apartamento PMI] Linha 9 | Faltando: CPF | Dados: Nome: 'GABRIELA MOTA', CPF: 'nan', Par: 'T.'
+🛑 [DESPESAS | Origem: Faturamento 0001 Ano 2025.xlsx -> Aba: Mês 01] Linha 6 | ERRO: Faltando VALOR (Ausente ou Zero). | Dados Lidos: Nome: 'HELENA DIAS', CPF: '10000000007.0', Valor: '0'
+🟡 [DESPESAS | Origem: Arquivo CSV: extra.csv] Linha 3 | AVISO: CPF Ausente. O sistema tentará mapear pelo nome 'NINA PIRES'.
+🟡 [DESPESAS | Origem: Faturamento 0001 Ano 2025.xlsx -> Aba: Mês 01] Linha 3 | AVISO: CPF Ausente. O sistema tentará mapear pelo nome 'CAIO SOUZA'.
+🟡 [DESPESAS | Origem: Faturamento 0001 Ano 2025.xlsx -> Aba: Mês 01] Linha 7 | AVISO: CPF Ausente. O sistema tentará mapear pelo nome 'IGOR DIAS'.

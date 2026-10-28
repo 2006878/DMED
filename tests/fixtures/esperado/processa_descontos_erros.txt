@@ -1,0 +1,4 @@
+⚠️ [DESCONTOS | Origem: DESCONTOS.xlsx -> Aba: ITAURB] Colunas obrigatórias ausentes.
+🛑 [DESCONTOS | Origem: DESCONTOS.xlsx -> Aba: PREFEITURA] Linha 4 | ERRO: Faltando NOME. | Dados Lidos: Nome: 'nan', CPF: '10000000099.0', Valor: '10'
+🛑 [DESCONTOS | Origem: DESCONTOS.xlsx -> Aba: PREFEITURA] Linha 5 | ERRO: Faltando TOTAL DE DESCONTOS (Ausente ou Zero). | Dados Lidos: Nome: 'HELENA DIAS', CPF: '10000000007.0', Valor: '0'
+🟡 [DESCONTOS | Origem: DESCONTOS.xlsx -> Aba: PREFEITURA] Linha 3 | AVISO: CPF Ausente. Agrupamento será feito pelo nome 'DEBORA LIMA'.
