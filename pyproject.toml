@@ -30,6 +30,10 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = ["-ra", "--strict-markers"]
 
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*"]
+
 [tool.ruff]
 target-version = "py311"
 extend-exclude = ["venv"]

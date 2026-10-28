@@ -1,172 +1,73 @@
+# DMED COSEMI
 
-# 📌 Streamlit Application - COSEMI
+Aplicação [Streamlit](https://streamlit.io/) da COSEMI com duas páginas:
 
+- **Informe de plano de saúde (IRPF):** consulta pelo CPF do titular e gera o PDF do informe do ano-calendário anterior.
+- **Arquivo DMED:** gera o arquivo `.DEC` da DMED para a Receita Federal, com relatório das inconsistências encontradas nas planilhas. Protegida por senha.
 
-Este repositório contém uma aplicação desenvolvida com [Streamlit](https://streamlit.io/) para o sistema DMED da COSEMI. Abaixo estão as instruções para configurar o ambiente, instalar as dependências e rodar a aplicação corretamente.
+## Requisitos
 
----
+- [uv](https://docs.astral.sh/uv/getting-started/installation/), que também instala o Python 3.11 definido em `.python-version`.
 
-
-## 🔧 Configuração do Ambiente
-
-
-Você pode executar esta aplicação de duas maneiras: usando um ambiente virtual Python ou usando Docker.
-
-### Opção 1: Ambiente Virtual Python
-
-#### Criando e ativando o ambiente virtual
-
-Para garantir um ambiente isolado e evitar conflitos de dependências, siga os passos abaixo para criar e ativar um ambiente virtual.
-
-
-##### 📌 Windows (cmd/powershell):
-```sh
-python -m venv venv
-venv\Scripts\activate
-```
-
-
-##### 📌 macOS/Linux (bash/zsh):
-```sh
-python3 -m venv venv
-source venv/bin/activate
-```
-
-Após a ativação, o terminal exibirá algo semelhante a `(venv)`, indicando que o ambiente virtual está ativo.
-
-
-#### 📦 Instalação das Dependências
-
-
-
-Com o ambiente virtual ativado, instale todas as bibliotecas listadas no `requirements.txt` com o seguinte comando:
+## Instalação
 
 ```sh
-pip install -r requirements.txt
+uv sync
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
 ```
 
-Para verificar se todas as dependências foram instaladas corretamente, use:
+Preencha a senha da página DMED em `.streamlit/secrets.toml`. Esse arquivo não é versionado.
+
+## Execução
 
 ```sh
-pip list
+uv run streamlit run main.py
 ```
 
+A aplicação abre em <http://localhost:8501>.
 
-#### 🚀 Executando a Aplicação Streamlit
-
-
-
-Após a configuração do ambiente e instalação das dependências, rode a aplicação com o seguinte comando:
+Com Docker:
 
 ```sh
-streamlit run main.py
+docker compose up --build
 ```
 
-
-#### ❌ Desativando o Ambiente Virtual
-
-Após terminar de usar a aplicação, você pode desativar o ambiente virtual com:
+## Testes e qualidade
 
 ```sh
-deactivate
+uv run pytest                          # testes
+uv run pytest --cov                    # testes com cobertura
+uv run ruff check .                    # lint
+uv run ruff format .                   # formatação
+uv run mypy                            # tipos
 ```
 
+Os testes rodam sobre planilhas fictícias (`tests/fixtures/`) e comparam as saídas com as referências em `tests/fixtures/esperado/`. Quando uma mudança de comportamento for intencional, regrave as referências com `uv run pytest --atualizar-esperado` e revise o diff antes do commit.
 
+## Estrutura
 
-### Opção 2: Usando Docker Compose
-
-Se você preferir usar Docker Compose, siga estas instruções para criar e executar os serviços da aplicação.
-
-#### Pré-requisitos
-- Docker e Docker Compose instalados em seu sistema ([Instruções de instalação](https://docs.docker.com/get-docker/))
-
-#### 🐳 Criando o arquivo `docker-compose.yml`
-
-Certifique-se de que o arquivo `docker-compose.yml` esteja no diretório raiz do projeto com o seguinte conteúdo:
-
-```yaml
-version: '3'
-services:
-  app:
-    image: cosemi
-    container_name: cosemi-container
-    ports:
-      - "8501:8501"
-    volumes:
-      - .:/app
-    environment:
-      - STREAMLIT_SERVER_RUN_ON_SAVE=true
-      - WATCHDOG_TIMEOUT=10
+```
+main.py              página inicial (entrada do Streamlit)
+pages/2_DMED.py      página de geração do arquivo DMED
+dmed/                regras de negócio
+assets/              logo e favicon
+docs/manual.md       manual de regras exibido na página DMED
+data/                planilhas de entrada e caches gerados
+tests/               testes e fixtures fictícias
 ```
 
-#### 🚀 Executando os serviços
+## Dados
 
-1. Navegue até o diretório raiz do projeto (onde está o arquivo `docker-compose.yml`).
-2. Execute o seguinte comando para iniciar os serviços:
+- `data/mensalidades/` e `data/descontos/DESCONTOS.xlsx` são baixados do Google Drive pelo botão **Reprocessar dados**, em *Opções avançadas* na página inicial.
+- `data/despesas/` e as demais planilhas de `data/descontos/` vêm do repositório.
+- `data/cache/` guarda os CSVs gerados pelo processamento. Eles não são versionados.
 
-```sh
-docker-compose up
-```
+## Deploy
 
-Para executar os serviços em segundo plano (modo detached):
+Streamlit Community Cloud, com `main.py` como arquivo de entrada. As dependências são instaladas a partir do `uv.lock`. A senha fica em *App settings > Secrets*, no mesmo formato de `.streamlit/secrets.toml.example`.
 
-```sh
-docker-compose up -d
-```
+## Licença
 
-#### 🌐 Acessando a aplicação
+Uso exclusivo da COSEMI. Veja [LICENSE](LICENSE).
 
-Abra seu navegador e acesse:
-```
-http://localhost:8501
-```
-
-#### ⚙️ Gerenciando os serviços
-
-Para parar os serviços:
-```sh
-docker-compose down
-```
-
-Para reiniciar os serviços:
-```sh
-docker-compose restart
-```
-
-Para visualizar os logs:
-```sh
-docker-compose logs
-```
-
----
-
-## 🛠 Solução de Problemas
-
-1. **Porta 8501 já em uso?**
-   - Altere a porta no arquivo `docker-compose.yml`:
-     ```yaml
-     ports:
-       - "8502:8501"
-     ```
-   - Em seguida, acesse a aplicação em `http://localhost:8502`.
-
-2. **Erro ao construir a imagem?**
-   - Certifique-se de que o arquivo `Dockerfile` está no diretório correto e que não há erros de sintaxe.
-
-3. **Não consegue acessar a aplicação?**
-   - Verifique se os serviços estão rodando com `docker-compose ps`.
-   - Verifique os logs com `docker-compose logs`.
-
-Se o problema persistir, crie uma issue no repositório! 🚀
-
----
-
-## 📜 Licença
-
-Este projeto é distribuído sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
-
----
-
-📝 **Autor:** [Tairone Amaral](https://www.linkedin.com/in/tairone-amaral/)
-
-🌟 Se este projeto foi útil para você, não se esqueça de dar uma ⭐ no repositório!
+**Autor:** [Tairone Amaral](https://www.linkedin.com/in/tairone-amaral/)
