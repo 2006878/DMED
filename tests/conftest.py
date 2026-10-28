@@ -48,7 +48,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 @pytest.fixture(autouse=True)
 def sem_rede(monkeypatch: pytest.MonkeyPatch) -> None:
     def bloqueia(*args: object, **kwargs: object) -> None:
-        raise RuntimeError("acesso à rede bloqueado nos testes")
+        raise requests.ConnectionError("acesso à rede bloqueado nos testes")
 
     monkeypatch.setattr(requests.Session, "request", bloqueia)
 
@@ -82,6 +82,7 @@ def ambiente(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     )
     monta_pasta(FIXTURES / "despesas", tmp_path / PASTA_DESPESAS)
     monta_pasta(FIXTURES / "descontos", tmp_path / PASTA_DESCONTOS)
+    monkeypatch.setenv("DMED_PASTA_DADOS", str(tmp_path / "data"))
     monkeypatch.chdir(tmp_path)
     return tmp_path
 

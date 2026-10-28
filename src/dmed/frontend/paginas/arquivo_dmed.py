@@ -1,336 +1,204 @@
-import streamlit as st
-import os
-from pathlib import Path
-import base64
-import pandas as pd
+"""Página protegida por senha que gera o arquivo DMED e o relatório de erros."""
+
+from __future__ import annotations
+
+import hmac
+import logging
 from datetime import datetime
-import traceback
 
-from dmed.backend.processamento import create_dmed_content
+import streamlit as st
 
-FRONTEND = Path(__file__).resolve().parents[1]
-
-# Carregando o ícone da aba
-favicon = str(FRONTEND / "assets" / "favicon.jpeg")
-
-# Streamlit page configuration
-st.set_page_config(
-    page_title=f"ARQUIVO DMED - COSEMI",
-    page_icon=favicon,
-    initial_sidebar_state="expanded",
-    layout="wide",
+from dmed.backend.arquivo_dmed import Responsavel, gerar_arquivo_dmed
+from dmed.backend.ocorrencias import Ocorrencia
+from dmed.frontend.componentes import (
+    CSS_BOTAO_DOWNLOAD,
+    CSS_CARTOES,
+    CSS_OCULTAR_CABECALHO,
+    CSS_OCULTAR_NAVEGACAO,
+    MANUAL,
+    RODAPE,
+    Chaves,
+    configurar_pagina,
+    exibir_logo,
+    html,
+    menu_lateral,
 )
 
-# Display logo
-with open(FRONTEND / "assets" / "logo.png", "rb") as f:
-    image_data = base64.b64encode(f.read()).decode()
+logger = logging.getLogger(__name__)
 
-st.markdown(
-    f"""
-    <div style="display: flex; justify-content: center; margin: 1em 0;">
-        <img src="data:image/png;base64,{image_data}" style="max-width: 300px; width: 100%; height: auto;">
-    </div>
-""",
-    unsafe_allow_html=True,
-)
+DIGITOS_CPF = 11
+
+configurar_pagina("ARQUIVO DMED - COSEMI")
+exibir_logo()
+html(CSS_OCULTAR_NAVEGACAO)
+menu_lateral(na_pagina_inicial=False)
 
 
-# Ocultar completamente o menu lateral original
-st.markdown(
-    """
-    <style>
-    /* Oculta todos os elementos de navegação */
-    section[data-testid="stSidebar"] ul {
-        display: none !important;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
-# Criar seu próprio menu lateral
-with st.sidebar:
-    st.title("Menu COSEMI")
-
-    # Botão para voltar à página inicial
-    if st.button("🏠 Home"):
-        st.switch_page("src/dmed/frontend/paginas/informe_irpf.py")
-
-    # Botão para a página atual (DMED)
-    st.button("⚙️ DMED", disabled=True)
+def _senha_configurada() -> str | None:
+    try:
+        return str(st.secrets["password"])
+    except (KeyError, FileNotFoundError):
+        return None
 
 
-# Configuração de autenticação
-def check_password():
-    """Retorna `True` se o usuário tiver a senha correta."""
+def _conferir_senha() -> None:
+    correta = _senha_configurada()
+    digitada = str(st.session_state[Chaves.SENHA])
+    st.session_state[Chaves.SENHA_CORRETA] = correta is not None and hmac.compare_digest(
+        digitada.encode(), correta.encode()
+    )
+    if st.session_state[Chaves.SENHA_CORRETA]:
+        del st.session_state[Chaves.SENHA]  # não guarda a senha na sessão
 
-    def password_entered():
-        """Verifica se a senha inserida pelo usuário está correta."""
-        if st.session_state["password"] == st.secrets["password"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Não armazene a senha
-        else:
-            st.session_state["password_correct"] = False
 
-    # Primeiro executa esta verificação
-    if "password_correct" not in st.session_state:
-        # Primeiro acesso, mostre o formulário de entrada
-        st.text_input(
-            "Senha", type="password", on_change=password_entered, key="password"
-        )
-        return False
-    elif not st.session_state["password_correct"]:
-        # Senha incorreta, mostre o formulário de entrada
-        st.text_input(
-            "Senha", type="password", on_change=password_entered, key="password"
-        )
-        st.error("😕 Senha incorreta")
-        return False
-    else:
-        # Senha correta, acesso permitido
+def senha_confirmada() -> bool:
+    if st.session_state.get(Chaves.SENHA_CORRETA):
         return True
+    st.text_input("Senha", type="password", on_change=_conferir_senha, key=Chaves.SENHA)
+    if Chaves.SENHA_CORRETA in st.session_state:
+        if _senha_configurada() is None:
+            st.error("A senha desta página não está configurada (secrets.toml).")
+        else:
+            st.error("😕 Senha incorreta")
+    return False
 
 
-# Início da aplicação
-if check_password():
-    st.title(f"DOWNLOAD ARQUIVO DMED - COSEMI")
-
-    # Ocultar elementos desnecessários da interface
-    st.markdown(
-        """
-        <style>
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        </style>
-    """,
-        unsafe_allow_html=True,
+def relatorio_de_erros(ocorrencias: list[Ocorrencia]) -> str:
+    separador = "========================================================\n"
+    return (
+        separador
+        + "RELATORIO DE INCONSISTENCIAS - COSEMI DMED\n"
+        + f"Gerado em: {datetime.now():%d/%m/%Y as %H:%M:%S}\n"
+        + separador
+        + "\n"
+        + "Por favor, corrija as linhas listadas abaixo nas planilhas originais:\n\n"
+        + "\n".join(str(o) for o in ocorrencias)
     )
 
-    # Estilos personalizados
-    st.markdown(
-        """
+
+def exibir_resultado(conteudo: str | None, ocorrencias: list[Ocorrencia]) -> None:
+    impede_envio = any(o.severidade.bloqueante for o in ocorrencias)
+    hoje = f"{datetime.now():%Y%m%d}"
+
+    if conteudo and impede_envio:
+        st.warning(
+            "⚠️ **ATENÇÃO:** O arquivo DMED foi gerado conforme solicitado, mas "
+            "**existem dados obrigatórios em branco** nas planilhas originais!"
+        )
+        st.info(
+            "Recomendamos baixar o Relatório de Erros e fazer a correção antes de "
+            "enviar à Receita Federal."
+        )
+        coluna_erros, coluna_dmed = st.columns(2)
+        with coluna_erros:
+            st.download_button(
+                label="📥 BAIXAR RELATÓRIO DE ERROS (.txt)",
+                data=relatorio_de_erros(ocorrencias).encode("utf-8"),
+                file_name=f"Erros_Planilhas_{hoje}.txt",
+                mime="text/plain",
+                type="primary",
+            )
+        with coluna_dmed:
+            st.download_button(
+                label="📥 BAIXAR DMED (COM ERROS) (.DEC)",
+                data=conteudo.encode("utf-8"),
+                file_name=f"DMED_{hoje}.DEC",
+                mime="text/plain",
+            )
+    elif conteudo:
+        st.success("✅ Arquivo DMED gerado e validado com sucesso!")
+        if ocorrencias:
+            with st.expander("⚠️ Avisos do Processamento (Não Impeditivos)"):
+                for ocorrencia in ocorrencias:
+                    st.write(str(ocorrencia))
+        st.download_button(
+            label="📥 BAIXAR ARQUIVO DMED (.DEC)",
+            data=conteudo.encode("utf-8"),
+            file_name=f"DMED_{hoje}.DEC",
+            mime="text/plain",
+            type="primary",
+        )
+    else:
+        st.error("Falha Crítica. O sistema não conseguiu montar o arquivo DMED.")
+        for ocorrencia in ocorrencias:
+            st.write(str(ocorrencia))
+
+
+if senha_confirmada():
+    st.title("DOWNLOAD ARQUIVO DMED - COSEMI")
+    html(CSS_OCULTAR_CABECALHO)
+    html(
+        f"""
         <style>
         /* Centralizar títulos */
-        h1, h2, h3 {
+        h1, h2, h3 {{
             text-align: center;
-        }
-        /* Centralizar botão de download */
-        [data-testid="stDownloadButton"] {
-            display: block;
-            margin: 0 auto;
-            max-width: 300px;
-        }
-        /* Estilização dos containers de informações */
-        .info-container {
-            background-color: #D9E3DA; /* Verde claro */
-            padding: 10px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-        }
-        .info-container h4 {
-            color: #005822; /* Verde escuro */
-            margin: 0;
-        }
-        .info-container p {
-            font-size: 18px;
-            margin: 5px 0;
-        }
+        }}
+        {CSS_BOTAO_DOWNLOAD}
+        {CSS_CARTOES}
         /* Ajuste do Expander */
-        .streamlit-expanderContent {
+        .streamlit-expanderContent {{
             display: flex;
             justify-content: center;
             align-items: center;
             text-align: center;
-        }
-        .streamlit-expanderContent div {
+        }}
+        .streamlit-expanderContent div {{
             width: 100%;
             max-width: 800px;
             margin: 0 auto;
-        }
+        }}
         </style>
-    """,
-        unsafe_allow_html=True,
+    """
+    )
+    html(
+        "<h3 style='font-size: 24px;'>Insira as informações abaixo para processar e "
+        "criar o arquivo:</h3>"
     )
 
-    st.markdown(
-        "<h3 style='font-size: 24px;'>Insira as informações abaixo para processar e criar o arquivo:</h3>",
-        unsafe_allow_html=True,
-    )
-
-    col1, col2 = st.columns(2)
-    with col1:
-        cpf_input = st.text_input(
+    coluna_esquerda, coluna_direita = st.columns(2)
+    with coluna_esquerda:
+        cpf_digitado = st.text_input(
             "Digite o CPF do Responsável aqui (apenas números):",
-            max_chars=11,
+            max_chars=DIGITOS_CPF,
             help="Digite apenas os 11 números do CPF, sem pontos ou traços",
         )
-
-        if cpf_input:
-            cpf_digits = "".join(filter(str.isdigit, cpf_input))
-            if len(cpf_digits) != 11:
-                st.error(
-                    "CPF deve conter exatamente 11 dígitos e sem pontos ou traços."
-                )
-            else:
-                cpf_responsavel = cpf_digits
-        else:
+        cpf_responsavel = "".join(filter(str.isdigit, cpf_digitado))
+        if cpf_digitado and len(cpf_responsavel) != DIGITOS_CPF:
+            st.error("CPF deve conter exatamente 11 dígitos e sem pontos ou traços.")
             cpf_responsavel = ""
+        nome_responsavel = st.text_input("Digite o nome do Responsável aqui.")
 
-        nome_respostavel = st.text_input("Digite o nome do Responsável aqui.")
-        st.selectbox(
-            "Selecione como deseja processar o arquivo:",
-            ["Titulares e Dependentes", "somente Titulares"],
-            key="processamento",
-        )
-        st.write(
-            f"Com a seleção atual o arquivo terá os dados informados incluindo ",
-            st.session_state.processamento,
-        )
-
-    with col2:
-        ddd_input = st.text_input(
+    with coluna_direita:
+        ddd = st.text_input(
             "Digite o DDD do telefone do Responsável aqui (apenas números):",
             max_chars=2,
             help="Digite apenas os 2 números, sem pontos ou traços",
         )
-
-        telefone_input = st.text_input(
+        telefone = st.text_input(
             "Digite o telefone do Responsável aqui (apenas números):",
             max_chars=9,
             help="Digite apenas os números do telefone, sem pontos ou traços",
         )
 
-    # =========================================================================
-    # LÓGICA DE PROCESSAMENTO E EMISSÃO DE ARQUIVOS
-    # =========================================================================
-    if (
-        cpf_responsavel != ""
-        and nome_respostavel != ""
-        and ddd_input != ""
-        and telefone_input != ""
-        and st.button("📥 Processar e criar arquivo DMED")
-    ):
-        # 1. Limpar arquivos locais antigos para garantir o download de dados frescos
-        arquivos_temp = [
-            os.path.join("data", "cache", nome)
-            for nome in ("mensalidades.csv", "despesas.csv", "descontos.csv")
-        ]
-        for f in arquivos_temp:
-            if os.path.exists(os.path.join(os.getcwd(), f)):
-                os.remove(os.path.join(os.getcwd(), f))
-
+    preenchido = all((cpf_responsavel, nome_responsavel, ddd, telefone))
+    if preenchido and st.button("📥 Processar e criar arquivo DMED"):
         with st.spinner(
-            "Analisando planilhas, validando regras e gerando arquivo... (Isso pode levar alguns instantes)"
+            "Analisando planilhas, validando regras e gerando arquivo... "
+            "(Isso pode levar alguns instantes)"
         ):
             try:
-                dmed_content = None
-                lista_erros = []
-
-                if st.session_state.processamento == "Titulares e Dependentes":
-                    # A função main agora retorna o conteúdo E a lista de erros
-                    dmed_content, lista_erros = create_dmed_content(
-                        cpf_responsavel, nome_respostavel, ddd_input, telefone_input
-                    )
-
-                else:
-                    st.error("Opção de processamento inválida.")
-
-                # =============================================================
-                # VERIFICAÇÃO DE ERROS E GERAÇÃO DE BOTÕES (ATUALIZADO)
-                # =============================================================
-                tem_erro_fatal = any(
-                    "🛑" in erro or "❌" in erro for erro in lista_erros
+                conteudo, ocorrencias = gerar_arquivo_dmed(
+                    Responsavel(cpf_responsavel, nome_responsavel, ddd, telefone)
                 )
-
-                # Cenário 1: Gerou o DMED, mas tem erros
-                if tem_erro_fatal and dmed_content:
-                    st.warning(
-                        "⚠️ **ATENÇÃO:** O arquivo DMED foi gerado conforme solicitado, mas **existem dados obrigatórios em branco** nas planilhas originais!"
-                    )
-                    st.info(
-                        "Recomendamos baixar o Relatório de Erros e fazer a correção antes de enviar à Receita Federal."
-                    )
-
-                    # Formatar o texto do log para download
-                    txt_erros = (
-                        "========================================================\n"
-                    )
-                    txt_erros += f"RELATORIO DE INCONSISTENCIAS - COSEMI DMED\n"
-                    txt_erros += f"Gerado em: {datetime.now().strftime('%d/%m/%Y as %H:%M:%S')}\n"
-                    txt_erros += (
-                        "========================================================\n\n"
-                    )
-                    txt_erros += "Por favor, corrija as linhas listadas abaixo nas planilhas originais:\n\n"
-                    txt_erros += "\n".join(lista_erros)
-
-                    # Colocar os botões lado a lado para o cliente
-                    col_btn1, col_btn2 = st.columns(2)
-
-                    with col_btn1:
-                        st.download_button(
-                            label="📥 BAIXAR RELATÓRIO DE ERROS (.txt)",
-                            data=txt_erros.encode("utf-8"),
-                            file_name=f"Erros_Planilhas_{datetime.now().strftime('%Y%m%d')}.txt",
-                            mime="text/plain",
-                            type="primary",  # Destaca o botão em vermelho/primário no Streamlit
-                        )
-                    with col_btn2:
-                        st.download_button(
-                            label="📥 BAIXAR DMED (COM ERROS) (.DEC)",
-                            data=dmed_content.encode("utf-8"),
-                            file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
-                            mime="text/plain",
-                        )
-
-                # Cenário 2: Sucesso Total (Pode ter avisos amarelos, mas nada fatal)
-                elif dmed_content and not tem_erro_fatal:
-                    st.success("✅ Arquivo DMED gerado e validado com sucesso!")
-
-                    # Se houver apenas avisos (bolinha amarela), mostramos sutilmente
-                    if lista_erros:
-                        with st.expander("⚠️ Avisos do Processamento (Não Impeditivos)"):
-                            for aviso in lista_erros:
-                                st.write(aviso)
-
-                    st.download_button(
-                        label="📥 BAIXAR ARQUIVO DMED (.DEC)",
-                        data=dmed_content.encode("utf-8"),
-                        file_name=f"DMED_{datetime.now().strftime('%Y%m%d')}.DEC",
-                        mime="text/plain",
-                        type="primary",
-                    )
-
-                # Cenário 3: Falha Crítica (Não conseguiu gerar a string do DMED)
-                else:
-                    st.error(
-                        "Falha Crítica. O sistema não conseguiu montar o arquivo DMED."
-                    )
-                    if lista_erros:
-                        for erro in lista_erros:
-                            st.write(erro)
-
-            except Exception as e:
-                st.error(f"Ocorreu um erro crítico no sistema: {str(e)}")
-                traceback.print_exc()
+            except Exception as falha:
+                # Falha inesperada: mostra a mensagem em vez de derrubar a página.
+                logger.exception("Falha ao gerar o arquivo DMED")
+                st.error(f"Ocorreu um erro crítico no sistema: {falha}")
+            else:
+                exibir_resultado(conteudo, ocorrencias)
 
     with st.expander("Manual de regras", expanded=False):
-        with open(
-            FRONTEND / "conteudo" / "manual_de_regras.md", "r", encoding="utf-8"
-        ) as file:
-            manual_content = file.read()
-        st.markdown(manual_content)
+        st.markdown(MANUAL.read_text(encoding="utf-8"))
 
-    # Footer
-    st.markdown(
-        """
-        <hr style='border:1px solid #e3e3e3;margin-top:40px'>
-        <div style='text-align: center;'>
-            Desenvolvido por 
-            <a href='https://www.linkedin.com/in/tairone-amaral/' target='_blank'>
-                Tairone Amaral
-            </a>
-        </div>
-    """,
-        unsafe_allow_html=True,
-    )
+    html(RODAPE)

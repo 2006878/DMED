@@ -69,8 +69,10 @@ def test_inicio_cpf_sem_registros() -> None:
     assert not at.exception
     assert [i.value for i in at.info] == [
         "Não existem registros de mensalidades para o CPF informado.",
+        "Não existem registros de despesas para o CPF informado.",
         "Não existem registros de descontos para o CPF informado.",
     ]
+    assert not at.download_button
 
 
 def test_menu_lateral_navega_entre_paginas() -> None:
@@ -109,6 +111,27 @@ def test_dmed_exibe_formulario_e_manual() -> None:
         encoding="utf-8"
     )
     assert any(m.value == manual.strip() for m in at.markdown)
+
+
+def test_dmed_cpf_incompleto_mostra_erro_sem_quebrar() -> None:
+    at = abre_dmed_autenticado()
+    campo(at, "Digite o CPF do Responsável").input("123").run()
+
+    assert not at.exception
+    assert [e.value for e in at.error] == [
+        "CPF deve conter exatamente 11 dígitos e sem pontos ou traços."
+    ]
+
+
+def test_dmed_sem_senha_configurada() -> None:
+    at = abre_inicio()
+    at.switch_page(PAGINA_DMED).run()
+    at.text_input(key="password").input("qualquer").run()
+
+    assert not at.exception
+    assert [e.value for e in at.error] == [
+        "A senha desta página não está configurada (secrets.toml)."
+    ]
 
 
 def test_dmed_gera_arquivo_com_relatorio_de_erros() -> None:

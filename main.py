@@ -1,9 +1,14 @@
 """Ponto de entrada do Streamlit: registra as páginas e executa a escolhida."""
 
+import logging
 import sys
 from pathlib import Path
 
 import streamlit as st
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
 
 RAIZ = Path(__file__).resolve().parent
 SRC = str(RAIZ / "src")

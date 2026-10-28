@@ -6,7 +6,9 @@ import math
 import pandas as pd
 import pytest
 
-from dmed.backend import processamento
+from dmed.backend import arquivo_dmed, config, formatacao, mensalidades
+from dmed.backend.informe_pdf import valor_para_exibicao, valor_para_soma
+from dmed.backend.ocorrencias import Ocorrencia, Severidade
 
 T = pd.Timestamp
 
@@ -28,8 +30,8 @@ T = pd.Timestamp
         (1.5, "00000000015"),  # float não inteiro vira dígitos soltos
     ],
 )
-def test_format_cpf(entrada: object, esperado: str) -> None:
-    assert processamento.format_cpf(entrada) == esperado
+def test_formatar_cpf(entrada: object, esperado: str) -> None:
+    assert formatacao.formatar_cpf(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -45,8 +47,8 @@ def test_format_cpf(entrada: object, esperado: str) -> None:
         (None, ""),
     ],
 )
-def test_format_valor(entrada: object, esperado: str) -> None:
-    assert processamento.format_valor(entrada) == esperado
+def test_formatar_valor_dmed(entrada: object, esperado: str) -> None:
+    assert formatacao.formatar_valor_dmed(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -63,8 +65,8 @@ def test_format_valor(entrada: object, esperado: str) -> None:
         (7, 7.0),
     ],
 )
-def test_parse_valor_monetario(entrada: object, esperado: float) -> None:
-    assert processamento.parse_valor_monetario(entrada) == esperado
+def test_ler_valor_monetario(entrada: object, esperado: float) -> None:
+    assert formatacao.ler_valor_monetario(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -76,8 +78,8 @@ def test_parse_valor_monetario(entrada: object, esperado: float) -> None:
         (math.nan, "NAN"),
     ],
 )
-def test_normalize_name(entrada: object, esperado: str) -> None:
-    assert processamento.normalize_name(entrada) == esperado
+def test_normalizar_nome(entrada: object, esperado: str) -> None:
+    assert formatacao.normalizar_nome(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -92,8 +94,8 @@ def test_normalize_name(entrada: object, esperado: str) -> None:
         ("Titular", "10"),
     ],
 )
-def test_get_dependent_code(relacao: str, codigo: str) -> None:
-    assert processamento.get_dependent_code(relacao) == codigo
+def test_codigo_dependencia(relacao: str, codigo: str) -> None:
+    assert arquivo_dmed.codigo_dependencia(relacao) == codigo
 
 
 TODOS = list(range(1, 13))
@@ -113,14 +115,14 @@ TODOS = list(range(1, 13))
         (T("2020-01-01"), T("2024-12-31"), []),
     ],
 )
-def test_calculate_active_months(
+def test_meses_ativos(
     admissao: pd.Timestamp, desligamento: pd.Timestamp, meses: list[int]
 ) -> None:
-    assert processamento.ano_anterior == 2025
-    assert processamento.calculate_active_months(admissao, desligamento) == meses
+    assert config.ano_calendario() == 2025
+    assert mensalidades.meses_ativos(admissao, desligamento, 2025) == meses
 
 
-def test_process_group() -> None:
+def test_registros_do_grupo() -> None:
     grupo = pd.DataFrame(
         {
             "Titular_CPF": ["10000000001"] * 4,
@@ -131,9 +133,54 @@ def test_process_group() -> None:
         }
     )
     despesas = {"10000000001": {"ANA SOUZA": 150.0, "CAIO SOUZA": 80.5}}
-    assert processamento.process_group(grupo, "10000000001", despesas) == [
+    assert arquivo_dmed.registros_do_grupo(grupo, "10000000001", despesas) == [
         "TOP|10000000001|ANA SOUZA|000135000|",
         "DTOP|||ZECA|10|000000001|",
         "DTOP|10000000002||BIA SOUZA|03|000000001|",
         "DTOP|10000000003||CAIO SOUZA|04|000038050|",
     ]
+
+
+# Fórmulas copiadas do código anterior, para provar que as novas dão o mesmo resultado.
+def _moeda_antiga(valor: float) -> str:
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _exibicao_antiga(valor_moeda: str) -> str:
+    # generate_pdf alterava a coluna Valor assim, e a tela convertia o resultado.
+    valor = pd.Series([valor_moeda]).astype(str).str.strip()
+    valor = valor.str.replace(r"[^\d,]", "", regex=True).str.replace(",", ".", regex=True)
+    texto = valor.iloc[0]
+    texto = str(texto).replace("R$", "").replace(".", "", texto.count(".") - 1)
+    texto = texto.replace(",", ".").strip()
+    try:
+        return f"{float(texto):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except ValueError:
+        return "Valor inválido"
+
+
+VALORES = [0.0, 0.01, 0.29, 1.5, 999.999, 1000.0, 1234.56, 1234567.891, -5.0, -1234.5]
+
+
+@pytest.mark.parametrize("valor", VALORES)
+def test_formatar_moeda_igual_a_formula_antiga(valor: float) -> None:
+    assert formatacao.formatar_moeda(valor) == _moeda_antiga(valor)
+
+
+@pytest.mark.parametrize(
+    "valor_moeda",
+    [_moeda_antiga(v) for v in VALORES] + ["", "abc", "nan", "R$ 1.234.567,89", "12,3,4"],
+)
+def test_valor_para_exibicao_igual_a_tela_antiga(valor_moeda: str) -> None:
+    assert valor_para_exibicao(valor_moeda) == _exibicao_antiga(valor_moeda)
+
+
+def test_valor_para_soma_descarta_o_sinal() -> None:
+    assert valor_para_soma("R$ -1.234,56") == "1234.56"
+
+
+def test_ocorrencia_mantem_o_texto_do_relatorio() -> None:
+    ocorrencia = Ocorrencia(Severidade.ERRO, "[DESPESAS] Linha 2")
+
+    assert str(ocorrencia) == "🛑 [DESPESAS] Linha 2"
+    assert [s.bloqueante for s in Severidade] == [False, False, True, True]

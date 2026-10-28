@@ -1,111 +1,55 @@
+"""Página inicial: consulta pelo CPF do titular e informe de IRPF em PDF."""
+
+from __future__ import annotations
+
 import streamlit as st
-from pathlib import Path
-import base64
-import pandas as pd
-from dmed.backend.processamento import (
-    ano_anterior,
-    baixar_e_atualizar_planilhas,
-    busca_dados_descontos,
-    busca_dados_despesas,
-    busca_dados_mensalidades,
-    format_cpf,
-    generate_pdf,
-    parse_valor_monetario,
-    processa_descontos,
-    processa_despesas,
-    processa_mensalidades,
+
+from dmed.backend import config, fontes
+from dmed.backend.consulta import Consulta, MensalidadesIndisponiveis
+from dmed.backend.descontos import processar_descontos
+from dmed.backend.despesas import processar_despesas
+from dmed.backend.formatacao import formatar_cpf, formatar_moeda, ler_valor_monetario
+from dmed.backend.informe_pdf import gerar_informe_pdf, valor_para_exibicao
+from dmed.backend.mensalidades import processar_mensalidades
+from dmed.frontend.componentes import (
+    CSS_BOTAO_DOWNLOAD,
+    CSS_CARTOES,
+    CSS_OCULTAR_CABECALHO,
+    CSS_OCULTAR_NAVEGACAO,
+    RODAPE,
+    Chaves,
+    cartao,
+    configurar_pagina,
+    exibir_logo,
+    html,
+    menu_lateral,
 )
 
-ASSETS = Path(__file__).resolve().parents[1] / "assets"
+SEM_DESCONTOS = "R$ 0,00"
 
-# Carregando o ícone da aba
-favicon = str(ASSETS / "favicon.jpeg")
-
-# Configuração da página
-st.set_page_config(
-    page_title=f"IRPF {ano_anterior} - COSEMI",
-    page_icon=favicon,
-    initial_sidebar_state="expanded",
-    layout="wide",
-)
-
-# Ocultar completamente o menu lateral original
-st.markdown(
-    """
-    <style>
-    /* Oculta todos os elementos de navegação */
-    section[data-testid="stSidebar"] ul {
-        display: none !important;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
-# Criar seu próprio menu lateral
-with st.sidebar:
-    st.title("Menu COSEMI")
-
-    # Botão para a página atual (Home)
-    st.button("🏠 Home", disabled=True)
-
-    # Botão para a página DMED
-    if st.button("⚙️ DMED"):
-        st.switch_page("src/dmed/frontend/paginas/arquivo_dmed.py")
-
-# Ocultar elementos desnecessários da interface
-st.markdown(
-    """
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
-# Estilos personalizados
-st.markdown(
-    """
+ano = config.ano_calendario()
+configurar_pagina(f"IRPF {ano} - COSEMI")
+html(CSS_OCULTAR_NAVEGACAO)
+menu_lateral(na_pagina_inicial=True)
+html(CSS_OCULTAR_CABECALHO)
+html(
+    f"""
     <style>
     /* Ajuste da largura do input CPF */
-    [data-testid="stTextInput"] {
+    [data-testid="stTextInput"] {{
         max-width: 300px;
         margin: 0 auto;
-    }
+    }}
     /* Centralizar títulos */
-    h1, h3 {
+    h1, h3 {{
         text-align: center;
-    }
-    /* Centralizar botão de download */
-    [data-testid="stDownloadButton"] {
-        display: block;
-        margin: 0 auto;
-        max-width: 300px;
-    }
-    /* Estilização dos containers de informações */
-    .info-container {
-        background-color: #D9E3DA; /* Verde claro */
-        padding: 10px;
-        margin-bottom: 5px;
-        border-radius: 5px;
-    }
-    .info-container h4 {
-        color: #005822; /* Verde escuro */
-        margin: 0;
-    }
-    .info-container p {
-        font-size: 18px;
-        margin: 5px 0;
-    }
+    }}
+    {CSS_BOTAO_DOWNLOAD}
+    {CSS_CARTOES}
     </style>
-""",
-    unsafe_allow_html=True,
+"""
 )
-
-# Adicionar logo com estilo responsivo
-st.markdown(
+html(
     """
     <style>
     .container {
@@ -120,141 +64,78 @@ st.markdown(
         height: auto;
     }
     </style>
-""",
-    unsafe_allow_html=True,
+"""
 )
+exibir_logo()
 
-# Display logo
-with open(ASSETS / "logo.png", "rb") as f:
-    image_data = base64.b64encode(f.read()).decode()
-
-st.markdown(
-    f"""
-    <div style="display: flex; justify-content: center; margin: 1em 0;">
-        <img src="data:image/png;base64,{image_data}" style="max-width: 300px; width: 100%; height: auto;">
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-st.title(f"INFORME PLANO DE SAÚDE {ano_anterior} IRPF - COSEMI")
-
-st.markdown(
-    "<h3 style='font-size: 24px;'>Digite o CPF do titular a ser consultado:</h3>",
-    unsafe_allow_html=True,
-)
-cpf_alvo = format_cpf(
+st.title(f"INFORME PLANO DE SAÚDE {ano} IRPF - COSEMI")
+html("<h3 style='font-size: 24px;'>Digite o CPF do titular a ser consultado:</h3>")
+cpf = formatar_cpf(
     st.text_input(
-        "Digite o CPF do Titular aqui.", label_visibility="collapsed", key="cpf_input"
+        "Digite o CPF do Titular aqui.",
+        label_visibility="collapsed",
+        key=Chaves.CPF_CONSULTA,
     )
 )
 
-if cpf_alvo:
-    with st.spinner("Buscando dados de mensalidades..."):
-        df_filtrado = busca_dados_mensalidades(cpf_alvo)
-        nome = (
-            df_filtrado["Nome"].iloc[0]
-            if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty
-            else ""
-        )
-    with st.spinner("Buscando dados de descontos..."):
-        descontos = busca_dados_descontos(cpf_alvo)
-    with st.spinner("Buscando dados de despesas..."):
-        df_despesas = busca_dados_despesas(cpf_alvo, nome)
+if cpf:
+    try:
+        with st.spinner("Buscando dados de mensalidades..."):
+            consulta = Consulta.carregar()
+            familia = consulta.mensalidades(cpf)
+            nome = familia["Nome"].iloc[0] if not familia.empty else ""
+        with st.spinner("Buscando dados de descontos..."):
+            total_descontos = formatar_moeda(ler_valor_monetario(consulta.descontos(cpf)))
+        with st.spinner("Buscando dados de despesas..."):
+            despesas = consulta.despesas(cpf, nome)
+    except MensalidadesIndisponiveis as falha:
+        st.error(str(falha))
+        st.stop()
 
-    if isinstance(descontos, pd.DataFrame):
-        descontos = 0.0
-    else:
-        descontos = parse_valor_monetario(descontos)
-
-    descontos = (
-        f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    # CPF sem nenhum registro: só os avisos, sem cartões nem PDF.
+    sem_registros = (
+        familia.empty and total_descontos == SEM_DESCONTOS and not consulta.tem_despesas(cpf)
     )
 
-    if (
-        isinstance(df_filtrado, pd.DataFrame)
-        and not df_filtrado.empty
-        or not df_despesas.empty
-    ):
-        pdf_data = generate_pdf(df_filtrado, df_despesas, descontos, cpf_alvo)
+    if not sem_registros and (not familia.empty or not despesas.empty):
         st.download_button(
             label="📥 Download PDF",
-            data=pdf_data,
-            file_name=f"relatorio_dmed_{cpf_alvo}.pdf",
+            data=gerar_informe_pdf(familia, despesas, total_descontos, cpf),
+            file_name=f"relatorio_dmed_{cpf}.pdf",
             mime="application/pdf",
         )
 
-    col1, col2, col3 = st.columns(3)
+    coluna_mensalidades, coluna_despesas, coluna_descontos = st.columns(3)
 
-    with col1:
+    with coluna_mensalidades:
         st.markdown("### 📊 Mensalidade Plano de Saúde")
-        if not df_filtrado.empty:
-            for _, row in df_filtrado.iterrows():
-                valor = row["Valor"]
-                valor = (
-                    str(valor)
-                    .replace("R$", "")
-                    .replace(".", "", valor.count(".") - 1)
-                    .replace(",", ".")
-                    .strip()
-                )
-                try:
-                    valor_float = float(valor)
-                    valor_formatado = (
-                        f"{valor_float:,.2f}".replace(",", "X")
-                        .replace(".", ",")
-                        .replace("X", ".")
-                    )
-                except ValueError:
-                    valor_formatado = "Valor inválido"
-                st.markdown(
-                    f"""
-                    <div class='info-container'>
-                        <h4>{row["Nome"]}</h4>
-                        <p>Valor: <strong>R$ {valor_formatado}</strong></p>
-                    </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+        if not familia.empty:
+            for membro, valor in zip(familia["Nome"], familia["Valor"], strict=True):
+                cartao(membro, f"Valor: <strong>R$ {valor_para_exibicao(valor)}</strong>")
         else:
             st.info("Não existem registros de mensalidades para o CPF informado.")
 
-    with col2:
+    with coluna_despesas:
         st.markdown("### 💉 Procedimentos co-participativos")
-        if not df_despesas.empty:
-            df_despesas["exact_match"] = df_despesas["Nome"].str.upper() == nome.upper()
-            df_despesas = df_despesas.sort_values("exact_match", ascending=False).drop(
-                "exact_match", axis=1
-            )
-            for _, row in df_despesas.iterrows():
-                st.markdown(
-                    f"""
-                    <div class='info-container'>
-                        <h4>{row.iloc[0]}</h4>
-                        <p>Valor: <strong>{row.iloc[1]}</strong></p>
-                    </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+        if not sem_registros and not despesas.empty:
+            # As despesas do titular aparecem primeiro.
+            ordem = despesas["Nome"].str.upper() == nome.upper()
+            for _, linha in despesas.assign(ordem=ordem).sort_values(
+                "ordem", ascending=False
+            ).iterrows():
+                cartao(linha.iloc[0], f"Valor: <strong>{linha.iloc[1]}</strong>")
         else:
             st.info("Não existem registros de despesas para o CPF informado.")
 
-    with col3:
+    with coluna_descontos:
         st.markdown("### 💰 Descontos ")
-        if descontos and descontos != "R$ 0,00":
-            st.markdown(
-                f"""
-                <div class='info-container'>
-                    <p>Total de descontos: <strong>{descontos}</strong></p>
-                </div>
-            """,
-                unsafe_allow_html=True,
-            )
+        if total_descontos and total_descontos != SEM_DESCONTOS:
+            cartao(None, f"Total de descontos: <strong>{total_descontos}</strong>")
         else:
             st.info("Não existem registros de descontos para o CPF informado.")
 
-# Botão discreto para processar os dados no canto superior direito
-st.markdown(
+# Botão discreto para reprocessar os dados, no canto superior direito.
+html(
     """
     <style>
     .expander-container {
@@ -270,50 +151,27 @@ st.markdown(
     }
     </style>
     <div class="expander-container">
-""",
-    unsafe_allow_html=True,
+"""
 )
 
 with st.expander("⚙️ Opções avançadas"):
     if st.button("🔄 Reprocessar dados"):
-        bar = st.progress(0)
-
-        # 1. Atualizado para baixar Mensalidades e Descontos simultaneamente
+        barra = st.progress(0)
         with st.spinner("Baixando bases atualizadas do Google Drive..."):
-            sucesso, msg = baixar_e_atualizar_planilhas()
+            sucesso, mensagem = fontes.baixar_planilhas_do_drive()
             if not sucesso:
-                st.error(msg)
-            bar.progress(25)
-
-        # 2. Processa as Mensalidades locais atualizadas
+                st.error(mensagem)
+            barra.progress(25)
         with st.spinner("Processando regras de mensalidades..."):
-            processa_mensalidades()
-            bar.progress(50)
-
-        # 3. Processa os Descontos locais atualizados
+            processar_mensalidades()
+            barra.progress(50)
         with st.spinner("Validando base de descontos..."):
-            processa_descontos()
-            bar.progress(75)
-
-        # 4. Processa as Despesas Médicas locais
+            processar_descontos()
+            barra.progress(75)
         with st.spinner("Processando despesas..."):
-            processa_despesas()
-            bar.progress(100)
-
+            processar_despesas()
+            barra.progress(100)
         st.success("Bases atualizadas e reprocessamento concluído com sucesso!")
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# Footer
-st.markdown(
-    """
-    <hr style='border:1px solid #e3e3e3;margin-top:40px'>
-    <div style='text-align: center;'>
-        Desenvolvido por 
-        <a href='https://www.linkedin.com/in/tairone-amaral/' target='_blank'>
-            Tairone Amaral
-        </a>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
+html("</div>")
+html(RODAPE)
