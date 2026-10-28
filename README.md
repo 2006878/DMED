@@ -26,12 +26,6 @@ uv run streamlit run main.py
 
 A aplicação abre em <http://localhost:8501>.
 
-Com Docker:
-
-```sh
-docker compose up --build
-```
-
 ## Testes e qualidade
 
 ```sh
@@ -62,7 +56,7 @@ data/                            planilhas de entrada e caches gerados
 tests/                           testes e fixtures fictícias
 ```
 
-Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.python-version` (versão do Python), `.streamlit/` (Streamlit), `Dockerfile`, `.dockerignore` e `compose.yaml` (Docker), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
+Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.python-version` (versão do Python), `.streamlit/` (Streamlit), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
 
 ## Dados
 
