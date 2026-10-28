@@ -16,9 +16,9 @@ Esperado = Callable[[str, str], None]
 # A ordem de os.listdir muda entre sistemas, então as listas de erros são
 # comparadas ordenadas.
 CACHES = {
-    "processa_mensalidades": Path("mensalidade_file.csv"),
-    "processa_despesas": Path("despesas_file.csv"),
-    "processa_descontos": Path("descontos_file.csv"),
+    "processa_mensalidades": Path("data/cache/mensalidades.csv"),
+    "processa_despesas": Path("data/cache/despesas.csv"),
+    "processa_descontos": Path("data/cache/descontos.csv"),
 }
 CPFS = ["10000000001", "10000000004", "10000000007", "10000000012", "10000000015", "99999999999"]
 
@@ -72,8 +72,10 @@ def test_consulta_por_cpf(cpf: str, esperado: Esperado) -> None:
 
 
 def test_cache_existente_nao_e_reprocessado(ambiente: Path) -> None:
+    cache = ambiente / CACHES["processa_mensalidades"]
+    cache.parent.mkdir(parents=True)
     pd.DataFrame({"Titular_CPF": ["10000000001"], "Relação": ["Titular"], "Nome": ["CACHE"], "Total": ["1"]}).to_csv(
-        ambiente / CACHES["processa_mensalidades"], index=False
+        cache, index=False
     )
 
     assert funcoes.busca_dados_mensalidades("10000000001")["Nome"].tolist() == ["CACHE"]

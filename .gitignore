@@ -16,9 +16,11 @@ htmlcov/
 .env
 .streamlit/secrets.toml
 
-# Dados gerados em tempo de execução
-/mensalidades/
-*_file.csv
+# Dados baixados ou gerados em tempo de execução
+/data/mensalidades/
+/data/cache/*
+!/data/cache/.gitkeep
+/data/snapshots/
 .~lock.*
 
 # Notas locais

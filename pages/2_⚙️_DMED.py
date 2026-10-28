@@ -179,7 +179,7 @@ if check_password():
     if cpf_responsavel != "" and nome_respostavel != "" and ddd_input != "" and telefone_input != "" and st.button("📥 Processar e criar arquivo DMED"):
         
         # 1. Limpar arquivos locais antigos para garantir o download de dados frescos
-        arquivos_temp = ['mensalidade_file.csv', 'despesas_file.csv', 'descontos_file.csv']
+        arquivos_temp = [os.path.join('data', 'cache', nome) for nome in ('mensalidades.csv', 'despesas.csv', 'descontos.csv')]
         for f in arquivos_temp:
             if os.path.exists(os.path.join(os.getcwd(), f)):
                 os.remove(os.path.join(os.getcwd(), f))

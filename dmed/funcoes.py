@@ -254,21 +254,21 @@ def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, tele
     # =========================================================================
     
     # 1.1 MENSALIDADES
-    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
+    mensalidades_file = os.path.join(os.getcwd(), 'data', 'cache', 'mensalidades.csv')
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
         mensalidades_file, erros_mensalidades = processa_mensalidades()
         if erros_mensalidades:
             todos_erros_dmed.extend(erros_mensalidades)
 
     # 1.2 DESPESAS
-    despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
+    despesas_file = os.path.join(os.getcwd(), 'data', 'cache', 'despesas.csv')
     if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
         despesas_file, erros_despesas = processa_despesas()
         if erros_despesas:
             todos_erros_dmed.extend(erros_despesas)
 
     # 1.3 DESCONTOS
-    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
+    descontos_file = os.path.join(os.getcwd(), 'data', 'cache', 'descontos.csv')
     if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
         descontos_file, erros_descontos = processa_descontos()
         if erros_descontos:
@@ -367,7 +367,7 @@ def baixar_e_atualizar_planilhas():
     
     try:
         for pasta, dados in pastas_arquivos.items():
-            caminho_pasta = os.path.join(os.getcwd(), pasta)
+            caminho_pasta = os.path.join(os.getcwd(), "data", pasta)
             caminho_arquivo = os.path.join(caminho_pasta, dados["arquivo"])
             
             # 1. Garante que a pasta existe
@@ -403,7 +403,7 @@ def processa_mensalidades():
     erros_relatados = []
     
     try:
-        arquivo_mensalidades = os.path.join(os.getcwd(), "mensalidades", "MENSALIDADES.xlsx")
+        arquivo_mensalidades = os.path.join(os.getcwd(), "data", "mensalidades", "MENSALIDADES.xlsx")
         
         # Trava de segurança: Verifica se o arquivo local existe antes de processar
         if not os.path.exists(arquivo_mensalidades):
@@ -546,7 +546,8 @@ def processa_mensalidades():
 
                     df_mensalidades = pd.concat([df_mensalidades, grupo], ignore_index=True)
         
-        mensalidades_file = 'mensalidade_file.csv'
+        mensalidades_file = os.path.join('data', 'cache', 'mensalidades.csv')
+        os.makedirs(os.path.dirname(mensalidades_file), exist_ok=True)
         df_mensalidades.to_csv(mensalidades_file, index=False)
         
         return mensalidades_file, erros_relatados
@@ -637,9 +638,9 @@ def processa_despesas():
         return out
 
     try:
-        data_folder = os.path.join(os.getcwd(), "despesas_nova")
+        data_folder = os.path.join(os.getcwd(), "data", "despesas")
         if not os.path.isdir(data_folder):
-            erro = "❌ [DESPESAS] Pasta 'despesas_nova' não encontrada."
+            erro = "❌ [DESPESAS] Pasta 'data/despesas' não encontrada."
             erros_relatados.append(erro)
             return None, erros_relatados
 
@@ -717,7 +718,7 @@ def processa_despesas():
         # Integração com Mensalidades para tentar achar o CPF pelo Nome
         cpf_para_titular = {}
         nome_para_titular = {}
-        mensalidades_file = os.path.join(os.getcwd(), "mensalidade_file.csv")
+        mensalidades_file = os.path.join(os.getcwd(), "data", "cache", "mensalidades.csv")
         
         if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
             mensalidades_file, erros_mensal = processa_mensalidades()
@@ -764,7 +765,8 @@ def processa_despesas():
         df_despesas["BENEFICIARIO"] = df_despesas["Nome"]
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["Valor a Pagar"]
 
-        despesas_file = "despesas_file.csv"
+        despesas_file = os.path.join("data", "cache", "despesas.csv")
+        os.makedirs(os.path.dirname(despesas_file), exist_ok=True)
         df_despesas.to_csv(despesas_file, index=False)
         print("Arquivo de despesas atualizado com sucesso!")
         
@@ -836,7 +838,7 @@ def processa_descontos():
         return df[["Nome", "CPF", "Total de Descontos"]].copy()
 
     try:
-        data_folder = os.path.join(os.getcwd(), "descontos")
+        data_folder = os.path.join(os.getcwd(), "data", "descontos")
         frames = []
 
         # TENTA LER DA PASTA LOCAL
@@ -905,7 +907,8 @@ def processa_descontos():
         df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].round(2)
         df_descontos = df_descontos.drop(columns=["Chave_Agrupamento"])
 
-        descontos_file = "descontos_file.csv"
+        descontos_file = os.path.join("data", "cache", "descontos.csv")
+        os.makedirs(os.path.dirname(descontos_file), exist_ok=True)
         df_descontos.to_csv(descontos_file, index=False)
         print("Arquivo de descontos atualizado com sucesso!")
         
@@ -920,7 +923,7 @@ def processa_descontos():
 
 def busca_dados_descontos(cpf_alvo):
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
-    descontos_file = os.path.join(os.getcwd(), 'descontos_file.csv')
+    descontos_file = os.path.join(os.getcwd(), 'data', 'cache', 'descontos.csv')
     if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
         processa_descontos()
     try:
@@ -962,7 +965,7 @@ def busca_dados_descontos(cpf_alvo):
 
 
 def busca_dados_mensalidades(cpf_alvo):
-    mensalidades_file = os.path.join(os.getcwd(), 'mensalidade_file.csv')
+    mensalidades_file = os.path.join(os.getcwd(), 'data', 'cache', 'mensalidades.csv')
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
         processa_mensalidades()
     try:
@@ -1026,7 +1029,7 @@ def busca_dados_mensalidades(cpf_alvo):
 
 
 def busca_dados_despesas(cpf_alvo, nome):
-    despesas_file = os.path.join(os.getcwd(), 'despesas_file.csv')
+    despesas_file = os.path.join(os.getcwd(), 'data', 'cache', 'despesas.csv')
     if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
         processa_despesas()
     try:

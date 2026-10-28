@@ -20,9 +20,9 @@ ESPERADO = FIXTURES / "esperado"
 
 # Onde o app espera cada arquivo, relativo à pasta de execução.
 ASSETS = ["assets/logo.png", "assets/favicon.jpeg", "docs/manual.md"]
-PASTA_MENSALIDADES = Path("mensalidades")
-PASTA_DESPESAS = Path("despesas_nova")
-PASTA_DESCONTOS = Path("descontos")
+PASTA_MENSALIDADES = Path("data/mensalidades")
+PASTA_DESPESAS = Path("data/despesas")
+PASTA_DESCONTOS = Path("data/descontos")
 
 # O ano-calendário vem do relógio; congelar mantém as saídas estáveis entre anos.
 AGORA = dt.datetime(2026, 3, 15, 12, 0, tzinfo=dt.timezone(dt.timedelta(hours=-3)))
