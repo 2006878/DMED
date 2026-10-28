@@ -11,6 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
+from typing import TypeVar
 
 import pandas as pd
 
@@ -18,6 +19,7 @@ from dmed.backend import descontos, despesas, fontes, mensalidades
 from dmed.backend.formatacao import formatar_cpf, formatar_moeda, ler_valor_monetario
 from dmed.backend.ocorrencias import Ocorrencia
 
+Base = TypeVar("Base")
 Processador = Callable[[], tuple[Path | None, list[Ocorrencia]]]
 
 # Ordem em que os caches são gerados quando faltam (despesas usa mensalidades).
@@ -32,7 +34,9 @@ class MensalidadesIndisponiveis(RuntimeError):
     """O cache de mensalidades está vazio: não há o que consultar."""
 
     def __init__(self) -> None:
-        super().__init__("Erro ao processar mensalidades — verifique o arquivo do Google Drive")
+        super().__init__(
+            "Erro ao processar mensalidades — verifique o arquivo do Google Drive"
+        )
 
 
 def _agrupar(df: pd.DataFrame, coluna: str) -> dict[str, pd.DataFrame]:
@@ -42,7 +46,8 @@ def _agrupar(df: pd.DataFrame, coluna: str) -> dict[str, pd.DataFrame]:
 def _somar(df: pd.DataFrame, chave: str, valor: str) -> dict[str, float]:
     # Series.sum() em cada subconjunto, como a consulta original fazia.
     return {
-        str(nome): float(grupo[valor].sum()) for nome, grupo in df.groupby(chave, sort=False)
+        str(nome): float(grupo[valor].sum())
+        for nome, grupo in df.groupby(chave, sort=False)
     }
 
 
@@ -72,7 +77,9 @@ def _base_mensalidades(versao: tuple[str, int, int]) -> BaseMensalidades:
     if df.empty:
         return BaseMensalidades(vazia=True, por_titular={}, modelo=df)
     df["Titular_CPF"] = df["Titular_CPF"].map(formatar_cpf)
-    return BaseMensalidades(vazia=False, por_titular=_agrupar(df, "Titular_CPF"), modelo=df.iloc[0:0])
+    return BaseMensalidades(
+        vazia=False, por_titular=_agrupar(df, "Titular_CPF"), modelo=df.iloc[0:0]
+    )
 
 
 @lru_cache(maxsize=2)
@@ -133,8 +140,10 @@ class Consulta:
                 if cache not in ignorar and not fontes.cache_existe(cache):
                     processar()
             return cls(
-                base_mensalidades=_carregar(mensalidades.CACHE, _base_mensalidades, ignorar),
-                base_descontos=_carregar_descontos(ignorar),
+                base_mensalidades=_carregar(
+                    mensalidades.CACHE, _base_mensalidades, ignorar
+                ),
+                base_descontos=_carregar(descontos.CACHE, _base_descontos, ignorar),
                 base_despesas=_carregar(despesas.CACHE, _base_despesas, ignorar),
             )
 
@@ -180,9 +189,13 @@ class Consulta:
             return pd.DataFrame()
         valor_descontos = float(self.descontos(cpf))
         if not base.vazia and cpf in base.por_cpf:
-            tabela = _ajustar_ao_desconto(base.por_cpf[cpf].copy(), nome, valor_descontos)
+            tabela = _ajustar_ao_desconto(
+                base.por_cpf[cpf].copy(), nome, valor_descontos
+            )
         else:
-            tabela = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [valor_descontos]})
+            tabela = pd.DataFrame(
+                {"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [valor_descontos]}
+            )
         tabela["VALOR_DO_SERVICO"] = tabela["VALOR_DO_SERVICO"].map(formatar_moeda)
         return tabela[["BENEFICIARIO", "VALOR_DO_SERVICO"]].rename(
             columns={"BENEFICIARIO": "Nome", "VALOR_DO_SERVICO": "Valor"}
@@ -196,16 +209,18 @@ class Consulta:
         if cpf not in self._nomes:
             familia = self.mensalidades(cpf)
             self._nomes[cpf] = (
-                str(familia["Nome"].iloc[0]).strip().upper() if not familia.empty else ""
+                str(familia["Nome"].iloc[0]).strip().upper()
+                if not familia.empty
+                else ""
             )
         return self._nomes[cpf]
 
 
 def _carregar(
     cache: str,
-    construir: Callable[[tuple[str, int, int]], BaseMensalidades | BaseDespesas],
+    construir: Callable[[tuple[str, int, int]], Base],
     ignorar: frozenset[str],
-) -> Any:
+) -> Base | None:
     if cache in ignorar:
         return None
     try:
@@ -214,16 +229,9 @@ def _carregar(
         return None
 
 
-def _carregar_descontos(ignorar: frozenset[str]) -> BaseDescontos | None:
-    if descontos.CACHE in ignorar:
-        return None
-    try:
-        return _base_descontos(_versao(descontos.CACHE))
-    except fontes.CacheIndisponivel:
-        return None
-
-
-def _ajustar_ao_desconto(tabela: pd.DataFrame, nome: str, valor_descontos: float) -> pd.DataFrame:
+def _ajustar_ao_desconto(
+    tabela: pd.DataFrame, nome: str, valor_descontos: float
+) -> pd.DataFrame:
     """Faz as despesas da família somarem o total descontado em folha.
 
     A diferença é distribuída igualmente entre os dependentes (as linhas que
@@ -268,6 +276,11 @@ def _ajustar_ao_desconto(tabela: pd.DataFrame, nome: str, valor_descontos: float
         elif len(tabela) == 1:
             tabela.at[tabela.index[0], "VALOR_DO_SERVICO"] = valor_descontos
 
+    return _abater_negativos(tabela)
+
+
+def _abater_negativos(tabela: pd.DataFrame) -> pd.DataFrame:
+    """Desconta os valores negativos do primeiro positivo e zera os negativos."""
     negativos = tabela["VALOR_DO_SERVICO"] < 0
     total_negativos = tabela.loc[negativos, "VALOR_DO_SERVICO"].sum()
     if total_negativos < 0:

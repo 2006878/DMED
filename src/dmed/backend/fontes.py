@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import threading
 from collections.abc import Iterator
 from functools import lru_cache
@@ -76,7 +75,7 @@ def gravar_cache(df: pd.DataFrame, nome: str) -> Path:
     destino.parent.mkdir(parents=True, exist_ok=True)
     temporario = destino.with_name(destino.name + ".gravando")
     df.to_csv(temporario, index=False)
-    os.replace(temporario, destino)
+    temporario.replace(destino)
     return destino
 
 

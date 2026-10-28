@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 
@@ -77,20 +78,25 @@ def destino_planilha(planilha: Planilha) -> Path:
     return pasta_descontos() / ARQUIVO_DESCONTOS
 
 
+def variavel_drive(planilha: Planilha) -> str:
+    return f"DMED_DRIVE_{planilha.name}"
+
+
 def url_drive(planilha: Planilha) -> str:
-    """URL de download do arquivo, a partir do ID em `[drive]` no secrets.toml.
+    """URL de download do arquivo no Google Drive.
 
-    A variável de ambiente DMED_DRIVE_<PLANILHA> tem precedência.
+    O ID vem da variável DMED_DRIVE_<PLANILHA>, que o main.py preenche a partir
+    da seção [drive] do secrets.toml.
     """
-    id_arquivo = os.environ.get(f"DMED_DRIVE_{planilha.name}")
+    id_arquivo = os.environ.get(variavel_drive(planilha))
     if not id_arquivo:
-        import streamlit as st
-
-        try:
-            id_arquivo = str(st.secrets["drive"][planilha.value])
-        except (KeyError, FileNotFoundError) as erro:
-            raise ConfiguracaoAusente(
-                f"ID do Google Drive para '{planilha.value}' não configurado "
-                "(seção [drive] do secrets.toml)."
-            ) from erro
+        raise ConfiguracaoAusente(
+            f"ID do Google Drive para '{planilha.value}' não configurado "
+            "(seção [drive] do secrets.toml)."
+        )
     return f"https://drive.google.com/uc?id={id_arquivo}"
+
+
+def agora() -> datetime:
+    """Data e hora do servidor, usadas no PDF e no relatório de erros."""
+    return datetime.now()  # noqa: DTZ005 - mantém o horário que o app sempre usou

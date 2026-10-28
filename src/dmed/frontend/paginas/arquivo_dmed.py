@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import hmac
 import logging
-from datetime import datetime
 
 import streamlit as st
 
+from dmed.backend import config
 from dmed.backend.arquivo_dmed import Responsavel, gerar_arquivo_dmed
 from dmed.backend.ocorrencias import Ocorrencia
 from dmed.frontend.componentes import (
@@ -44,8 +44,8 @@ def _senha_configurada() -> str | None:
 def _conferir_senha() -> None:
     correta = _senha_configurada()
     digitada = str(st.session_state[Chaves.SENHA])
-    st.session_state[Chaves.SENHA_CORRETA] = correta is not None and hmac.compare_digest(
-        digitada.encode(), correta.encode()
+    st.session_state[Chaves.SENHA_CORRETA] = (
+        correta is not None and hmac.compare_digest(digitada.encode(), correta.encode())
     )
     if st.session_state[Chaves.SENHA_CORRETA]:
         del st.session_state[Chaves.SENHA]  # não guarda a senha na sessão
@@ -68,7 +68,7 @@ def relatorio_de_erros(ocorrencias: list[Ocorrencia]) -> str:
     return (
         separador
         + "RELATORIO DE INCONSISTENCIAS - COSEMI DMED\n"
-        + f"Gerado em: {datetime.now():%d/%m/%Y as %H:%M:%S}\n"
+        + f"Gerado em: {config.agora():%d/%m/%Y as %H:%M:%S}\n"
         + separador
         + "\n"
         + "Por favor, corrija as linhas listadas abaixo nas planilhas originais:\n\n"
@@ -78,7 +78,7 @@ def relatorio_de_erros(ocorrencias: list[Ocorrencia]) -> str:
 
 def exibir_resultado(conteudo: str | None, ocorrencias: list[Ocorrencia]) -> None:
     impede_envio = any(o.severidade.bloqueante for o in ocorrencias)
-    hoje = f"{datetime.now():%Y%m%d}"
+    hoje = f"{config.agora():%Y%m%d}"
 
     if conteudo and impede_envio:
         st.warning(

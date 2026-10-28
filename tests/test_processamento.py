@@ -142,10 +142,8 @@ def test_download_que_falha_preserva_a_planilha_local(
 def test_sem_id_do_drive_a_mensagem_explica_a_configuracao(
     ambiente: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("DMED_DRIVE_DESCONTOS", raising=False)
-    monkeypatch.setattr(
-        config, "url_drive", _sem_configuracao, raising=True
-    )
+    for planilha in Planilha:
+        monkeypatch.delenv(config.variavel_drive(planilha), raising=False)
 
     sucesso, mensagem = fontes.baixar_planilhas_do_drive()
 
@@ -153,13 +151,13 @@ def test_sem_id_do_drive_a_mensagem_explica_a_configuracao(
     assert "secrets.toml" in mensagem
 
 
-def _sem_configuracao(planilha: Planilha) -> str:
-    raise config.ConfiguracaoAusente(f"ID do Google Drive para '{planilha.value}' (secrets.toml)")
-
-
 def test_arquivos_da_pasta_em_ordem_alfabetica(tmp_path: Path) -> None:
     for nome in ("b.xlsx", "A.xlsx", "c.csv"):
         (tmp_path / nome).write_text("")
     (tmp_path / "pasta").mkdir()
 
-    assert [a.name for a in fontes.arquivos_da_pasta(tmp_path)] == ["A.xlsx", "b.xlsx", "c.csv"]
+    assert [a.name for a in fontes.arquivos_da_pasta(tmp_path)] == [
+        "A.xlsx",
+        "b.xlsx",
+        "c.csv",
+    ]

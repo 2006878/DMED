@@ -45,11 +45,13 @@ def processar_descontos() -> tuple[Path | None, list[Ocorrencia]]:
 
             descontos = pd.concat(partes, ignore_index=True)
             if descontos.empty:
-                ocorrencias.append(alerta("[DESCONTOS] Nenhum desconto encontrado para processar."))
+                ocorrencias.append(
+                    alerta("[DESCONTOS] Nenhum desconto encontrado para processar.")
+                )
                 return None, ocorrencias
 
-            descontos = _consolidar(descontos)
-            if descontos is None:
+            consolidados = _consolidar(descontos)
+            if consolidados is None:
                 ocorrencias.append(
                     alerta(
                         "[DESCONTOS] Nenhum registro restou após a limpeza "
@@ -58,7 +60,7 @@ def processar_descontos() -> tuple[Path | None, list[Ocorrencia]]:
                 )
                 return None, ocorrencias
 
-            caminho = fontes.gravar_cache(descontos, CACHE)
+            caminho = fontes.gravar_cache(consolidados, CACHE)
             logger.info("Arquivo de descontos atualizado com sucesso!")
             return caminho, ocorrencias
 
@@ -81,7 +83,9 @@ def padronizar(
 
     df.columns = pd.Index([str(coluna).strip() for coluna in df.columns])
     if "Nome" not in df.columns or "Total de Descontos" not in df.columns:
-        ocorrencias.append(alerta(f"[DESCONTOS | Origem: {origem}] Colunas obrigatórias ausentes."))
+        ocorrencias.append(
+            alerta(f"[DESCONTOS | Origem: {origem}] Colunas obrigatórias ausentes.")
+        )
         return pd.DataFrame(columns=COLUNAS)
     if "CPF" not in df.columns:
         df["CPF"] = ""
@@ -97,7 +101,10 @@ def padronizar(
         falta_cpf = pd.isna(cpf_bruto) or cpf == "" or cpf.lower() == "nan"
         valor_numerico = 0.0 if pd.isna(valor_bruto) else ler_valor_monetario(valor)
         falta_valor = (
-            pd.isna(valor_bruto) or valor == "" or valor.lower() == "nan" or valor_numerico <= 0
+            pd.isna(valor_bruto)
+            or valor == ""
+            or valor.lower() == "nan"
+            or valor_numerico <= 0
         )
 
         if falta_nome or falta_valor:
@@ -131,14 +138,20 @@ def _consolidar(descontos: pd.DataFrame) -> pd.DataFrame | None:
     """Tira linhas sem nome ou zeradas e soma por CPF (ou pelo nome, sem CPF)."""
     descontos["Nome"] = descontos["Nome"].fillna("").astype(str).str.strip().str.upper()
     descontos["CPF"] = descontos["CPF"].map(formatar_cpf)
-    descontos["Total de Descontos"] = descontos["Total de Descontos"].map(ler_valor_monetario)
+    descontos["Total de Descontos"] = descontos["Total de Descontos"].map(
+        ler_valor_monetario
+    )
 
-    descontos = descontos[(descontos["Nome"] != "") & (descontos["Total de Descontos"] > 0)]
+    descontos = descontos[
+        (descontos["Nome"] != "") & (descontos["Total de Descontos"] > 0)
+    ]
     if descontos.empty:
         return None
 
     descontos = descontos.assign(
-        Chave_Agrupamento=descontos["CPF"].where(descontos["CPF"] != "", descontos["Nome"])
+        Chave_Agrupamento=descontos["CPF"].where(
+            descontos["CPF"] != "", descontos["Nome"]
+        )
     )
     descontos = descontos.groupby("Chave_Agrupamento", as_index=False).agg(
         {"Nome": "first", "CPF": "first", "Total de Descontos": "sum"}

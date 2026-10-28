@@ -60,17 +60,24 @@ def gerar_arquivo_dmed(
                     falhas.add(cache)
 
         if ocorrencias:
-            logger.info("%d ocorrência(s) nas planilhas; gerando o DMED mesmo assim.", len(ocorrencias))
+            logger.info(
+                "%d ocorrência(s) nas planilhas; gerando o DMED mesmo assim.",
+                len(ocorrencias),
+            )
 
         if mensalidades.CACHE in falhas:
             ocorrencias.append(
-                critico("[SISTEMA] Erro ao ler o arquivo de mensalidades: o processamento falhou.")
+                critico(
+                    "[SISTEMA] Erro ao ler o arquivo de mensalidades: o processamento falhou."
+                )
             )
             return None, ocorrencias
         try:
             base = fontes.ler_cache(mensalidades.CACHE, como_texto=True)
         except fontes.CacheIndisponivel as falha:
-            ocorrencias.append(critico(f"[SISTEMA] Erro ao ler o arquivo de mensalidades: {falha}"))
+            ocorrencias.append(
+                critico(f"[SISTEMA] Erro ao ler o arquivo de mensalidades: {falha}")
+            )
             return None, ocorrencias
 
         consulta = Consulta.carregar(ignorar=frozenset(falhas))
@@ -109,11 +116,15 @@ def _montar(base: pd.DataFrame, responsavel: Responsavel, consulta: Consulta) ->
     return "\n".join(linhas)
 
 
-def _despesas_por_titular(base: pd.DataFrame, consulta: Consulta) -> dict[str, dict[str, float]]:
+def _despesas_por_titular(
+    base: pd.DataFrame, consulta: Consulta
+) -> dict[str, dict[str, float]]:
     """Despesa de cada beneficiário (pelo nome normalizado), por CPF do titular."""
     despesas: dict[str, dict[str, float]] = {}
     primeiras_linhas = base.drop_duplicates("Titular_CPF")
-    for cpf, nome_bruto in zip(primeiras_linhas["Titular_CPF"], primeiras_linhas["Nome"], strict=True):
+    for cpf, nome_bruto in zip(
+        primeiras_linhas["Titular_CPF"], primeiras_linhas["Nome"], strict=True
+    ):
         if pd.isna(cpf) or str(cpf).strip() == "":
             continue
         nome = (
@@ -124,8 +135,16 @@ def _despesas_por_titular(base: pd.DataFrame, consulta: Consulta) -> dict[str, d
         tabela = consulta.despesas(cpf, nome)
         despesas[cpf] = {}
         if not tabela.empty:
-            for beneficiario, valor in zip(tabela["Nome"], tabela["Valor"], strict=True):
-                texto = str(valor).replace("R$", "").replace(".", "").replace(",", ".").strip()
+            for beneficiario, valor in zip(
+                tabela["Nome"], tabela["Valor"], strict=True
+            ):
+                texto = (
+                    str(valor)
+                    .replace("R$", "")
+                    .replace(".", "")
+                    .replace(",", ".")
+                    .strip()
+                )
                 despesas[cpf][normalizar_nome(beneficiario)] = float(texto or 0)
     return despesas
 

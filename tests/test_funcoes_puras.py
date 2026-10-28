@@ -149,12 +149,16 @@ def _moeda_antiga(valor: float) -> str:
 def _exibicao_antiga(valor_moeda: str) -> str:
     # generate_pdf alterava a coluna Valor assim, e a tela convertia o resultado.
     valor = pd.Series([valor_moeda]).astype(str).str.strip()
-    valor = valor.str.replace(r"[^\d,]", "", regex=True).str.replace(",", ".", regex=True)
+    valor = valor.str.replace(r"[^\d,]", "", regex=True).str.replace(
+        ",", ".", regex=True
+    )
     texto = valor.iloc[0]
     texto = str(texto).replace("R$", "").replace(".", "", texto.count(".") - 1)
     texto = texto.replace(",", ".").strip()
     try:
-        return f"{float(texto):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return (
+            f"{float(texto):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
     except ValueError:
         return "Valor inválido"
 
@@ -169,7 +173,8 @@ def test_formatar_moeda_igual_a_formula_antiga(valor: float) -> None:
 
 @pytest.mark.parametrize(
     "valor_moeda",
-    [_moeda_antiga(v) for v in VALORES] + ["", "abc", "nan", "R$ 1.234.567,89", "12,3,4"],
+    [_moeda_antiga(v) for v in VALORES]
+    + ["", "abc", "nan", "R$ 1.234.567,89", "12,3,4"],
 )
 def test_valor_para_exibicao_igual_a_tela_antiga(valor_moeda: str) -> None:
     assert valor_para_exibicao(valor_moeda) == _exibicao_antiga(valor_moeda)

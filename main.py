@@ -1,6 +1,7 @@
 """Ponto de entrada do Streamlit: registra as páginas e executa a escolhida."""
 
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -19,6 +20,18 @@ if SRC not in sys.path:
 
 PAGINAS = RAIZ / "src" / "dmed" / "frontend" / "paginas"
 
+
+def exportar_ids_do_drive() -> None:
+    """Passa a seção [drive] do secrets.toml para o ambiente, onde o backend a lê."""
+    try:
+        ids = dict(st.secrets.get("drive", {}))
+    except FileNotFoundError:  # nenhum secrets.toml configurado
+        return
+    for planilha, id_arquivo in ids.items():
+        os.environ.setdefault(f"DMED_DRIVE_{planilha.upper()}", str(id_arquivo))
+
+
+exportar_ids_do_drive()
 st.navigation(
     [
         st.Page(PAGINAS / "informe_irpf.py", default=True),

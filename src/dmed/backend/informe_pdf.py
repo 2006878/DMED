@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
 from typing import Any, cast
 
 import pandas as pd
@@ -94,14 +93,16 @@ def gerar_informe_pdf(
         ],
     )
 
-    pdf.cell(0, 6, f"Documento criado em: {datetime.now():%d/%m/%Y}", ln=True, align="C")
+    pdf.cell(
+        0, 6, f"Documento criado em: {config.agora():%d/%m/%Y}", ln=True, align="C"
+    )
     return cast(str, pdf.output(dest="S")).encode("latin-1")
 
 
 def _linhas_nome_valor(tabela: pd.DataFrame) -> list[str]:
     linhas = []
     for _, linha in tabela.iterrows():
-        nome = linha["Nome"] if "Nome" in linha else "N/A"
-        valor = linha["Valor"] if "Valor" in linha else "R$ 0,00"
+        nome = linha.get("Nome", "N/A")
+        valor = linha.get("Valor", "R$ 0,00")
         linhas.append(f"Nome: {nome} - Valor: {valor}")
     return linhas

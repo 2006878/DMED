@@ -85,7 +85,9 @@ if cpf:
             familia = consulta.mensalidades(cpf)
             nome = familia["Nome"].iloc[0] if not familia.empty else ""
         with st.spinner("Buscando dados de descontos..."):
-            total_descontos = formatar_moeda(ler_valor_monetario(consulta.descontos(cpf)))
+            total_descontos = formatar_moeda(
+                ler_valor_monetario(consulta.descontos(cpf))
+            )
         with st.spinner("Buscando dados de despesas..."):
             despesas = consulta.despesas(cpf, nome)
     except MensalidadesIndisponiveis as falha:
@@ -94,7 +96,9 @@ if cpf:
 
     # CPF sem nenhum registro: só os avisos, sem cartões nem PDF.
     sem_registros = (
-        familia.empty and total_descontos == SEM_DESCONTOS and not consulta.tem_despesas(cpf)
+        familia.empty
+        and total_descontos == SEM_DESCONTOS
+        and not consulta.tem_despesas(cpf)
     )
 
     if not sem_registros and (not familia.empty or not despesas.empty):
@@ -111,7 +115,9 @@ if cpf:
         st.markdown("### 📊 Mensalidade Plano de Saúde")
         if not familia.empty:
             for membro, valor in zip(familia["Nome"], familia["Valor"], strict=True):
-                cartao(membro, f"Valor: <strong>R$ {valor_para_exibicao(valor)}</strong>")
+                cartao(
+                    membro, f"Valor: <strong>R$ {valor_para_exibicao(valor)}</strong>"
+                )
         else:
             st.info("Não existem registros de mensalidades para o CPF informado.")
 
@@ -120,9 +126,11 @@ if cpf:
         if not sem_registros and not despesas.empty:
             # As despesas do titular aparecem primeiro.
             ordem = despesas["Nome"].str.upper() == nome.upper()
-            for _, linha in despesas.assign(ordem=ordem).sort_values(
-                "ordem", ascending=False
-            ).iterrows():
+            for _, linha in (
+                despesas.assign(ordem=ordem)
+                .sort_values("ordem", ascending=False)
+                .iterrows()
+            ):
                 cartao(linha.iloc[0], f"Valor: <strong>{linha.iloc[1]}</strong>")
         else:
             st.info("Não existem registros de despesas para o CPF informado.")

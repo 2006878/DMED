@@ -16,11 +16,14 @@ htmlcov/
 .env
 .streamlit/secrets.toml
 
-# Dados baixados ou gerados em tempo de execução
+# Dados baixados do Google Drive ou gerados em tempo de execução
 /data/mensalidades/
+/data/descontos/DESCONTOS.xlsx
 /data/cache/*
 !/data/cache/.gitkeep
 /data/snapshots/
+*.baixando
+*.gravando
 .~lock.*
 
 # Notas locais

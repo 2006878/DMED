@@ -62,7 +62,11 @@ select = [
     "PL",   # pylint
     "RUF",  # regras do próprio ruff
 ]
-ignore = ["E501"] # o formatter cuida do tamanho das linhas
+ignore = [
+    "E501",  # o formatter cuida do tamanho das linhas
+    "N818",  # exceções têm nomes em português, sem o sufixo "Error"
+    "PD008", # .at é o acesso escalar idiomático do pandas
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "PLR2004"]

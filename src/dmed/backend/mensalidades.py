@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from pandas.api.typing import NaTType
 
 from dmed.backend import config, fontes
 from dmed.backend.formatacao import formatar_cpf
@@ -31,22 +32,19 @@ MEMBROS_NO_RATEIO = 4  # planos comuns: só os 4 primeiros da família dividem o
 
 
 def meses_ativos(
-    admissao: pd.Timestamp, desligamento: pd.Timestamp, ano: int
+    admissao: pd.Timestamp | NaTType, desligamento: pd.Timestamp | NaTType, ano: int
 ) -> list[int]:
     """Meses do ano-calendário em que o beneficiário esteve no plano."""
-    if pd.isna(admissao) or admissao.year > ano:
+    if isinstance(admissao, NaTType) or admissao.year > ano:
         return []
-    if pd.isna(desligamento):
-        return list(range(1, 13)) if admissao.year < ano else list(range(admissao.month, 13))
-    if desligamento.year == ano and admissao.year == ano:
-        return list(range(admissao.month, desligamento.month + 1))
-    if desligamento.year == ano and admissao.year < ano:
-        return list(range(1, desligamento.month + 1))
-    if desligamento.year > ano and admissao.year == ano:
-        return list(range(admissao.month, 13))
-    if desligamento.year > ano and admissao.year < ano:
-        return list(range(1, 13))
-    return []
+    fim = 12
+    if isinstance(desligamento, pd.Timestamp):
+        if desligamento.year < ano:
+            return []
+        if desligamento.year == ano:
+            fim = desligamento.month
+    inicio = admissao.month if admissao.year == ano else 1
+    return list(range(inicio, fim + 1))
 
 
 def processar_mensalidades() -> tuple[Path | None, list[Ocorrencia]]:
@@ -178,7 +176,9 @@ def ratear_aba(df: pd.DataFrame, aba: str, ano: int) -> pd.DataFrame:
     valor_por_mes: dict[str, float] = {}
     for chave, valor_anual in zip(
         primeiros_titulares["Titular_CPF"],
-        primeiros_titulares.get(config.COLUNA_TOTAL_ANUAL, [None] * len(primeiros_titulares)),
+        primeiros_titulares.get(
+            config.COLUNA_TOTAL_ANUAL, [None] * len(primeiros_titulares)
+        ),
         strict=True,
     ):
         anual = float(valor_anual) if pd.notna(valor_anual) else 0
@@ -188,15 +188,23 @@ def ratear_aba(df: pd.DataFrame, aba: str, ano: int) -> pd.DataFrame:
     # Famílias sem titular ficam de fora, como sempre ficaram.
     rateadas = familias["Titular_CPF"].isin(list(valor_por_mes)).to_numpy()
     familias = familias[rateadas]
-    posicao, meses, eh_titular = posicao[rateadas], meses[rateadas], eh_titular[rateadas]
-    por_mes = familias["Titular_CPF"].map(valor_por_mes).to_numpy(dtype=float)
-    recebe = ~eh_titular if camara else (
-        np.ones(len(familias), dtype=bool) if complemento else posicao < MEMBROS_NO_RATEIO
+    posicao, meses, eh_titular = (
+        posicao[rateadas],
+        meses[rateadas],
+        eh_titular[rateadas],
     )
+    por_mes = familias["Titular_CPF"].map(valor_por_mes).to_numpy(dtype=float)
+    if camara:
+        recebe = ~eh_titular
+    elif complemento:
+        recebe = np.ones(len(familias), dtype=bool)
+    else:
+        recebe = posicao < MEMBROS_NO_RATEIO
     familias = familias.assign(Total=np.where(recebe, por_mes * meses, 0.0))
 
     # Mesma ordem do agrupamento original: famílias por CPF do titular.
-    return familias.sort_values("Titular_CPF", kind="stable").reset_index(drop=True)
+    ordenadas: pd.DataFrame = familias.sort_values("Titular_CPF", kind="stable")
+    return ordenadas.reset_index(drop=True)
 
 
 def _atribuir_titulares(ativos: pd.DataFrame) -> None:

@@ -38,7 +38,9 @@ def processar_despesas() -> tuple[Path | None, list[Ocorrencia]]:
         try:
             pasta = config.pasta_despesas()
             if not pasta.is_dir():
-                return None, [critico("[DESPESAS] Pasta 'data/despesas' não encontrada.")]
+                return None, [
+                    critico("[DESPESAS] Pasta 'data/despesas' não encontrada.")
+                ]
 
             partes = list(_ler_pasta(pasta, ocorrencias))
             if not partes:
@@ -50,7 +52,9 @@ def processar_despesas() -> tuple[Path | None, list[Ocorrencia]]:
             despesas = _consolidar(pd.concat(partes, ignore_index=True))
             if despesas is None:
                 ocorrencias.append(
-                    alerta("[DESPESAS] Nenhum registro de despesas restou após a limpeza.")
+                    alerta(
+                        "[DESPESAS] Nenhum registro de despesas restou após a limpeza."
+                    )
                 )
                 return None, ocorrencias
 
@@ -64,7 +68,9 @@ def processar_despesas() -> tuple[Path | None, list[Ocorrencia]]:
         except Exception as falha:
             # Qualquer falha numa planilha vira ocorrência crítica no relatório.
             logger.exception("Falha ao processar despesas")
-            return None, [critico(f"[DESPESAS] Erro crítico ao processar despesas: {falha}")]
+            return None, [
+                critico(f"[DESPESAS] Erro crítico ao processar despesas: {falha}")
+            ]
 
 
 def _ler_pasta(pasta: Path, ocorrencias: list[Ocorrencia]) -> Any:
@@ -85,7 +91,8 @@ def _ler_csv_avulso(arquivo: Path) -> pd.DataFrame | None:
         if separador is None:
             opcoes["engine"] = "python"
         try:
-            return pd.read_csv(arquivo, **opcoes)
+            lido: pd.DataFrame = pd.read_csv(arquivo, **opcoes)
+            return lido
         except (ValueError, csv.Error):
             continue
     return None
@@ -113,7 +120,9 @@ def padronizar(
     col_valor = _primeira_coluna(df, NOMES_COLUNA_VALOR)
     if not col_nome or not col_valor:
         ocorrencias.append(
-            alerta(f"[DESPESAS | Origem: {origem}] Colunas obrigatórias ausentes (Nome ou Valor).")
+            alerta(
+                f"[DESPESAS | Origem: {origem}] Colunas obrigatórias ausentes (Nome ou Valor)."
+            )
         )
         return pd.DataFrame(columns=COLUNAS)
 
@@ -133,7 +142,7 @@ def _validar(
     posicoes = [df.columns.get_loc(col) for col in (col_nome, col_cpf, col_valor)]
     ocorrencias = []
     for indice, *valores in df.itertuples(index=True, name=None):
-        nome_bruto, cpf_bruto, valor_bruto = (valores[p] for p in posicoes)  # type: ignore[index]
+        nome_bruto, cpf_bruto, valor_bruto = (valores[p] for p in posicoes)
         nome = str(nome_bruto).strip()
         cpf = str(cpf_bruto).strip()
         valor = str(valor_bruto).strip()
@@ -149,13 +158,19 @@ def _validar(
         falta_cpf = pd.isna(cpf_bruto) or cpf == "" or cpf.lower() == "nan"
         valor_numerico = 0.0 if pd.isna(valor_bruto) else ler_valor_monetario(valor)
         falta_valor = (
-            pd.isna(valor_bruto) or valor == "" or valor.lower() == "nan" or valor_numerico <= 0
+            pd.isna(valor_bruto)
+            or valor == ""
+            or valor.lower() == "nan"
+            or valor_numerico <= 0
         )
 
         if falta_nome or falta_valor:
             campos = " e ".join(
                 campo
-                for campo, falta in (("NOME", falta_nome), ("VALOR (Ausente ou Zero)", falta_valor))
+                for campo, falta in (
+                    ("NOME", falta_nome),
+                    ("VALOR (Ausente ou Zero)", falta_valor),
+                )
                 if falta
             )
             ocorrencias.append(
@@ -183,7 +198,9 @@ def _consolidar(despesas: pd.DataFrame) -> pd.DataFrame | None:
 
     # Linhas como "--------" não têm letras nem dígitos e saem aqui.
     nome_valido = despesas["Nome"].str.contains(r"[A-Z0-9]", regex=True, na=False)
-    despesas = despesas[(despesas["CPF"] != "") | ((despesas["Nome"] != "") & nome_valido)]
+    despesas = despesas[
+        (despesas["CPF"] != "") | ((despesas["Nome"] != "") & nome_valido)
+    ]
     despesas = despesas[~((despesas["CPF"] == "") & (despesas["Valor a Pagar"] <= 0))]
     if despesas.empty:
         return None
