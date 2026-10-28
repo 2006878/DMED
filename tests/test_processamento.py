@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from conftest import csv_texto, normaliza_pdf
 
-from dmed import funcoes
+from conftest import csv_texto, normaliza_pdf
+from dmed.backend import processamento
 
 Esperado = Callable[[str, str], None]
 
@@ -37,7 +37,7 @@ def linhas(erros: list[str] | None) -> str:
 @pytest.mark.usefixtures("ambiente")
 @pytest.mark.parametrize("etapa", list(CACHES))
 def test_processamento_das_planilhas(etapa: str, esperado: Esperado) -> None:
-    arquivo, erros = getattr(funcoes, etapa)()
+    arquivo, erros = getattr(processamento, etapa)()
 
     assert arquivo is not None
     esperado(f"{etapa}.csv", Path(arquivo).read_text(encoding="utf-8"))
@@ -46,7 +46,7 @@ def test_processamento_das_planilhas(etapa: str, esperado: Esperado) -> None:
 
 @pytest.mark.usefixtures("ambiente")
 def test_arquivo_dmed(esperado: Esperado) -> None:
-    conteudo, erros = funcoes.create_dmed_content(
+    conteudo, erros = processamento.create_dmed_content(
         "00000000191", "RESPONSAVEL TESTE", "31", "999999999"
     )
 
@@ -58,11 +58,11 @@ def test_arquivo_dmed(esperado: Esperado) -> None:
 @pytest.mark.parametrize("cpf", CPFS)
 def test_consulta_por_cpf(cpf: str, esperado: Esperado) -> None:
     # Mesmo fluxo da tela inicial (main.py).
-    df_mensalidades = funcoes.busca_dados_mensalidades(cpf)
+    df_mensalidades = processamento.busca_dados_mensalidades(cpf)
     nome = df_mensalidades["Nome"].iloc[0] if not df_mensalidades.empty else ""
-    descontos = funcoes.busca_dados_descontos(cpf)
-    df_despesas = funcoes.busca_dados_despesas(cpf, nome)
-    descontos = funcoes.parse_valor_monetario(descontos)
+    descontos = processamento.busca_dados_descontos(cpf)
+    df_despesas = processamento.busca_dados_despesas(cpf, nome)
+    descontos = processamento.parse_valor_monetario(descontos)
     descontos = (
         f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     )
@@ -75,7 +75,7 @@ def test_consulta_por_cpf(cpf: str, esperado: Esperado) -> None:
         csv_texto(df_despesas),
     ]
     if not df_mensalidades.empty or not df_despesas.empty:
-        pdf = funcoes.generate_pdf(df_mensalidades, df_despesas, descontos, cpf)
+        pdf = processamento.generate_pdf(df_mensalidades, df_despesas, descontos, cpf)
         esperado(f"consulta_{cpf}.pdf.txt", normaliza_pdf(pdf))
         # generate_pdf altera o DataFrame recebido, e a tela usa o resultado.
         partes += ["mensalidades depois do PDF:", csv_texto(df_mensalidades)]
@@ -94,4 +94,6 @@ def test_cache_existente_nao_e_reprocessado(ambiente: Path) -> None:
         }
     ).to_csv(cache, index=False)
 
-    assert funcoes.busca_dados_mensalidades("10000000001")["Nome"].tolist() == ["CACHE"]
+    assert processamento.busca_dados_mensalidades("10000000001")["Nome"].tolist() == [
+        "CACHE"
+    ]

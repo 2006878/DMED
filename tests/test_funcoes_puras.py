@@ -6,7 +6,7 @@ import math
 import pandas as pd
 import pytest
 
-from dmed import funcoes
+from dmed.backend import processamento
 
 T = pd.Timestamp
 
@@ -29,7 +29,7 @@ T = pd.Timestamp
     ],
 )
 def test_format_cpf(entrada: object, esperado: str) -> None:
-    assert funcoes.format_cpf(entrada) == esperado
+    assert processamento.format_cpf(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ def test_format_cpf(entrada: object, esperado: str) -> None:
     ],
 )
 def test_format_valor(entrada: object, esperado: str) -> None:
-    assert funcoes.format_valor(entrada) == esperado
+    assert processamento.format_valor(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -64,7 +64,7 @@ def test_format_valor(entrada: object, esperado: str) -> None:
     ],
 )
 def test_parse_valor_monetario(entrada: object, esperado: float) -> None:
-    assert funcoes.parse_valor_monetario(entrada) == esperado
+    assert processamento.parse_valor_monetario(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -77,7 +77,7 @@ def test_parse_valor_monetario(entrada: object, esperado: float) -> None:
     ],
 )
 def test_normalize_name(entrada: object, esperado: str) -> None:
-    assert funcoes.normalize_name(entrada) == esperado
+    assert processamento.normalize_name(entrada) == esperado
 
 
 @pytest.mark.parametrize(
@@ -93,7 +93,7 @@ def test_normalize_name(entrada: object, esperado: str) -> None:
     ],
 )
 def test_get_dependent_code(relacao: str, codigo: str) -> None:
-    assert funcoes.get_dependent_code(relacao) == codigo
+    assert processamento.get_dependent_code(relacao) == codigo
 
 
 TODOS = list(range(1, 13))
@@ -116,8 +116,8 @@ TODOS = list(range(1, 13))
 def test_calculate_active_months(
     admissao: pd.Timestamp, desligamento: pd.Timestamp, meses: list[int]
 ) -> None:
-    assert funcoes.ano_anterior == 2025
-    assert funcoes.calculate_active_months(admissao, desligamento) == meses
+    assert processamento.ano_anterior == 2025
+    assert processamento.calculate_active_months(admissao, desligamento) == meses
 
 
 def test_process_group() -> None:
@@ -131,7 +131,7 @@ def test_process_group() -> None:
         }
     )
     despesas = {"10000000001": {"ANA SOUZA": 150.0, "CAIO SOUZA": 80.5}}
-    assert funcoes.process_group(grupo, "10000000001", despesas) == [
+    assert processamento.process_group(grupo, "10000000001", despesas) == [
         "TOP|10000000001|ANA SOUZA|000135000|",
         "DTOP|||ZECA|10|000000001|",
         "DTOP|10000000002||BIA SOUZA|03|000000001|",

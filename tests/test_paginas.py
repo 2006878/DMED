@@ -4,14 +4,15 @@ planilhas fictícias do fixture `ambiente`."""
 from collections.abc import Callable
 
 import pytest
-from conftest import RAIZ
 from streamlit.testing.v1 import AppTest
 from streamlit.testing.v1.element_tree import Button, TextInput
+
+from conftest import RAIZ
 
 Esperado = Callable[[str, str], None]
 
 ENTRADA = RAIZ / "main.py"
-PAGINA_DMED = "pages/2_DMED.py"
+PAGINA_DMED = "src/dmed/frontend/paginas/arquivo_dmed.py"
 SENHA = "senha-de-teste"
 pytestmark = pytest.mark.usefixtures("ambiente")
 
@@ -104,7 +105,9 @@ def test_dmed_exibe_formulario_e_manual() -> None:
 
     assert not at.exception
     assert [t.value for t in at.main.title] == ["DOWNLOAD ARQUIVO DMED - COSEMI"]
-    manual = (RAIZ / "docs" / "manual.md").read_text(encoding="utf-8")
+    manual = (RAIZ / "src/dmed/frontend/conteudo/manual_de_regras.md").read_text(
+        encoding="utf-8"
+    )
     assert any(m.value == manual.strip() for m in at.markdown)
 
 

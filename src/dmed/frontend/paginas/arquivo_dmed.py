@@ -1,5 +1,4 @@
 import streamlit as st
-import sys
 import os
 from pathlib import Path
 import base64
@@ -7,14 +6,12 @@ import pandas as pd
 from datetime import datetime
 import traceback
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from dmed.backend.processamento import create_dmed_content
 
-from dmed.funcoes import create_dmed_content
+FRONTEND = Path(__file__).resolve().parents[1]
 
 # Carregando o ícone da aba
-favicon = "assets/favicon.jpeg"
+favicon = str(FRONTEND / "assets" / "favicon.jpeg")
 
 # Streamlit page configuration
 st.set_page_config(
@@ -25,7 +22,7 @@ st.set_page_config(
 )
 
 # Display logo
-with open("assets/logo.png", "rb") as f:
+with open(FRONTEND / "assets" / "logo.png", "rb") as f:
     image_data = base64.b64encode(f.read()).decode()
 
 st.markdown(
@@ -57,7 +54,7 @@ with st.sidebar:
 
     # Botão para voltar à página inicial
     if st.button("🏠 Home"):
-        st.switch_page("main.py")
+        st.switch_page("src/dmed/frontend/paginas/informe_irpf.py")
 
     # Botão para a página atual (DMED)
     st.button("⚙️ DMED", disabled=True)
@@ -318,7 +315,9 @@ if check_password():
                 traceback.print_exc()
 
     with st.expander("Manual de regras", expanded=False):
-        with open("docs/manual.md", "r", encoding="utf-8") as file:
+        with open(
+            FRONTEND / "conteudo" / "manual_de_regras.md", "r", encoding="utf-8"
+        ) as file:
             manual_content = file.read()
         st.markdown(manual_content)
 

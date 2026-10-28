@@ -19,8 +19,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).parent / "fixtures"
 ESPERADO = FIXTURES / "esperado"
 
-# Onde o app espera cada arquivo, relativo à pasta de execução.
-ASSETS = ["assets/logo.png", "assets/favicon.jpeg", "docs/manual.md"]
+# Onde o app espera as planilhas, relativo à pasta de execução.
 PASTA_MENSALIDADES = Path("data/mensalidades")
 PASTA_DESPESAS = Path("data/despesas")
 PASTA_DESCONTOS = Path("data/descontos")
@@ -77,10 +76,7 @@ def monta_pasta(origem: Path, destino: Path) -> None:
 
 @pytest.fixture
 def ambiente(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Pasta de execução com assets reais e planilhas fictícias."""
-    for asset in ASSETS:
-        (tmp_path / asset).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(RAIZ / asset, tmp_path / asset)
+    """Pasta de execução com as planilhas fictícias."""
     monta_xlsx(
         FIXTURES / "mensalidades", tmp_path / PASTA_MENSALIDADES / "MENSALIDADES.xlsx"
     )

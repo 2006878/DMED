@@ -47,14 +47,22 @@ Os testes rodam sobre planilhas fictícias (`tests/fixtures/`) e comparam as sa�
 ## Estrutura
 
 ```
-main.py              página inicial (entrada do Streamlit)
-pages/2_DMED.py      página de geração do arquivo DMED
-dmed/                regras de negócio
-assets/              logo e favicon
-docs/manual.md       manual de regras exibido na página DMED
-data/                planilhas de entrada e caches gerados
-tests/               testes e fixtures fictícias
+main.py                          entrada do Streamlit: registra as páginas
+src/dmed/
+├── backend/
+│   └── processamento.py         planilhas, caches, arquivo DMED e PDF
+└── frontend/
+    ├── paginas/
+    │   ├── informe_irpf.py      página inicial (URL /)
+    │   └── arquivo_dmed.py      geração do arquivo DMED (URL /DMED)
+    ├── assets/                  logo e favicon
+    └── conteudo/
+        └── manual_de_regras.md  manual exibido na página do arquivo DMED
+data/                            planilhas de entrada e caches gerados
+tests/                           testes e fixtures fictícias
 ```
+
+Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.python-version` (versão do Python), `.streamlit/` (Streamlit), `Dockerfile`, `.dockerignore` e `compose.yaml` (Docker), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
 
 ## Dados
 
