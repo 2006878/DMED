@@ -7,7 +7,7 @@ Aplicação [Streamlit](https://streamlit.io/) da COSEMI com duas páginas:
 
 ## Requisitos
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/), que também instala o Python 3.11 definido em `.python-version`.
+- [uv](https://docs.astral.sh/uv/getting-started/installation/), que também instala um Python compatível (3.11 ou mais novo, conforme o `pyproject.toml`).
 
 ## Instalação
 
@@ -56,7 +56,7 @@ data/                            planilhas de entrada e caches gerados
 tests/                           testes e fixtures fictícias
 ```
 
-Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.python-version` (versão do Python), `.streamlit/` (Streamlit), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
+Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.streamlit/` (Streamlit), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
 
 ## Dados
 

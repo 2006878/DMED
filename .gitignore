@@ -27,7 +27,7 @@ htmlcov/
 /docs/pendencias.md
 
 # Claude Code e graphify: só o grafo é versionado
-/.claude/
+/.claude
 /.graphifyignore
 /graphify-out/*
 !/graphify-out/graph.json
