@@ -113,7 +113,9 @@ TODOS = list(range(1, 13))
         (T("2020-01-01"), T("2024-12-31"), []),
     ],
 )
-def test_calculate_active_months(admissao: pd.Timestamp, desligamento: pd.Timestamp, meses: list[int]) -> None:
+def test_calculate_active_months(
+    admissao: pd.Timestamp, desligamento: pd.Timestamp, meses: list[int]
+) -> None:
     assert funcoes.ano_anterior == 2025
     assert funcoes.calculate_active_months(admissao, desligamento) == meses
 

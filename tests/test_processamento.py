@@ -20,7 +20,14 @@ CACHES = {
     "processa_despesas": Path("data/cache/despesas.csv"),
     "processa_descontos": Path("data/cache/descontos.csv"),
 }
-CPFS = ["10000000001", "10000000004", "10000000007", "10000000012", "10000000015", "99999999999"]
+CPFS = [
+    "10000000001",
+    "10000000004",
+    "10000000007",
+    "10000000012",
+    "10000000015",
+    "99999999999",
+]
 
 
 def linhas(erros: list[str] | None) -> str:
@@ -39,7 +46,9 @@ def test_processamento_das_planilhas(etapa: str, esperado: Esperado) -> None:
 
 @pytest.mark.usefixtures("ambiente")
 def test_arquivo_dmed(esperado: Esperado) -> None:
-    conteudo, erros = funcoes.create_dmed_content("00000000191", "RESPONSAVEL TESTE", "31", "999999999")
+    conteudo, erros = funcoes.create_dmed_content(
+        "00000000191", "RESPONSAVEL TESTE", "31", "999999999"
+    )
 
     esperado("dmed.DEC", conteudo + "\n")
     esperado("dmed_erros.txt", linhas(erros))
@@ -54,7 +63,9 @@ def test_consulta_por_cpf(cpf: str, esperado: Esperado) -> None:
     descontos = funcoes.busca_dados_descontos(cpf)
     df_despesas = funcoes.busca_dados_despesas(cpf, nome)
     descontos = funcoes.parse_valor_monetario(descontos)
-    descontos = f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    descontos = (
+        f"R$ {descontos:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
 
     partes = [
         f"descontos: {descontos}",
@@ -74,8 +85,13 @@ def test_consulta_por_cpf(cpf: str, esperado: Esperado) -> None:
 def test_cache_existente_nao_e_reprocessado(ambiente: Path) -> None:
     cache = ambiente / CACHES["processa_mensalidades"]
     cache.parent.mkdir(parents=True)
-    pd.DataFrame({"Titular_CPF": ["10000000001"], "Relação": ["Titular"], "Nome": ["CACHE"], "Total": ["1"]}).to_csv(
-        cache, index=False
-    )
+    pd.DataFrame(
+        {
+            "Titular_CPF": ["10000000001"],
+            "Relação": ["Titular"],
+            "Nome": ["CACHE"],
+            "Total": ["1"],
+        }
+    ).to_csv(cache, index=False)
 
     assert funcoes.busca_dados_mensalidades("10000000001")["Nome"].tolist() == ["CACHE"]

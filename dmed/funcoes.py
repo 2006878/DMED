@@ -11,9 +11,10 @@ import unicodedata
 ano_anterior = pd.Timestamp.now().year - 1
 ano_atual = pd.Timestamp.now().year
 
+
 def format_cpf(cpf):
-    if pd.isna(cpf) or str(cpf).strip() == '' or str(cpf).strip() == '0':
-        return ''
+    if pd.isna(cpf) or str(cpf).strip() == "" or str(cpf).strip() == "0":
+        return ""
     if isinstance(cpf, (int, float)):
         if float(cpf).is_integer():
             cpf_str = str(int(float(cpf)))
@@ -26,9 +27,10 @@ def format_cpf(cpf):
 
     cpf_str = re.sub(r"\D", "", cpf_str)
     if not cpf_str:
-        return ''
+        return ""
     return cpf_str.zfill(11)
-    
+
+
 def format_valor(valor_str):
     try:
         # Remove currency symbol and standardize decimal separator
@@ -38,13 +40,14 @@ def format_valor(valor_str):
             valor = valor.replace(".", "").replace(",", ".")
         # Convert to float and round to 2 decimal places
         valor_float = round(float(valor), 2)
-        if valor_float == 0  or pd.isna(valor_float):
+        if valor_float == 0 or pd.isna(valor_float):
             valor_float = 0.01
         # Convert to cents without decimal point
         valor_cents = int(valor_float * 100)
         return f"{valor_cents:09d}"
     except:
         return ""
+
 
 def parse_valor_monetario(valor):
     if pd.isna(valor):
@@ -65,17 +68,20 @@ def parse_valor_monetario(valor):
     except (ValueError, TypeError):
         return 0.0
 
+
 def normalize_name(name):
     import unicodedata
+
     # Convert to uppercase and normalize
-    normalized = unicodedata.normalize('NFKD', str(name).upper())
+    normalized = unicodedata.normalize("NFKD", str(name).upper())
     # Remove accents
-    normalized = u"".join([c for c in normalized if not unicodedata.combining(c)])
+    normalized = "".join([c for c in normalized if not unicodedata.combining(c)])
     # Replace Ç with C
-    normalized = normalized.replace('Ç', 'C')
+    normalized = normalized.replace("Ç", "C")
     # Remove any remaining special characters
-    normalized = ''.join(c for c in normalized if c.isalnum() or c.isspace())
+    normalized = "".join(c for c in normalized if c.isalnum() or c.isspace())
     return normalized
+
 
 def format_currency(value):
     try:
@@ -84,96 +90,119 @@ def format_currency(value):
     except ValueError:
         return "Valores de desconto não encontrados."
 
+
 def generate_pdf(df_mensalidades, df_despesas, descontos, cpf):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)  # Quebra de página automática
     pdf.add_page()
+
     # Função para formatar títulos de seções
     def draw_section(title, content_lines):
-        """ Cria uma seção com um título sublinhado e uma borda ao redor do conteúdo. """
-        pdf.set_font('Arial', 'B', 12)
+        """Cria uma seção com um título sublinhado e uma borda ao redor do conteúdo."""
+        pdf.set_font("Arial", "B", 12)
         start_y = pdf.get_y()
-        
+
         # Criando o título sublinhado
-        pdf.cell(0, 8, title, ln=True, align='L')
+        pdf.cell(0, 8, title, ln=True, align="L")
         pdf.set_draw_color(0, 0, 0)  # Cor preta para a linha
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())  # Linha abaixo do título
         pdf.ln(4)  # Espaço após a linha
-        
+
         # Adicionando o conteúdo dentro do retângulo
-        pdf.set_font('Arial', '', 12)
+        pdf.set_font("Arial", "", 12)
         for line in content_lines:
             pdf.cell(0, 6, line, ln=True)
-        
+
         end_y = pdf.get_y()
         pdf.rect(10, start_y, 190, end_y - start_y + 2)  # Borda ao redor do conteúdo
         pdf.ln(6)  # Espaçamento extra
 
     # Cabeçalho
-    pdf.set_font('Arial', 'B', 16)
-    pdf.cell(0, 10, 'INFORME PLANO DE SAÚDE', ln=True, align='C')
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "INFORME PLANO DE SAÚDE", ln=True, align="C")
     pdf.ln(3)
-    pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 8, 'ANO - CALENDÁRIO DE 2025', ln=True, align='C')
-    pdf.cell(0, 8, 'IMPOSTO DE RENDA - PESSOA FÍSICA', ln=True, align='C')
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 8, "ANO - CALENDÁRIO DE 2025", ln=True, align="C")
+    pdf.cell(0, 8, "IMPOSTO DE RENDA - PESSOA FÍSICA", ln=True, align="C")
     pdf.ln(10)
 
     # 1. DADOS CADASTRAIS
 
-    titular = df_mensalidades.iloc[0]['Nome'] if isinstance(df_mensalidades, pd.DataFrame) and not df_mensalidades.empty else "N/A"
-    draw_section('1 - DADOS CADASTRAIS', [f"Titular: {titular} - CPF: {cpf}"])
+    titular = (
+        df_mensalidades.iloc[0]["Nome"]
+        if isinstance(df_mensalidades, pd.DataFrame) and not df_mensalidades.empty
+        else "N/A"
+    )
+    draw_section("1 - DADOS CADASTRAIS", [f"Titular: {titular} - CPF: {cpf}"])
 
     # 2. IDENTIFICAÇÃO DA FONTE PAGADORA
     fonte_pagadora = [
         "Nome empresarial: Cosemi - Cooperativa de Economia E Credito Mutuo dos",
         "Servidores Municipais de Itabira Ltda",
-        "CNPJ: 16.651.002/0001-80"
+        "CNPJ: 16.651.002/0001-80",
     ]
-    draw_section('2 - IDENTIFICAÇÃO DA FONTE PAGADORA', fonte_pagadora)
+    draw_section("2 - IDENTIFICAÇÃO DA FONTE PAGADORA", fonte_pagadora)
 
     # 3. INFORMAÇÕES PLANO DE SAÚDE
     info_plano = ["Mensalidade Plano de Saúde:"]
     if isinstance(df_mensalidades, pd.DataFrame) and not df_mensalidades.empty:
         for _, row in df_mensalidades.iterrows():
-            nome = row['Nome'] if 'Nome' in row else "N/A"
-            valor = row['Valor'] if 'Valor' in row else "R$ 0,00"
+            nome = row["Nome"] if "Nome" in row else "N/A"
+            valor = row["Valor"] if "Valor" in row else "R$ 0,00"
             info_plano.append(f"Nome: {nome} - Valor: {valor}")
-    draw_section('3 - INFORMAÇÕES PLANO DE SAÚDE', info_plano)
+    draw_section("3 - INFORMAÇÕES PLANO DE SAÚDE", info_plano)
 
     # 4. INFORMAÇÕES DESPESAS
     despesas_info = []
     for _, row in df_despesas.iterrows():
-        nome = row['Nome'] if 'Nome' in row else "N/A"
-        valor = row['Valor'] if 'Valor' in row else "R$ 0,00"
+        nome = row["Nome"] if "Nome" in row else "N/A"
+        valor = row["Valor"] if "Valor" in row else "R$ 0,00"
         despesas_info.append(f"Nome: {nome} - Valor: {valor}")
-    draw_section('4 - INFORMAÇÕES DESPESAS', despesas_info)
+    draw_section("4 - INFORMAÇÕES DESPESAS", despesas_info)
 
     # 5. TOTAIS
     descontos_info = []
     # Removendo caracteres inesperados e convertendo corretamente
-    df_mensalidades['Valor'] = df_mensalidades['Valor'].astype(str).str.strip()  # Remove espaços extras
-    df_mensalidades['Valor'] = df_mensalidades['Valor'].str.replace(r'[^\d,]', '', regex=True)  # Remove tudo que não for número ou vírgula
-    df_mensalidades['Valor'] = df_mensalidades['Valor'].str.replace(',', '.', regex=True)  # Substitui vírgula por ponto para conversão
-    
+    df_mensalidades["Valor"] = (
+        df_mensalidades["Valor"].astype(str).str.strip()
+    )  # Remove espaços extras
+    df_mensalidades["Valor"] = df_mensalidades["Valor"].str.replace(
+        r"[^\d,]", "", regex=True
+    )  # Remove tudo que não for número ou vírgula
+    df_mensalidades["Valor"] = df_mensalidades["Valor"].str.replace(
+        ",", ".", regex=True
+    )  # Substitui vírgula por ponto para conversão
+
     # Removendo valores vazios antes da conversão
-    df_mensalidades = df_mensalidades[df_mensalidades['Valor'] != '']
-    
+    df_mensalidades = df_mensalidades[df_mensalidades["Valor"] != ""]
+
     # Convertendo para float
-    df_mensalidades['Valor'] = df_mensalidades['Valor'].astype(float)
-    
+    df_mensalidades["Valor"] = df_mensalidades["Valor"].astype(float)
+
     # Calculando total
-    total_mensalidades = df_mensalidades['Valor'].sum()
-    
+    total_mensalidades = df_mensalidades["Valor"].sum()
+
     # Exibir resultado formatado
     descontos_info = []
     descontos_info.append(f"Total de Despesas: {descontos}")
-    descontos_info.append(f"Total de Mensalidades: R$ {total_mensalidades:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-    
-    draw_section('5 - TOTAIS', descontos_info)
+    descontos_info.append(
+        f"Total de Mensalidades: R$ {total_mensalidades:,.2f}".replace(",", "X")
+        .replace(".", ",")
+        .replace("X", ".")
+    )
 
-    pdf.cell(0, 6, f'Documento criado em: {datetime.now().strftime("%d/%m/%Y")}', ln=True, align='C')
-    
-    return pdf.output(dest='S').encode('latin-1')
+    draw_section("5 - TOTAIS", descontos_info)
+
+    pdf.cell(
+        0,
+        6,
+        f"Documento criado em: {datetime.now().strftime('%d/%m/%Y')}",
+        ln=True,
+        align="C",
+    )
+
+    return pdf.output(dest="S").encode("latin-1")
+
 
 def get_dependent_code(relacao):
     codes = {
@@ -181,94 +210,109 @@ def get_dependent_code(relacao):
         "Filho(a)": "04",
         "Enteado(a)": "06",
         "Pais": "08",
-        "Agregado(a)/outros": "10"
+        "Agregado(a)/outros": "10",
     }
     return codes.get(relacao, "10")
+
 
 def calculate_active_months(admission, termination=None):
     if pd.isna(admission) or admission.year > ano_anterior:
         return []
     if pd.isna(termination):
-        return [month for month in range(1, 13)] if admission.year < ano_anterior else [month for month in range(int(admission.month), 13)]
-    
+        return (
+            [month for month in range(1, 13)]
+            if admission.year < ano_anterior
+            else [month for month in range(int(admission.month), 13)]
+        )
+
     if termination.year == ano_anterior and admission.year == ano_anterior:
-        return [month for month in range(int(admission.month), int(termination.month) + 1)]
-    
+        return [
+            month for month in range(int(admission.month), int(termination.month) + 1)
+        ]
+
     if termination.year == ano_anterior and admission.year < ano_anterior:
         return [month for month in range(1, int(termination.month) + 1)]
-    
+
     if termination.year > ano_anterior and admission.year == ano_anterior:
         return [month for month in range(int(admission.month), 13)]
-    
+
     if termination.year > ano_anterior and admission.year < ano_anterior:
         return [month for month in range(1, 13)]  # Returns [1,2,3,4,5,6,7,8,9,10,11,12]
-    
+
     return []
+
 
 # Agrupar e processar dados de uma vez
 def process_group(grupo, titular_cpf, despesas_dict):
     results = []
-    
+
     # Processar titular
     titular = grupo[grupo["Relação"] == "Titular"]
     if not titular.empty:
         titular = titular.iloc[0]
-        nome_titular = normalize_name(titular['Nome'])
-        
+        nome_titular = normalize_name(titular["Nome"])
+
         # Buscar valor de despesa do dicionário pré-calculado
         valor_despesas = despesas_dict.get(titular_cpf, {}).get(nome_titular, 0)
         valor_titular = pd.to_numeric(titular["Total"]).round(2) + valor_despesas
-        
+
         if valor_titular <= 0:
             valor_titular = 0.01
-            
-        results.append(f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{format_valor(valor_titular)}|")
-    
+
+        results.append(
+            f"TOP|{format_cpf(titular_cpf)}|{nome_titular}|{format_valor(valor_titular)}|"
+        )
+
     # Processar dependentes
     dependentes = grupo[grupo["Relação"] != "Titular"].copy()
     if not dependentes.empty:
-        dependentes['CPF'] = dependentes['CPF'].apply(format_cpf)
-        dependentes_sorted = dependentes.sort_values(['CPF'])
-        
+        dependentes["CPF"] = dependentes["CPF"].apply(format_cpf)
+        dependentes_sorted = dependentes.sort_values(["CPF"])
+
         for _, dep in dependentes_sorted.iterrows():
-            nome_dep = normalize_name(dep['Nome'])
+            nome_dep = normalize_name(dep["Nome"])
             valor_mensalidade = pd.to_numeric(dep["Total"])
             valor_despesas = despesas_dict.get(titular_cpf, {}).get(nome_dep, 0)
-            
+
             valor_total = valor_mensalidade + valor_despesas
             if valor_total <= 0:
                 valor_total = 0.01
-                
-            results.append(f"DTOP|{format_cpf(dep['CPF'])}||{nome_dep}|{get_dependent_code(dep['Relação'])}|{format_valor(str(valor_total))}|")
-    
+
+            results.append(
+                f"DTOP|{format_cpf(dep['CPF'])}||{nome_dep}|{get_dependent_code(dep['Relação'])}|{format_valor(str(valor_total))}|"
+            )
+
     return results
 
-def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel):
+
+def create_dmed_content(
+    responsavel_cpf, responsavel_nome, ddd_responsavel, telefone_responsavel
+):
     start = datetime.now()
-    
+
     # Lista geral para consolidar erros de todas as planilhas
     todos_erros_dmed = []
-    
+
     # =========================================================================
     # 1. ORQUESTRAÇÃO E COLETA DE ERROS DAS 3 PLANILHAS
     # =========================================================================
-    
+
     # 1.1 MENSALIDADES
-    mensalidades_file = os.path.join(os.getcwd(), 'data', 'cache', 'mensalidades.csv')
+    mensalidades_file = os.path.join(os.getcwd(), "data", "cache", "mensalidades.csv")
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
         mensalidades_file, erros_mensalidades = processa_mensalidades()
         if erros_mensalidades:
             todos_erros_dmed.extend(erros_mensalidades)
 
     # 1.2 DESPESAS
-    despesas_file = os.path.join(os.getcwd(), 'data', 'cache', 'despesas.csv')
+    despesas_file = os.path.join(os.getcwd(), "data", "cache", "despesas.csv")
     if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
         despesas_file, erros_despesas = processa_despesas()
         if erros_despesas:
             todos_erros_dmed.extend(erros_despesas)
 
     # 1.3 DESCONTOS
-    descontos_file = os.path.join(os.getcwd(), 'data', 'cache', 'descontos.csv')
+    descontos_file = os.path.join(os.getcwd(), "data", "cache", "descontos.csv")
     if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
         descontos_file, erros_descontos = processa_descontos()
         if erros_descontos:
@@ -277,75 +321,90 @@ def create_dmed_content(responsavel_cpf, responsavel_nome, ddd_responsavel, tele
     # =========================================================================
     # 2. GERAÇÃO DO ARQUIVO DMED (MESMO COM ERROS)
     # =========================================================================
-    
-    tem_erro_fatal = any("🛑" in erro or "❌" in erro or "⚠️" in erro for erro in todos_erros_dmed)
+
+    tem_erro_fatal = any(
+        "🛑" in erro or "❌" in erro or "⚠️" in erro for erro in todos_erros_dmed
+    )
     if tem_erro_fatal:
-        print("Erros encontrados, mas prosseguindo com a geração do DMED conforme solicitado pelo cliente.")
+        print(
+            "Erros encontrados, mas prosseguindo com a geração do DMED conforme solicitado pelo cliente."
+        )
 
     try:
         df_filtrado = pd.read_csv(mensalidades_file, dtype=str)
     except Exception as e:
         erro_leitura = f"❌ [SISTEMA] Erro ao ler o arquivo de mensalidades: {e}"
         todos_erros_dmed.append(erro_leitura)
-        return None, todos_erros_dmed 
+        return None, todos_erros_dmed
 
     print("Criando arquivo DMed...")
 
     # Pré-processar dados
-    df_filtrado['Total'] = pd.to_numeric(df_filtrado['Total'], errors='coerce').fillna(0).round(2)
-    df_filtrado['Titular_CPF'] = df_filtrado['Titular_CPF'].apply(format_cpf)
-    
+    df_filtrado["Total"] = (
+        pd.to_numeric(df_filtrado["Total"], errors="coerce").fillna(0).round(2)
+    )
+    df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
+
     # Cabeçalho do DMED
     content = [
         f"DMED|{ano_atual}|{ano_anterior}|N|||",
         f"RESPO|{responsavel_cpf}|{responsavel_nome}|{ddd_responsavel}|{telefone_responsavel}||||",
         f"DECPJ|16651002000180|COOPERATIVA DE ECONOMIA E CREDITO MUTUO DOS SERVIDORES MUNICIPAIS DE ITABIRA LTDA SICOOB COSEMI|2|419761||{responsavel_cpf}|N||S|",
-        "OPPAS|"
+        "OPPAS|",
     ]
-    
+
     # Pré-calcular despesas para todos os titulares
     despesas_dict = {}
-    for cpf in df_filtrado['Titular_CPF'].unique():
-        if pd.notna(cpf) and str(cpf).strip() != '':
-            
-            titular_nome_bruto = df_filtrado[df_filtrado['Titular_CPF'] == cpf]['Nome'].iloc[0]
-            if pd.notna(titular_nome_bruto) and str(titular_nome_bruto).lower() != 'nan':
+    for cpf in df_filtrado["Titular_CPF"].unique():
+        if pd.notna(cpf) and str(cpf).strip() != "":
+            titular_nome_bruto = df_filtrado[df_filtrado["Titular_CPF"] == cpf][
+                "Nome"
+            ].iloc[0]
+            if (
+                pd.notna(titular_nome_bruto)
+                and str(titular_nome_bruto).lower() != "nan"
+            ):
                 titular_nome = str(titular_nome_bruto).strip()
             else:
                 titular_nome = ""
-                
+
             df_desp = busca_dados_despesas(cpf, titular_nome)
-            
+
             despesas_dict[cpf] = {}
             if not df_desp.empty:
                 for _, row in df_desp.iterrows():
-                    nome_norm = normalize_name(row['Nome'])
-                    valor_str = str(row['Valor']).replace("R$", "").replace(".", "").replace(",", ".").strip()
+                    nome_norm = normalize_name(row["Nome"])
+                    valor_str = (
+                        str(row["Valor"])
+                        .replace("R$", "")
+                        .replace(".", "")
+                        .replace(",", ".")
+                        .strip()
+                    )
                     despesas_dict[cpf][nome_norm] = float(valor_str or 0)
-  
+
     # Agrupar dados por Nome para evitar duplicatas
-    df_grouped = df_filtrado.groupby(['Titular_CPF', 'Nome']).agg({
-        'Total': 'sum',
-        'Relação': 'first',
-        'CPF': 'first'
-    }).reset_index()
-    
+    df_grouped = (
+        df_filtrado.groupby(["Titular_CPF", "Nome"])
+        .agg({"Total": "sum", "Relação": "first", "CPF": "first"})
+        .reset_index()
+    )
+
     # Processar cada grupo de titular
-    for titular_cpf, grupo in df_grouped.groupby('Titular_CPF'):
+    for titular_cpf, grupo in df_grouped.groupby("Titular_CPF"):
         if pd.notna(titular_cpf):
             results = process_group(grupo, titular_cpf, despesas_dict)
             content.extend(results)
-    
+
     content.append("FIMDmed|")
-    
+
     dmed_final_string = "\n".join(content)
-    
+
     end = datetime.now()
     print(f"Tempo total de execução: {end - start}")
-    
+
     # Retorna o DMED FORÇADO e os erros juntos!
     return dmed_final_string, todos_erros_dmed
-
 
 
 def baixar_e_atualizar_planilhas():
@@ -354,57 +413,64 @@ def baixar_e_atualizar_planilhas():
     limpa os arquivos antigos e garante a gravação dos novos.
     """
     print("Iniciando download das planilhas do Google Drive...")
-    
+
     # URLs do Drive
     url_descontos = "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
-    url_mensalidades = "https://drive.google.com/uc?id=1NEqJ7VaM_dICfTPpSSVIkwwfSLCaOTcE"
-    
+    url_mensalidades = (
+        "https://drive.google.com/uc?id=1NEqJ7VaM_dICfTPpSSVIkwwfSLCaOTcE"
+    )
+
     # Mapeamento de Pastas e Arquivos
     pastas_arquivos = {
         "descontos": {"url": url_descontos, "arquivo": "DESCONTOS.xlsx"},
-        "mensalidades": {"url": url_mensalidades, "arquivo": "MENSALIDADES.xlsx"}
+        "mensalidades": {"url": url_mensalidades, "arquivo": "MENSALIDADES.xlsx"},
     }
-    
+
     try:
         for pasta, dados in pastas_arquivos.items():
             caminho_pasta = os.path.join(os.getcwd(), "data", pasta)
             caminho_arquivo = os.path.join(caminho_pasta, dados["arquivo"])
-            
+
             # 1. Garante que a pasta existe
             if not os.path.exists(caminho_pasta):
                 os.makedirs(caminho_pasta)
                 print(f"Pasta '{caminho_pasta}' criada.")
-                
+
             # 2. Remove o arquivo antigo
             if os.path.exists(caminho_arquivo):
                 try:
                     os.remove(caminho_arquivo)
                     print(f"Arquivo antigo '{dados['arquivo']}' removido com sucesso.")
                 except Exception as e:
-                    print(f"Aviso ao tentar remover o arquivo antigo {dados['arquivo']}: {e}")
-                    
+                    print(
+                        f"Aviso ao tentar remover o arquivo antigo {dados['arquivo']}: {e}"
+                    )
+
             # 3. Download do novo arquivo
             response = requests.get(dados["url"])
             response.raise_for_status()
-            
+
             with open(caminho_arquivo, "wb") as f:
                 f.write(response.content)
             print(f"Nova planilha '{dados['arquivo']}' salva com sucesso!")
-            
+
         return True, "Planilhas de Descontos e Mensalidades baixadas e atualizadas!"
-        
+
     except Exception as e:
         erro_msg = f"❌ Erro ao atualizar os arquivos físicos: {e}"
         print(erro_msg)
         return False, erro_msg
 
+
 def processa_mensalidades():
     df_mensalidades = pd.DataFrame()
     erros_relatados = []
-    
+
     try:
-        arquivo_mensalidades = os.path.join(os.getcwd(), "data", "mensalidades", "MENSALIDADES.xlsx")
-        
+        arquivo_mensalidades = os.path.join(
+            os.getcwd(), "data", "mensalidades", "MENSALIDADES.xlsx"
+        )
+
         # Trava de segurança: Verifica se o arquivo local existe antes de processar
         if not os.path.exists(arquivo_mensalidades):
             try:
@@ -415,36 +481,45 @@ def processa_mensalidades():
 
         excel = pd.ExcelFile(arquivo_mensalidades, engine="openpyxl")
         print("Processando mensalidades...")
-        
+
         for sheet_name in excel.sheet_names:
             df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
-            df['Planilha_Origem'] = sheet_name
+            df["Planilha_Origem"] = sheet_name
 
             # =================================================================
             # BLOCO DE RASTREIO E COLETA DE ERROS
             # =================================================================
             for idx, row in df.iterrows():
-                nome = str(row.get('Nome', '')).strip()
-                cpf = str(row.get('CPF', '')).strip()
-                valor = str(row.get('Total 2024', '')).strip()
-                
-                parentesco = str(row.get('Par.', '')).strip().upper()
-                is_titular = (parentesco == "T.")
+                nome = str(row.get("Nome", "")).strip()
+                cpf = str(row.get("CPF", "")).strip()
+                valor = str(row.get("Total 2024", "")).strip()
 
-                falta_nome = pd.isna(row.get('Nome')) or nome == '' or nome.lower() == 'nan'
-                falta_cpf = pd.isna(row.get('CPF')) or cpf == '' or cpf.lower() == 'nan'
-                
+                parentesco = str(row.get("Par.", "")).strip().upper()
+                is_titular = parentesco == "T."
+
+                falta_nome = (
+                    pd.isna(row.get("Nome")) or nome == "" or nome.lower() == "nan"
+                )
+                falta_cpf = pd.isna(row.get("CPF")) or cpf == "" or cpf.lower() == "nan"
+
                 falta_valor = False
-                if is_titular and 'Total 2024' in df.columns:
-                    falta_valor = pd.isna(row.get('Total 2024')) or valor == '' or valor.lower() == 'nan'
+                if is_titular and "Total 2024" in df.columns:
+                    falta_valor = (
+                        pd.isna(row.get("Total 2024"))
+                        or valor == ""
+                        or valor.lower() == "nan"
+                    )
 
                 if falta_nome or falta_cpf or falta_valor:
                     linha_excel = idx + 2
                     erros = []
-                    if falta_nome: erros.append("NOME")
-                    if falta_cpf: erros.append("CPF")
-                    if falta_valor: erros.append("VALOR (Obrigatório p/ Titular)")
-                    
+                    if falta_nome:
+                        erros.append("NOME")
+                    if falta_cpf:
+                        erros.append("CPF")
+                    if falta_valor:
+                        erros.append("VALOR (Obrigatório p/ Titular)")
+
                     campos_faltantes = " e ".join(erros)
                     mensagem_erro = (
                         f"⚠️ [MENSALIDADES | Aba: {sheet_name}] Linha {linha_excel} | "
@@ -452,20 +527,28 @@ def processa_mensalidades():
                     )
                     erros_relatados.append(mensagem_erro)
             # =================================================================
-            
+
             # Padronização de Plano
-            if 'Tipo de Plano' not in df.columns:
-                df['Tipo de Plano'] = 'Apartamento' if sheet_name.lower().startswith('apartamento') else 'Enfermaria'
-            
-            df['Tipo de Plano'] = df['Tipo de Plano'].apply(
-                lambda x: 'Apartamento' if str(x).strip().upper() == 'APARTAMENTO' else 'Enfermaria'
+            if "Tipo de Plano" not in df.columns:
+                df["Tipo de Plano"] = (
+                    "Apartamento"
+                    if sheet_name.lower().startswith("apartamento")
+                    else "Enfermaria"
+                )
+
+            df["Tipo de Plano"] = df["Tipo de Plano"].apply(
+                lambda x: (
+                    "Apartamento"
+                    if str(x).strip().upper() == "APARTAMENTO"
+                    else "Enfermaria"
+                )
             )
 
             # Filtros e Transformações
             ano_anterior = pd.Timestamp.now().year - 1
             df["Deslig."] = pd.to_datetime(df["Deslig."], errors="coerce")
             df["Adm."] = pd.to_datetime(df["Adm."], errors="coerce")
-            
+
             df_filtrado = df[
                 (df["Deslig."].dt.year >= ano_anterior) | (pd.isna(df["Deslig."]))
             ].copy()
@@ -476,9 +559,13 @@ def processa_mensalidades():
             df_filtrado["Total"] = 0.0
 
             relacao_mapeamento = {
-                "T.": "Titular", "T": "Titular",
-                "esp.": "Cônjuge", "FIL.": "Filho(a)", "ENT.": "Enteado(a)",
-                "MAE": "Pais", "PAI": "Pais"
+                "T.": "Titular",
+                "T": "Titular",
+                "esp.": "Cônjuge",
+                "FIL.": "Filho(a)",
+                "ENT.": "Enteado(a)",
+                "MAE": "Pais",
+                "PAI": "Pais",
             }
 
             # Processamento de Hierarquia
@@ -487,13 +574,17 @@ def processa_mensalidades():
             for idx, row in df_filtrado.iterrows():
                 par = str(row["Par."]).strip().upper()
                 if par == "T.":
-                    cpf_titular_atual = format_cpf(row["CPF"]) if pd.notna(row["CPF"]) else row["Nome"]
+                    cpf_titular_atual = (
+                        format_cpf(row["CPF"]) if pd.notna(row["CPF"]) else row["Nome"]
+                    )
                     df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
                     df_filtrado.at[idx, "Relação"] = "Titular"
                     plano_tipo_atual = row["Tipo de Plano"]
                 elif cpf_titular_atual:
                     df_filtrado.at[idx, "Titular_CPF"] = cpf_titular_atual
-                    df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(par, "Outros")
+                    df_filtrado.at[idx, "Relação"] = relacao_mapeamento.get(
+                        par, "Outros"
+                    )
                     df_filtrado.at[idx, "Tipo de Plano"] = plano_tipo_atual
 
             # Cálculo de meses ativos
@@ -503,30 +594,49 @@ def processa_mensalidades():
             df_filtrado = df_filtrado[df_filtrado["Meses Ativos"].astype(bool)]
 
             # FLAGS PARA IDENTIFICAR A REGRA DE CÁLCULO
-            df_filtrado['is_camara'] = sheet_name.lower().startswith('câmara')
-            df_filtrado['is_complemento'] = sheet_name.lower().startswith('complemento')
-            
+            df_filtrado["is_camara"] = sheet_name.lower().startswith("câmara")
+            df_filtrado["is_complemento"] = sheet_name.lower().startswith("complemento")
+
             # Rateio Financeiro
             for cpf_titular, grupo in df_filtrado.groupby("Titular_CPF"):
                 if pd.notna(cpf_titular):
                     titulares = grupo[grupo["Relação"] == "Titular"]
-                    if titulares.empty: continue
+                    if titulares.empty:
+                        continue
 
                     titular = titulares.iloc[0]
-                    valor_total_anual = float(titular["Total 2024"]) if pd.notna(titular.get("Total 2024")) else 0
+                    valor_total_anual = (
+                        float(titular["Total 2024"])
+                        if pd.notna(titular.get("Total 2024"))
+                        else 0
+                    )
 
-                    is_camara = titular['is_camara']
-                    is_complemento = titular.get('is_complemento', False)
+                    is_camara = titular["is_camara"]
+                    is_complemento = titular.get("is_complemento", False)
 
                     # 1. Definir o Total de Meses Válidos para o Rateio
                     if is_camara:
-                        total_meses_validos = sum(len(m["Meses Ativos"]) for i, (_, m) in enumerate(grupo.iterrows()) if i > 0)
+                        total_meses_validos = sum(
+                            len(m["Meses Ativos"])
+                            for i, (_, m) in enumerate(grupo.iterrows())
+                            if i > 0
+                        )
                     elif is_complemento:
-                        total_meses_validos = sum(len(m["Meses Ativos"]) for _, m in grupo.iterrows())
+                        total_meses_validos = sum(
+                            len(m["Meses Ativos"]) for _, m in grupo.iterrows()
+                        )
                     else:
-                        total_meses_validos = sum(len(m["Meses Ativos"]) for i, (_, m) in enumerate(grupo.iterrows()) if i < 4)
+                        total_meses_validos = sum(
+                            len(m["Meses Ativos"])
+                            for i, (_, m) in enumerate(grupo.iterrows())
+                            if i < 4
+                        )
 
-                    valor_por_mes = valor_total_anual / total_meses_validos if total_meses_validos > 0 else 0
+                    valor_por_mes = (
+                        valor_total_anual / total_meses_validos
+                        if total_meses_validos > 0
+                        else 0
+                    )
                     grupo = grupo.reset_index(drop=True)
 
                     # 2. Distribuir o Valor Calculado
@@ -535,30 +645,39 @@ def processa_mensalidades():
                             if member["Relação"] == "Titular":
                                 grupo.at[idx, "Total"] = 0
                             else:
-                                grupo.at[idx, "Total"] = valor_por_mes * len(member["Meses Ativos"])
+                                grupo.at[idx, "Total"] = valor_por_mes * len(
+                                    member["Meses Ativos"]
+                                )
                         elif is_complemento:
-                            grupo.at[idx, "Total"] = valor_por_mes * len(member["Meses Ativos"])
+                            grupo.at[idx, "Total"] = valor_por_mes * len(
+                                member["Meses Ativos"]
+                            )
                         else:
                             if idx < 4:
-                                grupo.at[idx, "Total"] = valor_por_mes * len(member["Meses Ativos"])
+                                grupo.at[idx, "Total"] = valor_por_mes * len(
+                                    member["Meses Ativos"]
+                                )
                             else:
                                 grupo.at[idx, "Total"] = 0
 
-                    df_mensalidades = pd.concat([df_mensalidades, grupo], ignore_index=True)
-        
-        mensalidades_file = os.path.join('data', 'cache', 'mensalidades.csv')
+                    df_mensalidades = pd.concat(
+                        [df_mensalidades, grupo], ignore_index=True
+                    )
+
+        mensalidades_file = os.path.join("data", "cache", "mensalidades.csv")
         os.makedirs(os.path.dirname(mensalidades_file), exist_ok=True)
         df_mensalidades.to_csv(mensalidades_file, index=False)
-        
+
         return mensalidades_file, erros_relatados
-        
+
     except Exception as e:
         erro_critico = f"❌ Erro crítico ao processar mensalidades: {e}"
         return None, [erro_critico]
-    
+
+
 def processa_despesas():
     print("Processando despesas...")
-    
+
     erros_relatados = []
 
     def normaliza_coluna(col):
@@ -572,15 +691,36 @@ def processa_despesas():
             return pd.DataFrame(columns=["Nome", "CPF", "Valor a Pagar"])
 
         col_map = {c: normaliza_coluna(c) for c in df.columns}
-        nome_col = next((orig for orig, norm in col_map.items() if norm in {"NOME", "BENEFICIARIO"}), None)
-        cpf_col = next((orig for orig, norm in col_map.items() if norm in {"CPF", "CPF DO RESPONSAVEL", "CPF_DO_RESPONSAVEL"}), None)
-        valor_col = next((
-            orig for orig, norm in col_map.items()
-            if norm in {"VALOR A PAGAR", "VALOR_DO_SERVICO", "VALOR DO SERVICO", "VALOR"}
-        ), None)
+        nome_col = next(
+            (
+                orig
+                for orig, norm in col_map.items()
+                if norm in {"NOME", "BENEFICIARIO"}
+            ),
+            None,
+        )
+        cpf_col = next(
+            (
+                orig
+                for orig, norm in col_map.items()
+                if norm in {"CPF", "CPF DO RESPONSAVEL", "CPF_DO_RESPONSAVEL"}
+            ),
+            None,
+        )
+        valor_col = next(
+            (
+                orig
+                for orig, norm in col_map.items()
+                if norm
+                in {"VALOR A PAGAR", "VALOR_DO_SERVICO", "VALOR DO SERVICO", "VALOR"}
+            ),
+            None,
+        )
 
         if not nome_col or not valor_col:
-            erros_relatados.append(f"⚠️ [DESPESAS | Origem: {origem_nome}] Colunas obrigatórias ausentes (Nome ou Valor).")
+            erros_relatados.append(
+                f"⚠️ [DESPESAS | Origem: {origem_nome}] Colunas obrigatórias ausentes (Nome ou Valor)."
+            )
             return pd.DataFrame(columns=["Nome", "CPF", "Valor a Pagar"])
 
         if not cpf_col:
@@ -588,42 +728,56 @@ def processa_despesas():
             cpf_col = "CPF_AUSENTE"
 
         # =================================================================
-        # BLOCO DE RASTREIO E AVISOS 
+        # BLOCO DE RASTREIO E AVISOS
         # =================================================================
         for idx, row in df.iterrows():
-            nome = str(row.get(nome_col, '')).strip()
-            cpf = str(row.get(cpf_col, '')).strip()
-            valor = str(row.get(valor_col, '')).strip()
+            nome = str(row.get(nome_col, "")).strip()
+            cpf = str(row.get(cpf_col, "")).strip()
+            valor = str(row.get(valor_col, "")).strip()
 
-            linha_texto = " ".join([str(val).upper() for val in row.values if pd.notna(val)])
-            
-            # Ignora se: 
+            linha_texto = " ".join(
+                [str(val).upper() for val in row.values if pd.notna(val)]
+            )
+
+            # Ignora se:
             # 1. A linha contém "DIVISAO" ou "DIVISÃO" em qualquer coluna
             # 2. O nome é composto APENAS por tracinhos ou underlines (ex: '---------')
-            if ("DIVISÃO" in linha_texto or "DIVISAO" in linha_texto) or \
-               (nome and nome.replace('-', '').replace('_', '').strip() == ''):
-                continue  
+            if ("DIVISÃO" in linha_texto or "DIVISAO" in linha_texto) or (
+                nome and nome.replace("-", "").replace("_", "").strip() == ""
+            ):
+                continue
             # ------------------------------------------------------------
 
-            falta_nome = pd.isna(row.get(nome_col)) or nome == '' or nome.lower() == 'nan'
-            falta_cpf = pd.isna(row.get(cpf_col)) or cpf == '' or cpf.lower() == 'nan'
-            
-            valor_numerico = parse_valor_monetario(valor) if not pd.isna(row.get(valor_col)) else 0.0
-            falta_valor = pd.isna(row.get(valor_col)) or valor == '' or valor.lower() == 'nan' or valor_numerico <= 0
-            
+            falta_nome = (
+                pd.isna(row.get(nome_col)) or nome == "" or nome.lower() == "nan"
+            )
+            falta_cpf = pd.isna(row.get(cpf_col)) or cpf == "" or cpf.lower() == "nan"
+
+            valor_numerico = (
+                parse_valor_monetario(valor) if not pd.isna(row.get(valor_col)) else 0.0
+            )
+            falta_valor = (
+                pd.isna(row.get(valor_col))
+                or valor == ""
+                or valor.lower() == "nan"
+                or valor_numerico <= 0
+            )
+
             if falta_nome or falta_valor:
                 linha_excel = idx + 2
                 erros = []
-                if falta_nome: erros.append("NOME")
-                if falta_valor: erros.append("VALOR (Ausente ou Zero)")
-                
+                if falta_nome:
+                    erros.append("NOME")
+                if falta_valor:
+                    erros.append("VALOR (Ausente ou Zero)")
+
                 campos = " e ".join(erros)
                 mensagem_erro = (
                     f"🛑 [DESPESAS | Origem: {origem_nome}] Linha {linha_excel} | "
                     f"ERRO: Faltando {campos}. | Dados Lidos: Nome: '{nome}', CPF: '{cpf}', Valor: '{valor}'"
                 )
                 erros_relatados.append(mensagem_erro)
-            
+
             elif falta_cpf and not falta_nome:
                 linha_excel = idx + 2
                 mensagem_aviso = (
@@ -654,10 +808,12 @@ def processa_despesas():
             if lower.endswith((".xlsx", ".xlsm", ".xls")):
                 excel = pd.ExcelFile(file_path, engine="openpyxl")
                 for sheet_name in excel.sheet_names:
-                    df_sheet = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
+                    df_sheet = pd.read_excel(
+                        excel, sheet_name=sheet_name, engine="openpyxl"
+                    )
                     origem_identificador = f"{filename} -> Aba: {sheet_name}"
                     frames.append(padroniza_df(df_sheet, origem_identificador))
-            
+
             elif lower.endswith(".csv"):
                 df_csv = None
                 for encoding in ("latin1", "utf-8"):
@@ -684,18 +840,26 @@ def processa_despesas():
             return None, erros_relatados
 
         df_despesas = pd.concat(frames, ignore_index=True)
-        
-        df_despesas["Nome"] = df_despesas["Nome"].fillna("").astype(str).str.strip().str.upper()
+
+        df_despesas["Nome"] = (
+            df_despesas["Nome"].fillna("").astype(str).str.strip().str.upper()
+        )
         df_despesas["CPF"] = df_despesas["CPF"].apply(format_cpf)
-        df_despesas["Valor a Pagar"] = df_despesas["Valor a Pagar"].apply(parse_valor_monetario)
-        
-        # NOTE: A limpeza padrão do Pandas aqui embaixo garante que as linhas com "--------" 
+        df_despesas["Valor a Pagar"] = df_despesas["Valor a Pagar"].apply(
+            parse_valor_monetario
+        )
+
+        # NOTE: A limpeza padrão do Pandas aqui embaixo garante que as linhas com "--------"
         # sejam permanentemente excluídas do processamento de cálculos finais, pois não contêm letras/números!
-        nome_valido = df_despesas["Nome"].str.contains(r"[A-Z0-9]", regex=True, na=False)
+        nome_valido = df_despesas["Nome"].str.contains(
+            r"[A-Z0-9]", regex=True, na=False
+        )
         df_despesas = df_despesas[
             (df_despesas["CPF"] != "") | ((df_despesas["Nome"] != "") & nome_valido)
         ]
-        df_despesas = df_despesas[~((df_despesas["CPF"] == "") & (df_despesas["Valor a Pagar"] <= 0))]
+        df_despesas = df_despesas[
+            ~((df_despesas["CPF"] == "") & (df_despesas["Valor a Pagar"] <= 0))
+        ]
 
         if df_despesas.empty:
             erro = "⚠️ [DESPESAS] Nenhum registro de despesas restou após a limpeza."
@@ -703,14 +867,11 @@ def processa_despesas():
             return None, erros_relatados
 
         df_despesas["Chave_Agrupamento"] = df_despesas.apply(
-            lambda row: row["CPF"] if row["CPF"] else row["Nome"],
-            axis=1
+            lambda row: row["CPF"] if row["CPF"] else row["Nome"], axis=1
         )
-        df_despesas = df_despesas.groupby("Chave_Agrupamento", as_index=False).agg({
-            "Nome": "first",
-            "CPF": "first",
-            "Valor a Pagar": "sum"
-        })
+        df_despesas = df_despesas.groupby("Chave_Agrupamento", as_index=False).agg(
+            {"Nome": "first", "CPF": "first", "Valor a Pagar": "sum"}
+        )
         df_despesas["Valor a Pagar"] = df_despesas["Valor a Pagar"].round(2)
         df_despesas = df_despesas.drop(columns=["Chave_Agrupamento"])
         df_despesas["CPF"] = df_despesas["CPF"].fillna("").astype(str)
@@ -718,9 +879,14 @@ def processa_despesas():
         # Integração com Mensalidades para tentar achar o CPF pelo Nome
         cpf_para_titular = {}
         nome_para_titular = {}
-        mensalidades_file = os.path.join(os.getcwd(), "data", "cache", "mensalidades.csv")
-        
-        if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
+        mensalidades_file = os.path.join(
+            os.getcwd(), "data", "cache", "mensalidades.csv"
+        )
+
+        if (
+            not os.path.exists(mensalidades_file)
+            or os.path.getsize(mensalidades_file) == 0
+        ):
             mensalidades_file, erros_mensal = processa_mensalidades()
             if erros_mensal:
                 erros_relatados.extend(erros_mensal)
@@ -734,7 +900,9 @@ def processa_despesas():
                 else:
                     df_mens["CPF"] = ""
                 if "Nome" in df_mens.columns:
-                    df_mens["Nome"] = df_mens["Nome"].fillna("").astype(str).str.strip().str.upper()
+                    df_mens["Nome"] = (
+                        df_mens["Nome"].fillna("").astype(str).str.strip().str.upper()
+                    )
                 else:
                     df_mens["Nome"] = ""
 
@@ -749,7 +917,9 @@ def processa_despesas():
                     if nome_benef and nome_benef not in nome_para_titular:
                         nome_para_titular[nome_benef] = titular
         except Exception as e:
-            erros_relatados.append(f"❌ [DESPESAS] Erro ao mapear Titular_CPF das mensalidades: {e}")
+            erros_relatados.append(
+                f"❌ [DESPESAS] Erro ao mapear Titular_CPF das mensalidades: {e}"
+            )
 
         # Substitui o CPF faltante pelo Titular_CPF caso encontre pelo nome
         df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas.apply(
@@ -758,9 +928,11 @@ def processa_despesas():
                 or nome_para_titular.get(row["Nome"])
                 or row["CPF"]
             ),
-            axis=1
+            axis=1,
         )
-        df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
+        df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(
+            format_cpf
+        )
 
         df_despesas["BENEFICIARIO"] = df_despesas["Nome"]
         df_despesas["VALOR_DO_SERVICO"] = df_despesas["Valor a Pagar"]
@@ -769,7 +941,7 @@ def processa_despesas():
         os.makedirs(os.path.dirname(despesas_file), exist_ok=True)
         df_despesas.to_csv(despesas_file, index=False)
         print("Arquivo de despesas atualizado com sucesso!")
-        
+
         return despesas_file, erros_relatados
 
     except Exception as e:
@@ -777,12 +949,13 @@ def processa_despesas():
         print(erro_critico)
         return None, [erro_critico]
 
+
 def processa_descontos():
     print("Processando descontos...")
-    
+
     # LISTA QUE VAI ARMAZENAR TODOS OS ERROS DESTA ETAPA
     erros_relatados = []
-    
+
     def padroniza_e_valida_df(df, origem_nome):
         """Padroniza colunas e realiza a validação linha a linha."""
         if df is None or df.empty:
@@ -792,7 +965,9 @@ def processa_descontos():
         df.columns = [str(col).strip() for col in df.columns]
 
         if "Nome" not in df.columns or "Total de Descontos" not in df.columns:
-            erros_relatados.append(f"⚠️ [DESCONTOS | Origem: {origem_nome}] Colunas obrigatórias ausentes.")
+            erros_relatados.append(
+                f"⚠️ [DESCONTOS | Origem: {origem_nome}] Colunas obrigatórias ausentes."
+            )
             return pd.DataFrame(columns=["Nome", "CPF", "Total de Descontos"])
 
         if "CPF" not in df.columns:
@@ -802,30 +977,41 @@ def processa_descontos():
         # BLOCO DE RASTREIO E AVISOS
         # =================================================================
         for idx, row in df.iterrows():
-            nome = str(row.get("Nome", '')).strip()
-            cpf = str(row.get("CPF", '')).strip()
-            valor = str(row.get("Total de Descontos", '')).strip()
+            nome = str(row.get("Nome", "")).strip()
+            cpf = str(row.get("CPF", "")).strip()
+            valor = str(row.get("Total de Descontos", "")).strip()
 
-            falta_nome = pd.isna(row.get("Nome")) or nome == '' or nome.lower() == 'nan'
-            falta_cpf = pd.isna(row.get("CPF")) or cpf == '' or cpf.lower() == 'nan'
+            falta_nome = pd.isna(row.get("Nome")) or nome == "" or nome.lower() == "nan"
+            falta_cpf = pd.isna(row.get("CPF")) or cpf == "" or cpf.lower() == "nan"
 
             # Validação do valor (maior que zero)
-            valor_numerico = parse_valor_monetario(valor) if not pd.isna(row.get("Total de Descontos")) else 0.0
-            falta_valor = pd.isna(row.get("Total de Descontos")) or valor == '' or valor.lower() == 'nan' or valor_numerico <= 0
+            valor_numerico = (
+                parse_valor_monetario(valor)
+                if not pd.isna(row.get("Total de Descontos"))
+                else 0.0
+            )
+            falta_valor = (
+                pd.isna(row.get("Total de Descontos"))
+                or valor == ""
+                or valor.lower() == "nan"
+                or valor_numerico <= 0
+            )
 
             # 1. Se falta Nome ou Valor, é ERRO FATAL
             if falta_nome or falta_valor:
                 linha_excel = idx + 2
                 erros = []
-                if falta_nome: erros.append("NOME")
-                if falta_valor: erros.append("TOTAL DE DESCONTOS (Ausente ou Zero)")
+                if falta_nome:
+                    erros.append("NOME")
+                if falta_valor:
+                    erros.append("TOTAL DE DESCONTOS (Ausente ou Zero)")
 
                 campos = " e ".join(erros)
                 erros_relatados.append(
                     f"🛑 [DESCONTOS | Origem: {origem_nome}] Linha {linha_excel} | "
                     f"ERRO: Faltando {campos}. | Dados Lidos: Nome: '{nome}', CPF: '{cpf}', Valor: '{valor}'"
                 )
-                
+
             # 2. Se tem Nome, mas falta CPF, é AVISO (Warning)
             elif falta_cpf and not falta_nome:
                 linha_excel = idx + 2
@@ -845,7 +1031,9 @@ def processa_descontos():
         if os.path.isdir(data_folder):
             for filename in os.listdir(data_folder):
                 file_path = os.path.join(data_folder, filename)
-                if not (os.path.isfile(file_path) and filename.lower().endswith(".xlsx")):
+                if not (
+                    os.path.isfile(file_path) and filename.lower().endswith(".xlsx")
+                ):
                     continue
 
                 excel = pd.ExcelFile(file_path, engine="openpyxl")
@@ -853,14 +1041,16 @@ def processa_descontos():
                     df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
                     origem_identificador = f"{filename} -> Aba: {sheet_name}"
                     frames.append(padroniza_e_valida_df(df, origem_identificador))
-        
+
         # FALLBACK: LÊ DO GOOGLE DRIVE
         else:
-            url_excel_file = "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
+            url_excel_file = (
+                "https://drive.google.com/uc?id=132cv-9fgKpgHUkJZbl3hz0G5nkJFot22"
+            )
             response = requests.get(url_excel_file)
             response.raise_for_status()
             excel = pd.ExcelFile(BytesIO(response.content), engine="openpyxl")
-            
+
             for sheet_name in excel.sheet_names:
                 df = pd.read_excel(excel, sheet_name=sheet_name, engine="openpyxl")
                 origem_identificador = f"Google Drive -> Aba: {sheet_name}"
@@ -880,12 +1070,18 @@ def processa_descontos():
             return None, erros_relatados
 
         # Formatação
-        df_descontos["Nome"] = df_descontos["Nome"].fillna("").astype(str).str.strip().str.upper()
+        df_descontos["Nome"] = (
+            df_descontos["Nome"].fillna("").astype(str).str.strip().str.upper()
+        )
         df_descontos["CPF"] = df_descontos["CPF"].apply(format_cpf)
-        df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(parse_valor_monetario)
-        
+        df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(
+            parse_valor_monetario
+        )
+
         # Filtra os dados com base nos erros fatais que mapeamos (remove quem não tem nome ou zerados)
-        df_descontos = df_descontos[(df_descontos["Nome"] != "") & (df_descontos["Total de Descontos"] > 0)]
+        df_descontos = df_descontos[
+            (df_descontos["Nome"] != "") & (df_descontos["Total de Descontos"] > 0)
+        ]
 
         if df_descontos.empty:
             erro = "⚠️ [DESCONTOS] Nenhum registro restou após a limpeza (todos zerados ou sem nome)."
@@ -894,16 +1090,13 @@ def processa_descontos():
 
         # Agrupamento (Se tem CPF agrupa por ele, senão pelo Nome)
         df_descontos["Chave_Agrupamento"] = df_descontos.apply(
-            lambda row: row["CPF"] if row["CPF"] else row["Nome"],
-            axis=1
+            lambda row: row["CPF"] if row["CPF"] else row["Nome"], axis=1
         )
-        
-        df_descontos = df_descontos.groupby("Chave_Agrupamento", as_index=False).agg({
-            "Nome": "first",
-            "CPF": "first",
-            "Total de Descontos": "sum"
-        })
-        
+
+        df_descontos = df_descontos.groupby("Chave_Agrupamento", as_index=False).agg(
+            {"Nome": "first", "CPF": "first", "Total de Descontos": "sum"}
+        )
+
         df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].round(2)
         df_descontos = df_descontos.drop(columns=["Chave_Agrupamento"])
 
@@ -911,19 +1104,21 @@ def processa_descontos():
         os.makedirs(os.path.dirname(descontos_file), exist_ok=True)
         df_descontos.to_csv(descontos_file, index=False)
         print("Arquivo de descontos atualizado com sucesso!")
-        
+
         # RETORNA A TUPLA: Arquivo, Lista de Erros
         return descontos_file, erros_relatados
 
     except Exception as e:
-        erro_critico = f"❌ [DESCONTOS] Erro crítico ao processar o arquivo de descontos: {e}"
+        erro_critico = (
+            f"❌ [DESCONTOS] Erro crítico ao processar o arquivo de descontos: {e}"
+        )
         print(erro_critico)
         return None, [erro_critico]
 
 
 def busca_dados_descontos(cpf_alvo):
     df_filtrado = busca_dados_mensalidades(cpf_alvo)
-    descontos_file = os.path.join(os.getcwd(), 'data', 'cache', 'descontos.csv')
+    descontos_file = os.path.join(os.getcwd(), "data", "cache", "descontos.csv")
     if not os.path.exists(descontos_file) or os.path.getsize(descontos_file) == 0:
         processa_descontos()
     try:
@@ -936,7 +1131,10 @@ def busca_dados_descontos(cpf_alvo):
     if df_descontos.empty:
         return total_descontos
 
-    if "Total de Descontos" not in df_descontos.columns and "Valor a Pagar" in df_descontos.columns:
+    if (
+        "Total de Descontos" not in df_descontos.columns
+        and "Valor a Pagar" in df_descontos.columns
+    ):
         df_descontos["Total de Descontos"] = df_descontos["Valor a Pagar"]
     if "Total de Descontos" not in df_descontos.columns:
         return total_descontos
@@ -946,7 +1144,9 @@ def busca_dados_descontos(cpf_alvo):
     if "CPF" in df_descontos.columns:
         df_descontos["CPF"] = df_descontos["CPF"].apply(format_cpf)
     df_descontos["Nome"] = df_descontos["Nome"].astype(str).str.strip().str.upper()
-    df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(parse_valor_monetario)
+    df_descontos["Total de Descontos"] = df_descontos["Total de Descontos"].apply(
+        parse_valor_monetario
+    )
 
     cpf_alvo_formatado = format_cpf(cpf_alvo)
     if cpf_alvo_formatado and "CPF" in df_descontos.columns:
@@ -965,7 +1165,7 @@ def busca_dados_descontos(cpf_alvo):
 
 
 def busca_dados_mensalidades(cpf_alvo):
-    mensalidades_file = os.path.join(os.getcwd(), 'data', 'cache', 'mensalidades.csv')
+    mensalidades_file = os.path.join(os.getcwd(), "data", "cache", "mensalidades.csv")
     if not os.path.exists(mensalidades_file) or os.path.getsize(mensalidades_file) == 0:
         processa_mensalidades()
     try:
@@ -973,7 +1173,7 @@ def busca_dados_mensalidades(cpf_alvo):
     except Exception as e:
         print(f"Erro ao ler o arquivo de mensalidades: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
-    
+
     if df_filtrado.empty:
         st.error("Erro ao processar mensalidades — verifique o arquivo do Google Drive")
         st.stop()
@@ -982,54 +1182,62 @@ def busca_dados_mensalidades(cpf_alvo):
     if isinstance(df_filtrado, pd.DataFrame) and not df_filtrado.empty:
         df_filtrado["Titular_CPF"] = df_filtrado["Titular_CPF"].apply(format_cpf)
         df_filtrado = df_filtrado[df_filtrado["Titular_CPF"] == cpf_alvo]
-         # Converter colunas numéricas para float ANTES de qualquer cálculo
-        colunas_numericas = ['Total', 'Total 2024', 'Valor']
+        # Converter colunas numéricas para float ANTES de qualquer cálculo
+        colunas_numericas = ["Total", "Total 2024", "Valor"]
         for col in colunas_numericas:
             if col in df_filtrado.columns:
                 df_filtrado[col] = pd.to_numeric(
-                    df_filtrado[col].astype(str).str.replace(',', '.'),
-                    errors='coerce'
+                    df_filtrado[col].astype(str).str.replace(",", "."), errors="coerce"
                 ).fillna(0)
 
         # Criando a coluna auxiliar para priorizar o Titular
         df_filtrado["Ordem"] = (df_filtrado["Relação"] != "Titular").astype(int)
 
         # Aplicando groupby mantendo "Ordem"
-        df_filtrado = df_filtrado.groupby(["Nome", "Ordem"], as_index=False).agg({
-            "Total": "sum"
-        })
+        df_filtrado = df_filtrado.groupby(["Nome", "Ordem"], as_index=False).agg(
+            {"Total": "sum"}
+        )
 
         # Convertendo "Total" para número
-        df_filtrado["Total"] = pd.to_numeric(df_filtrado["Total"], errors='coerce').round(2)
+        df_filtrado["Total"] = pd.to_numeric(
+            df_filtrado["Total"], errors="coerce"
+        ).round(2)
 
         # Ordenação final: Titular primeiro
-        df_filtrado = df_filtrado.sort_values(by=["Ordem", "Total"], ascending=[True, False]).drop(columns=["Ordem"])
+        df_filtrado = df_filtrado.sort_values(
+            by=["Ordem", "Total"], ascending=[True, False]
+        ).drop(columns=["Ordem"])
 
         # Ajuste do Total 2024, se necessário
-       
 
         if "Total 2024" in df_filtrado.columns:
-            total_esperado = float(df_filtrado[df_filtrado["Ordem"] == 0]["Total 2024"].iloc[0])
+            total_esperado = float(
+                df_filtrado[df_filtrado["Ordem"] == 0]["Total 2024"].iloc[0]
+            )
             soma_atual = df_filtrado["Total"].sum()
-            
-            if abs(soma_atual - total_esperado) >= 0.01:  # Tolerância para comparação de float
+
+            if (
+                abs(soma_atual - total_esperado) >= 0.01
+            ):  # Tolerância para comparação de float
                 diferenca = total_esperado - soma_atual
-                
+
                 # Ajustando o primeiro registro com Total > 0
                 mask = df_filtrado["Total"] > 0
                 if mask.any():
                     idx = df_filtrado[mask].index[0]
                     df_filtrado.at[idx, "Total"] += diferenca
-        
-        df_filtrado = df_filtrado[['Nome', 'Total']].rename(columns={'Nome': 'Nome', 'Total': 'Valor'})
+
+        df_filtrado = df_filtrado[["Nome", "Total"]].rename(
+            columns={"Nome": "Nome", "Total": "Valor"}
+        )
 
         df_filtrado["Valor"] = df_filtrado["Valor"].apply(format_currency)
-    
+
     return df_filtrado
 
 
 def busca_dados_despesas(cpf_alvo, nome):
-    despesas_file = os.path.join(os.getcwd(), 'data', 'cache', 'despesas.csv')
+    despesas_file = os.path.join(os.getcwd(), "data", "cache", "despesas.csv")
     if not os.path.exists(despesas_file) or os.path.getsize(despesas_file) == 0:
         processa_despesas()
     try:
@@ -1042,9 +1250,11 @@ def busca_dados_despesas(cpf_alvo, nome):
     except Exception as e:
         print(f"Erro ao calcular descontos: {e}")
         descontos = 0
-    
+
     if not df_despesas.empty:
-        df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(format_cpf)
+        df_despesas["CPF_DO_RESPONSAVEL"] = df_despesas["CPF_DO_RESPONSAVEL"].apply(
+            format_cpf
+        )
         df_despesas = df_despesas[df_despesas["CPF_DO_RESPONSAVEL"] == cpf_alvo]
         total_despesas = df_despesas["VALOR_DO_SERVICO"].sum()
 
@@ -1052,98 +1262,136 @@ def busca_dados_despesas(cpf_alvo, nome):
             diferenca = descontos - total_despesas
 
             # Normalizar os nomes no DataFrame
-            df_despesas["BENEFICIARIO"] = df_despesas["BENEFICIARIO"].str.strip().str.upper()
+            df_despesas["BENEFICIARIO"] = (
+                df_despesas["BENEFICIARIO"].str.strip().str.upper()
+            )
 
             # Normalizar o nome fornecido
             nome_normalizado = nome.strip().upper()
 
             # Aplicar a máscara para encontrar o nome
-            pattern = re.escape(nome_normalizado)  # Escapar caracteres especiais no nome
+            pattern = re.escape(
+                nome_normalizado
+            )  # Escapar caracteres especiais no nome
             mask = df_despesas["BENEFICIARIO"] == nome_normalizado
 
             # Verificar se há correspondências
             if mask.any():
                 # Create a sorting column (True values will come first)
-                df_despesas['sort_order'] = mask
-                
+                df_despesas["sort_order"] = mask
+
                 # Sort by the new column and drop it
-                df_despesas = df_despesas.sort_values('sort_order', ascending=False).drop('sort_order', axis=1)
-            
+                df_despesas = df_despesas.sort_values(
+                    "sort_order", ascending=False
+                ).drop("sort_order", axis=1)
+
             remaining_mask = ~mask
             remaining_count = remaining_mask.sum()
-            total_remaining_mask = df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"].sum()
+            total_remaining_mask = df_despesas.loc[
+                remaining_mask, "VALOR_DO_SERVICO"
+            ].sum()
 
             if descontos > 0 and mask is True:
                 df_despesas.loc[mask, "VALOR_DO_SERVICO"] += diferenca
-                
+
             elif diferenca != 0:  # Only process if there's a difference to distribute
-                if remaining_count > 0 and total_remaining_mask >= abs(diferenca) or remaining_count > 0 and total_remaining_mask < abs(diferenca) and diferenca > 0:
+                if (
+                    remaining_count > 0
+                    and total_remaining_mask >= abs(diferenca)
+                    or remaining_count > 0
+                    and total_remaining_mask < abs(diferenca)
+                    and diferenca > 0
+                ):
                     value_per_record = abs(diferenca) / remaining_count
-                    
+
                     # Initialize insufficient_mask before the conditional blocks
                     insufficient_mask = pd.Series(False, index=df_despesas.index)
                     # Handle records with insufficient values
                     if diferenca < 0:
-                        insufficient_mask = remaining_mask & (df_despesas["VALOR_DO_SERVICO"] < value_per_record)
+                        insufficient_mask = remaining_mask & (
+                            df_despesas["VALOR_DO_SERVICO"] < value_per_record
+                        )
 
                     if insufficient_mask.any():
-                        insufficient_values = df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"]
+                        insufficient_values = df_despesas.loc[
+                            insufficient_mask, "VALOR_DO_SERVICO"
+                        ]
                         df_despesas.loc[insufficient_mask, "VALOR_DO_SERVICO"] = 0
                         diferenca += insufficient_values.sum()
-                        
+
                         # Update remaining records
                         remaining_mask = remaining_mask & ~insufficient_mask
                         remaining_count = remaining_mask.sum()
-                        
+
                         # Recalculate value_per_record only if there are remaining records
                         if remaining_count > 0:
                             value_per_record = abs(diferenca) / remaining_count
-                            
+
                     # Process remaining records with sufficient values
                     if remaining_count > 0:
                         if diferenca < 0:
-                            df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= value_per_record
+                            df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] -= (
+                                value_per_record
+                            )
                         else:
-                            df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] += value_per_record
-                
-                if remaining_count > 0 and total_remaining_mask < abs(diferenca) and diferenca < 0:
+                            df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] += (
+                                value_per_record
+                            )
+
+                if (
+                    remaining_count > 0
+                    and total_remaining_mask < abs(diferenca)
+                    and diferenca < 0
+                ):
                     df_despesas.loc[remaining_mask, "VALOR_DO_SERVICO"] = 0
                     df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
 
                 elif df_despesas.empty:
-                    df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})
-                
+                    df_despesas = pd.DataFrame(
+                        {"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]}
+                    )
+
                 elif len(df_despesas) == 1:
                     df_despesas.at[df_despesas.index[0], "VALOR_DO_SERVICO"] = descontos
 
             # Identificar registros com valores negativos
             negativos_mask = df_despesas["VALOR_DO_SERVICO"] < 0
             negativos_total = df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"].sum()
-            
+
             if negativos_total < 0:
                 # Encontrar o primeiro índice com um valor positivo
-                primeiro_positivo_idx = df_despesas[df_despesas["VALOR_DO_SERVICO"] > 0].index.min()
-                
-                if pd.notna(primeiro_positivo_idx):  # Se existir pelo menos um registro positivo
-                    df_despesas.at[primeiro_positivo_idx, "VALOR_DO_SERVICO"] += negativos_total
-            
+                primeiro_positivo_idx = df_despesas[
+                    df_despesas["VALOR_DO_SERVICO"] > 0
+                ].index.min()
+
+                if pd.notna(
+                    primeiro_positivo_idx
+                ):  # Se existir pelo menos um registro positivo
+                    df_despesas.at[primeiro_positivo_idx, "VALOR_DO_SERVICO"] += (
+                        negativos_total
+                    )
+
                 # Zeramos os valores negativos para não gerar inconsistências
                 df_despesas.loc[negativos_mask, "VALOR_DO_SERVICO"] = 0
-        
+
         else:
-            df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})
+            df_despesas = pd.DataFrame(
+                {"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]}
+            )
 
     if df_despesas.empty:
-        df_despesas = pd.DataFrame({"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]})        
-    
+        df_despesas = pd.DataFrame(
+            {"BENEFICIARIO": [nome], "VALOR_DO_SERVICO": [descontos]}
+        )
+
     if df_despesas.empty and descontos == 0:
-        return pd.DataFrame(columns=['Nome', 'Valor'])
-           
+        return pd.DataFrame(columns=["Nome", "Valor"])
+
     df_despesas["VALOR_DO_SERVICO"] = df_despesas["VALOR_DO_SERVICO"].apply(
         lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     )
-    df_despesas = df_despesas[['BENEFICIARIO', 'VALOR_DO_SERVICO']].rename(
-        columns={'BENEFICIARIO': 'Nome', 'VALOR_DO_SERVICO': 'Valor'}
+    df_despesas = df_despesas[["BENEFICIARIO", "VALOR_DO_SERVICO"]].rename(
+        columns={"BENEFICIARIO": "Nome", "VALOR_DO_SERVICO": "Valor"}
     )
-     
+
     return df_despesas

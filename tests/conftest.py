@@ -80,7 +80,9 @@ def ambiente(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     for asset in ASSETS:
         (tmp_path / asset).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(RAIZ / asset, tmp_path / asset)
-    monta_xlsx(FIXTURES / "mensalidades", tmp_path / PASTA_MENSALIDADES / "MENSALIDADES.xlsx")
+    monta_xlsx(
+        FIXTURES / "mensalidades", tmp_path / PASTA_MENSALIDADES / "MENSALIDADES.xlsx"
+    )
     monta_pasta(FIXTURES / "despesas", tmp_path / PASTA_DESPESAS)
     monta_pasta(FIXTURES / "descontos", tmp_path / PASTA_DESCONTOS)
     monkeypatch.chdir(tmp_path)
@@ -115,7 +117,11 @@ def normaliza_pdf(pdf: bytes) -> str:
             dados = zlib.decompress(dados)
         except zlib.error:
             pass
-        return b"stream\n" + re.sub(rb"\d{2}/\d{2}/\d{4}", b"<DATA>", dados) + b"\nendstream"
+        return (
+            b"stream\n"
+            + re.sub(rb"\d{2}/\d{2}/\d{4}", b"<DATA>", dados)
+            + b"\nendstream"
+        )
 
     pdf = re.sub(rb"stream\r?\n(.*?)\r?\nendstream", descomprime, pdf, flags=re.S)
     pdf = re.sub(rb"/CreationDate \(D:\d+\)", b"/CreationDate (D:X)", pdf)

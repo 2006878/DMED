@@ -42,7 +42,9 @@ def test_inicio_sem_cpf() -> None:
 
     assert not at.exception
     assert [t.value for t in at.sidebar.title] == ["Menu COSEMI"]
-    assert [t.value for t in at.main.title] == ["INFORME PLANO DE SAÚDE 2025 IRPF - COSEMI"]
+    assert [t.value for t in at.main.title] == [
+        "INFORME PLANO DE SAÚDE 2025 IRPF - COSEMI"
+    ]
     assert not at.download_button
 
 
@@ -51,7 +53,11 @@ def test_inicio_consulta_cpf(esperado: Esperado) -> None:
     at.text_input(key="cpf_input").input("100.000.000-01").run()
 
     assert not at.exception
-    cartoes = [m.value.strip() for m in at.markdown if "<div class='info-container'>" in m.value]
+    cartoes = [
+        m.value.strip()
+        for m in at.markdown
+        if "<div class='info-container'>" in m.value
+    ]
     esperado("tela_inicio_10000000001.txt", "\n\n".join(cartoes) + "\n")
     assert [b.label for b in at.download_button] == ["📥 Download PDF"]
 
@@ -78,7 +84,9 @@ def test_menu_lateral_navega_entre_paginas() -> None:
     at.text_input(key="password").input(SENHA).run()
     botao(at, "🏠 Home").click().run()
 
-    assert [t.value for t in at.main.title] == ["INFORME PLANO DE SAÚDE 2025 IRPF - COSEMI"]
+    assert [t.value for t in at.main.title] == [
+        "INFORME PLANO DE SAÚDE 2025 IRPF - COSEMI"
+    ]
 
 
 def test_dmed_senha_incorreta() -> None:
