@@ -110,8 +110,8 @@
 ## PROCESSAMENTO DE DESPESAS
 
 ### Leitura dos Arquivos
-- Sistema acessa a pasta `despesas_nova`.
-- Lê todos os arquivos CSV de despesas.
+- Sistema acessa a pasta `data/despesas`.
+- Lê todas as planilhas (Excel) e arquivos CSV de despesas.
 - Foca em informações essenciais:
   - CPF do Responsável.
   - Nome do Beneficiário.
@@ -124,7 +124,7 @@
 - Mantém registro único por beneficiário.
 
 ### Sistema de Cache
-- Salva processamento em arquivo `despesas_file.csv`.
+- Salva processamento em arquivo `data/cache/despesas.csv`.
 - Otimiza consultas futuras.
 - Reduz tempo de processamento.
 - Mantém consistência dos dados.

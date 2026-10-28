@@ -14,9 +14,10 @@ Aplicação [Streamlit](https://streamlit.io/) da COSEMI com duas páginas:
 ```sh
 uv sync
 cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+uv run pre-commit install
 ```
 
-Preencha a senha da página DMED em `.streamlit/secrets.toml`. Esse arquivo não é versionado.
+Preencha o `.streamlit/secrets.toml` (não versionado): a senha da página do arquivo DMED e, na seção `[drive]`, os IDs das planilhas de mensalidades e de descontos no Google Drive.
 
 ## Execução
 
@@ -34,39 +35,53 @@ uv run pytest --cov                    # testes com cobertura
 uv run ruff check .                    # lint
 uv run ruff format .                   # formatação
 uv run mypy                            # tipos
+uv run pre-commit run --all-files      # todos os hooks do pre-commit
 ```
+
+O GitHub Actions roda lint, tipos e testes em cada push na `main` e na `develop` e em cada pull request (`.github/workflows/ci.yml`).
 
 Os testes rodam sobre planilhas fictícias (`tests/fixtures/`) e comparam as saídas com as referências em `tests/fixtures/esperado/`. Quando uma mudança de comportamento for intencional, regrave as referências com `uv run pytest --atualizar-esperado` e revise o diff antes do commit.
 
 ## Estrutura
 
 ```
-main.py                          entrada do Streamlit: registra as páginas
+main.py                     entrada do Streamlit: registra as páginas
 src/dmed/
-├── backend/
-│   └── processamento.py         planilhas, caches, arquivo DMED e PDF
-└── frontend/
+├── backend/                regras de negócio e acesso a dados
+│   ├── config.py           caminhos, constantes da declaração, IDs do Drive
+│   ├── fontes.py           Google Drive, planilhas e caches em CSV
+│   ├── formatacao.py       CPF, nomes e valores monetários
+│   ├── ocorrencias.py      inconsistências e sua severidade
+│   ├── mensalidades.py     validação, família e rateio anual
+│   ├── despesas.py         despesas de coparticipação
+│   ├── descontos.py        descontos em folha
+│   ├── consulta.py         consulta por CPF do titular
+│   ├── arquivo_dmed.py     arquivo .DEC da DMED
+│   └── informe_pdf.py      informe de IRPF em PDF
+└── frontend/               interface Streamlit
+    ├── componentes.py      menu, logo, cartões e estilos compartilhados
     ├── paginas/
-    │   ├── informe_irpf.py      página inicial (URL /)
-    │   └── arquivo_dmed.py      geração do arquivo DMED (URL /DMED)
-    ├── assets/                  logo e favicon
+    │   ├── informe_irpf.py página inicial (URL /)
+    │   └── arquivo_dmed.py geração do arquivo DMED (URL /DMED)
+    ├── assets/             logo e favicon
     └── conteudo/
-        └── manual_de_regras.md  manual exibido na página do arquivo DMED
-data/                            planilhas de entrada e caches gerados
-tests/                           testes e fixtures fictícias
+        └── manual_de_regras.md
+data/                       planilhas de entrada e caches gerados
+tests/                      testes e fixtures fictícias
+graphify-out/               grafo de conhecimento do código (graphify)
 ```
 
-Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.streamlit/` (Streamlit), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
+Os arquivos da raiz são configurações que cada ferramenta procura ali: `pyproject.toml` e `uv.lock` (uv), `.streamlit/` (Streamlit), `.pre-commit-config.yaml` (pre-commit), `.github/` (GitHub Actions), `.gitignore`, `.gitattributes` e `.git-blame-ignore-revs` (git e GitHub), `.editorconfig` (editores) e `LICENSE`.
 
 ## Dados
 
-- `data/mensalidades/` e `data/descontos/DESCONTOS.xlsx` são baixados do Google Drive pelo botão **Reprocessar dados**, em *Opções avançadas* na página inicial.
-- `data/despesas/` e as demais planilhas de `data/descontos/` vêm do repositório.
-- `data/cache/` guarda os CSVs gerados pelo processamento. Eles não são versionados.
+- `data/mensalidades/MENSALIDADES.xlsx` e `data/descontos/DESCONTOS.xlsx` vêm do Google Drive. São baixados quando faltam e atualizados pelo botão **Reprocessar dados**, em *Opções avançadas* na página inicial. Não são versionados.
+- `data/despesas/` e a planilha "ANTIGAS" de `data/descontos/` ainda não estão no Drive e por isso ficam no repositório.
+- `data/cache/` guarda os CSVs gerados pelo processamento. Não são versionados.
 
 ## Deploy
 
-Streamlit Community Cloud, com `main.py` como arquivo de entrada. As dependências são instaladas a partir do `uv.lock`. A senha fica em *App settings > Secrets*, no mesmo formato de `.streamlit/secrets.toml.example`.
+Streamlit Community Cloud, com `main.py` como arquivo de entrada. As dependências são instaladas a partir do `uv.lock`. A senha e os IDs do Drive ficam em *App settings > Secrets*, no mesmo formato de `.streamlit/secrets.toml.example`.
 
 ## Licença
 

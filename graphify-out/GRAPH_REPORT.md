@@ -1,103 +1,137 @@
 # Graph Report - DMED  (2026-10-28)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 26 files · ~15,014 words
+- Verdict: corpus is large enough that graph structure adds value.
+- Unclassified: 20 file(s) not represented in the graph (top: .csv 12, (none) 5, .toml 1)
 
 ## Summary
-- 125 nodes · 253 edges · 13 communities (8 shown, 5 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 15 edges (avg confidence: 0.85)
+- 407 nodes · 869 edges · 17 communities (13 shown, 4 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 57 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `19275a0e`
+- Built from commit: `46a1ac2c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - conftest.py
 - test_paginas.py
-- test_processamento.py
+- config.py
 - test_funcoes_puras.py
-- arquivo_dmed.py
-- processamento.py
 - informe_irpf.py
-- os
-- processa_despesas
-- generate_pdf
+- pandas
+- despesas.py
+- fontes.py
+- manual_de_regras.md
+- qualidade
 - dmed
+- hooks
+- ratear_aba
+- DMED COSEMI
+- main.py
 
 ## God Nodes (most connected - your core abstractions)
-1. `format_cpf()` - 12 edges
-2. `create_dmed_content()` - 11 edges
-3. `processa_despesas()` - 11 edges
-4. `processa_descontos()` - 10 edges
-5. `processa_mensalidades()` - 10 edges
-6. `busca_dados_descontos()` - 9 edges
-7. `busca_dados_despesas()` - 9 edges
-8. `parse_valor_monetario()` - 9 edges
-9. `busca_dados_mensalidades()` - 9 edges
-10. `abre_inicio()` - 8 edges
+1. `Ocorrencia` - 26 edges
+2. `formatar_cpf()` - 20 edges
+3. `processar_descontos()` - 17 edges
+4. `Consulta` - 16 edges
+5. `processar_mensalidades()` - 15 edges
+6. `test_consulta_por_cpf()` - 15 edges
+7. `Planilha` - 14 edges
+8. `ler_valor_monetario()` - 14 edges
+9. `gerar_arquivo_dmed()` - 13 edges
+10. `processar_despesas()` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `test_consulta_por_cpf()` --calls--> `csv_texto()`  [EXTRACTED]
-  tests/test_processamento.py → tests/conftest.py
-- `test_consulta_por_cpf()` --calls--> `normaliza_pdf()`  [EXTRACTED]
-  tests/test_processamento.py → tests/conftest.py
+- `test_cache_existente_nao_e_reprocessado()` --uses--> `Consulta`  [INFERRED]
+  tests/test_processamento.py → src/dmed/backend/consulta.py
+- `test_pdf_nao_altera_a_tabela()` --uses--> `Consulta`  [INFERRED]
+  tests/test_processamento.py → src/dmed/backend/consulta.py
+- `test_valor_para_soma_descarta_o_sinal()` --calls--> `valor_para_soma()`  [EXTRACTED]
+  tests/test_funcoes_puras.py → src/dmed/backend/informe_pdf.py
+- `test_ocorrencia_mantem_o_texto_do_relatorio()` --uses--> `Severidade`  [INFERRED]
+  tests/test_funcoes_puras.py → src/dmed/backend/ocorrencias.py
+- `test_ocorrencia_mantem_o_texto_do_relatorio()` --uses--> `Ocorrencia`  [INFERRED]
+  tests/test_funcoes_puras.py → src/dmed/backend/ocorrencias.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (13 total, 5 thin omitted)
+## Communities (17 total, 4 thin omitted)
 
 ### Community 0 - "conftest.py"
-Cohesion: 0.10
-Nodes (8): ambiente(), esperado(), monta_pasta(), monta_xlsx(), pytest_addoption(), pytest_configure(), pytest_unconfigure(), sem_rede()
+Cohesion: 0.08
+Nodes (10): ambiente(), csv_texto(), esperado(), monta_pasta(), monta_xlsx(), normaliza_pdf(), pytest_addoption(), pytest_configure() (+2 more)
 
 ### Community 1 - "test_paginas.py"
-Cohesion: 0.17
-Nodes (11): abre_dmed_autenticado(), abre_inicio(), botao(), campo(), test_dmed_exibe_formulario_e_manual(), test_dmed_gera_arquivo_com_relatorio_de_erros(), test_dmed_senha_incorreta(), test_inicio_consulta_cpf() (+3 more)
+Cohesion: 0.18
+Nodes (13): abre_dmed_autenticado(), abre_inicio(), botao(), campo(), test_dmed_cpf_incompleto_mostra_erro_sem_quebrar(), test_dmed_exibe_formulario_e_manual(), test_dmed_gera_arquivo_com_relatorio_de_erros(), test_dmed_sem_senha_configurada() (+5 more)
 
-### Community 2 - "test_processamento.py"
-Cohesion: 0.20
-Nodes (7): csv_texto(), normaliza_pdf(), linhas(), test_arquivo_dmed(), test_cache_existente_nao_e_reprocessado(), test_consulta_por_cpf(), test_processamento_das_planilhas()
+### Community 2 - "config.py"
+Cohesion: 0.09
+Nodes (21): ano_entrega(), ConfiguracaoAusente, destino_planilha(), pasta_cache(), pasta_dados(), pasta_descontos(), pasta_despesas(), pasta_mensalidades() (+13 more)
 
 ### Community 3 - "test_funcoes_puras.py"
+Cohesion: 0.17
+Nodes (13): _exibicao_antiga(), _moeda_antiga(), test_codigo_dependencia(), test_formatar_cpf(), test_formatar_moeda_igual_a_formula_antiga(), test_formatar_valor_dmed(), test_ler_valor_monetario(), test_meses_ativos() (+5 more)
+
+### Community 4 - "informe_irpf.py"
+Cohesion: 0.12
+Nodes (14): agora(), MensalidadesIndisponiveis, cartao(), Chaves, configurar_pagina(), escapar(), exibir_logo(), html() (+6 more)
+
+### Community 5 - "pandas"
+Cohesion: 0.06
+Nodes (28): codigo_dependencia(), _despesas_por_titular(), gerar_arquivo_dmed(), _montar(), registros_do_grupo(), Responsavel, _abater_negativos(), _agrupar() (+20 more)
+
+### Community 6 - "despesas.py"
+Cohesion: 0.10
+Nodes (19): _consolidar(), padronizar(), processar_descontos(), _consolidar(), _cpf_do_responsavel(), _ler_csv_avulso(), _ler_pasta(), _normalizar_coluna() (+11 more)
+
+### Community 7 - "fontes.py"
+Cohesion: 0.09
+Nodes (15): ano_calendario(), _carregar(), _versao(), abas_da_planilha(), arquivos_da_pasta(), assinatura(), baixar_planilha(), baixar_planilhas_do_drive() (+7 more)
+
+### Community 8 - "manual_de_regras.md"
+Cohesion: 0.05
+Nodes (43): Análise da Planilha, Apresentação Final, Armazenamento, Benefícios do Sistema:, Benefícios do Sistema:, BUSCA DESCONTOS, BUSCA DESPESAS, BUSCA MENSALIDADES (+35 more)
+
+### Community 9 - "qualidade"
+Cohesion: 0.10
+Nodes (20): jobs, qualidade, python, name, on, pull_request, push, branches (+12 more)
+
+### Community 13 - "hooks"
+Cohesion: 0.15
+Nodes (12): exclude, args, entry, exclude, id, language, name, types_or (+4 more)
+
+### Community 14 - "ratear_aba"
+Cohesion: 0.22
+Nodes (3): _atribuir_titulares(), meses_ativos(), ratear_aba()
+
+### Community 15 - "DMED COSEMI"
 Cohesion: 0.20
-Nodes (7): test_calculate_active_months(), test_format_cpf(), test_format_valor(), test_get_dependent_code(), test_normalize_name(), test_parse_valor_monetario(), test_process_group()
-
-### Community 5 - "processamento.py"
-Cohesion: 0.30
-Nodes (6): calculate_active_months(), create_dmed_content(), format_valor(), get_dependent_code(), normalize_name(), process_group()
-
-### Community 6 - "informe_irpf.py"
-Cohesion: 0.61
-Nodes (6): busca_dados_descontos(), busca_dados_despesas(), format_cpf(), parse_valor_monetario(), processa_descontos(), padroniza_e_valida_df()
-
-### Community 7 - "os"
-Cohesion: 0.38
-Nodes (4): baixar_e_atualizar_planilhas(), busca_dados_mensalidades(), format_currency(), processa_mensalidades()
-
-### Community 8 - "processa_despesas"
-Cohesion: 1.00
-Nodes (3): processa_despesas(), normaliza_coluna(), padroniza_df()
+Nodes (9): Dados, Deploy, DMED COSEMI, Estrutura, Execução, Instalação, Licença, Requisitos (+1 more)
 
 ## Knowledge Gaps
 - **1 isolated node(s):** `dmed`
-  These have ≤1 connection - possible missing edges. (Counts symbols only; 43 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 176 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `normaliza_pdf()` connect `test_processamento.py` to `conftest.py`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
-- **Are the 7 inferred relationships involving `format_cpf()` (e.g. with `busca_dados_descontos()` and `busca_dados_despesas()`) actually correct?**
-  _`format_cpf()` has 7 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Ocorrencia` connect `despesas.py` to `config.py`, `test_funcoes_puras.py`, `informe_irpf.py`, `pandas`, `fontes.py`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Are the 14 inferred relationships involving `Ocorrencia` (e.g. with `gerar_arquivo_dmed()` and `padronizar()`) actually correct?**
+  _`Ocorrencia` has 14 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `dmed` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `conftest.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.10461538461538461 - nodes in this community are weakly interconnected._
-- **Are the 2 inferred relationships involving `processa_despesas()` (e.g. with `format_cpf()` and `parse_valor_monetario()`) actually correct?**
-  _`processa_despesas()` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 2 inferred relationships involving `processa_descontos()` (e.g. with `format_cpf()` and `parse_valor_monetario()`) actually correct?**
-  _`processa_descontos()` has 2 INFERRED edges - model-reasoned connections that need verification._
+  _Cohesion score 0.08387096774193549 - nodes in this community are weakly interconnected._
+- **Why does `Consulta` connect `pandas` to `config.py`, `informe_irpf.py`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+- **Are the 8 inferred relationships involving `formatar_cpf()` (e.g. with `_montar()` and `_base_descontos()`) actually correct?**
+  _`formatar_cpf()` has 8 INFERRED edges - model-reasoned connections that need verification._
+- **Should `config.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.09358974358974359 - nodes in this community are weakly interconnected._
