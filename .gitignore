@@ -24,5 +24,12 @@ htmlcov/
 .~lock.*
 
 # Notas locais
-/claude/
 /docs/pendencias.md
+
+# Claude Code e graphify: só o grafo é versionado
+/.claude/
+/.graphifyignore
+/graphify-out/*
+!/graphify-out/graph.json
+!/graphify-out/GRAPH_REPORT.md
+!/graphify-out/graph.html
