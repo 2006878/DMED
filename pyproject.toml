@@ -29,3 +29,45 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = ["-ra", "--strict-markers"]
+
+[tool.ruff]
+target-version = "py311"
+extend-exclude = ["venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "W",    # pycodestyle (avisos)
+    "F",    # pyflakes
+    "I",    # ordenação de imports
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "S",    # bandit (segurança)
+    "BLE",  # except genérico
+    "C4",   # comprehensions
+    "SIM",  # simplificações
+    "RET",  # returns
+    "PERF", # desempenho
+    "PD",   # pandas-vet
+    "DTZ",  # datetime sem fuso horário
+    "PTH",  # pathlib
+    "N",    # nomes (PEP 8)
+    "T20",  # print
+    "ERA",  # código comentado
+    "PL",   # pylint
+    "RUF",  # regras do próprio ruff
+]
+ignore = ["E501"] # o formatter cuida do tamanho das linhas
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+files = ["main.py", "pages", "dmed", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["fpdf", "fpdf.*"]
+ignore_missing_imports = true
