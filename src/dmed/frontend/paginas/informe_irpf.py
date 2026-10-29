@@ -4,182 +4,136 @@ from __future__ import annotations
 
 import streamlit as st
 
-from dmed.backend import config, fontes
+from dmed.backend import config
 from dmed.backend.consulta import Consulta, MensalidadesIndisponiveis
-from dmed.backend.descontos import processar_descontos
-from dmed.backend.despesas import processar_despesas
-from dmed.backend.formatacao import formatar_cpf, formatar_moeda, ler_valor_monetario
-from dmed.backend.informe_pdf import gerar_informe_pdf, valor_para_exibicao
-from dmed.backend.mensalidades import processar_mensalidades
-from dmed.frontend.componentes import (
-    CSS_BOTAO_DOWNLOAD,
-    CSS_CARTOES,
-    CSS_OCULTAR_CABECALHO,
-    CSS_OCULTAR_NAVEGACAO,
-    RODAPE,
-    Chaves,
-    cartao,
-    configurar_pagina,
-    exibir_logo,
-    html,
-    menu_lateral,
+from dmed.backend.formatacao import formatar_moeda, ler_valor_monetario
+from dmed.backend.informe_pdf import (
+    gerar_informe_pdf,
+    total_de_mensalidades,
+    valor_para_exibicao,
 )
+from dmed.frontend.componentes import (
+    Chaves,
+    botao_download,
+    cartao,
+    heroi,
+    rodape,
+    secao,
+    tabela_de_valores,
+)
+from dmed.frontend.validacao import CpfConsultado, cpf_com_mascara, ler_cpf_da_consulta
 
 SEM_DESCONTOS = "R$ 0,00"
 
 ano = config.ano_calendario()
-configurar_pagina(f"IRPF {ano} - COSEMI")
-html(CSS_OCULTAR_NAVEGACAO)
-menu_lateral(na_pagina_inicial=True)
-html(CSS_OCULTAR_CABECALHO)
-html(
-    f"""
-    <style>
-    /* Ajuste da largura do input CPF */
-    [data-testid="stTextInput"] {{
-        max-width: 300px;
-        margin: 0 auto;
-    }}
-    /* Centralizar títulos */
-    h1, h3 {{
-        text-align: center;
-    }}
-    {CSS_BOTAO_DOWNLOAD}
-    {CSS_CARTOES}
-    </style>
-"""
-)
-html(
-    """
-    <style>
-    .container {
-        display: flex;
-        justify-content: center;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 10px;
-    }
-    img {
-        max-width: 100%;
-        height: auto;
-    }
-    </style>
-"""
-)
-exibir_logo()
 
-st.title(f"INFORME PLANO DE SAÚDE {ano} IRPF - COSEMI")
-html("<h3 style='font-size: 24px;'>Digite o CPF do titular a ser consultado:</h3>")
-cpf = formatar_cpf(
-    st.text_input(
-        "Digite o CPF do Titular aqui.",
-        label_visibility="collapsed",
-        key=Chaves.CPF_CONSULTA,
-    )
-)
 
-if cpf:
+def formulario_de_consulta() -> CpfConsultado | None:
+    """Campo do CPF e botão Consultar; devolve o último CPF enviado, já lido."""
+    with (
+        st.form("consulta", border=False),
+        # Campo do tamanho de um CPF e o botão até o fim do card; quebra no celular.
+        st.container(horizontal=True, vertical_alignment="bottom", gap="medium"),
+    ):
+        st.text_input(
+            "CPF do titular",
+            key=Chaves.CPF_CONSULTA,
+            placeholder="000.000.000-00",
+            max_chars=14,
+            help="Com ou sem pontos e traço.",
+            width=300,
+        )
+        st.form_submit_button("Consultar", type="primary", width="stretch")
+
+    digitado = str(st.session_state.get(Chaves.CPF_CONSULTA, ""))
+    if not digitado:
+        return None
+    leitura = ler_cpf_da_consulta(digitado)
+    if leitura.erro:
+        st.error(leitura.erro, icon=":material/error:")
+    elif leitura.aviso:
+        st.warning(leitura.aviso, icon=":material/warning:")
+    return leitura
+
+
+def exibir_consulta(cpf: str) -> None:
     try:
-        with st.spinner("Buscando dados de mensalidades..."):
+        with st.spinner("Consultando..."):
             consulta = Consulta.carregar()
             familia = consulta.mensalidades(cpf)
             nome = familia["Nome"].iloc[0] if not familia.empty else ""
-        with st.spinner("Buscando dados de descontos..."):
             total_descontos = formatar_moeda(
                 ler_valor_monetario(consulta.descontos(cpf))
             )
-        with st.spinner("Buscando dados de despesas..."):
             despesas = consulta.despesas(cpf, nome)
-    except MensalidadesIndisponiveis as falha:
-        st.error(str(falha))
-        st.stop()
+    except MensalidadesIndisponiveis:
+        st.error(
+            "Dados de mensalidades indisponíveis. Peça a quem administra o app "
+            "para atualizar as planilhas na página **Arquivo DMED**.",
+            icon=":material/error:",
+        )
+        return
 
-    # CPF sem nenhum registro: só os avisos, sem cartões nem PDF.
-    sem_registros = (
+    # CPF sem nenhum registro: só o aviso, sem resumo nem PDF.
+    if (
         familia.empty
         and total_descontos == SEM_DESCONTOS
         and not consulta.tem_despesas(cpf)
-    )
+    ):
+        st.warning(
+            f"Nenhum registro em {ano} para o CPF {cpf_com_mascara(cpf)}. "
+            "Confira o número digitado.",
+            icon=":material/search_off:",
+        )
+        return
 
-    if not sem_registros and (not familia.empty or not despesas.empty):
-        st.download_button(
-            label="📥 Download PDF",
-            data=gerar_informe_pdf(familia, despesas, total_descontos, cpf),
-            file_name=f"relatorio_dmed_{cpf}.pdf",
-            mime="application/pdf",
+    with cartao("titular"):
+        identificacao, acao = st.columns([3, 2], vertical_alignment="center")
+        with identificacao:
+            st.subheader(nome or "Titular sem mensalidades no ano", anchor=False)
+            st.caption(f"CPF {cpf_com_mascara(cpf)} · ano-calendário {ano}")
+        with acao:
+            if not familia.empty or not despesas.empty:
+                botao_download(
+                    "Baixar informe em PDF",
+                    gerar_informe_pdf(familia, despesas, total_descontos, cpf),
+                    f"informe_plano_saude_{ano}_{cpf}.pdf",
+                    "application/pdf",
+                )
+        mensalidades, gastos = st.columns(2)
+        mensalidades.metric("Total de mensalidades", total_de_mensalidades(familia))
+        gastos.metric(
+            "Total de despesas",
+            total_descontos,
+            help="Coparticipação descontada no ano, como no quadro de totais do informe.",
         )
 
-    coluna_mensalidades, coluna_despesas, coluna_descontos = st.columns(3)
-
-    with coluna_mensalidades:
-        st.markdown("### 📊 Mensalidade Plano de Saúde")
-        if not familia.empty:
-            for membro, valor in zip(familia["Nome"], familia["Valor"], strict=True):
-                cartao(
-                    membro, f"Valor: <strong>R$ {valor_para_exibicao(valor)}</strong>"
-                )
+    with cartao("mensalidades"):
+        secao("Mensalidades do plano")
+        if familia.empty:
+            st.caption(f"Nenhuma mensalidade em {ano}.")
         else:
-            st.info("Não existem registros de mensalidades para o CPF informado.")
+            tabela_de_valores(
+                familia["Nome"],
+                [f"R$ {valor_para_exibicao(valor)}" for valor in familia["Valor"]],
+            )
 
-    with coluna_despesas:
-        st.markdown("### 💉 Procedimentos co-participativos")
-        if not sem_registros and not despesas.empty:
+    with cartao("despesas"):
+        secao("Despesas de coparticipação")
+        if despesas.empty:
+            st.caption(f"Nenhuma despesa de coparticipação em {ano}.")
+        else:
             # As despesas do titular aparecem primeiro.
             ordem = despesas["Nome"].str.upper() == nome.upper()
-            for _, linha in (
-                despesas.assign(ordem=ordem)
-                .sort_values("ordem", ascending=False)
-                .iterrows()
-            ):
-                cartao(linha.iloc[0], f"Valor: <strong>{linha.iloc[1]}</strong>")
-        else:
-            st.info("Não existem registros de despesas para o CPF informado.")
+            ordenadas = despesas.assign(ordem=ordem).sort_values(
+                "ordem", ascending=False
+            )
+            tabela_de_valores(ordenadas.iloc[:, 0], ordenadas.iloc[:, 1].to_list())
 
-    with coluna_descontos:
-        st.markdown("### 💰 Descontos ")
-        if total_descontos and total_descontos != SEM_DESCONTOS:
-            cartao(None, f"Total de descontos: <strong>{total_descontos}</strong>")
-        else:
-            st.info("Não existem registros de descontos para o CPF informado.")
 
-# Botão discreto para reprocessar os dados, no canto superior direito.
-html(
-    """
-    <style>
-    .expander-container {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        width: auto; /* Ajusta a largura automaticamente ao conteúdo */
-        z-index: 1000;
-    }
-    .streamlit-expander {
-        width: auto !important; /* Ajusta a largura do expander */
-        display: inline-block; /* Garante que o expander ocupe apenas o espaço necessário */
-    }
-    </style>
-    <div class="expander-container">
-"""
-)
+with heroi("Informe de plano de saúde", f"Ano-calendário {ano} · Imposto de Renda"):
+    leitura = formulario_de_consulta()
+if leitura is not None and leitura.cpf:
+    exibir_consulta(leitura.cpf)
 
-with st.expander("⚙️ Opções avançadas"):
-    if st.button("🔄 Reprocessar dados"):
-        barra = st.progress(0)
-        with st.spinner("Baixando bases atualizadas do Google Drive..."):
-            sucesso, mensagem = fontes.baixar_planilhas_do_drive()
-            if not sucesso:
-                st.error(mensagem)
-            barra.progress(25)
-        with st.spinner("Processando regras de mensalidades..."):
-            processar_mensalidades()
-            barra.progress(50)
-        with st.spinner("Validando base de descontos..."):
-            processar_descontos()
-            barra.progress(75)
-        with st.spinner("Processando despesas..."):
-            processar_despesas()
-            barra.progress(100)
-        st.success("Bases atualizadas e reprocessamento concluído com sucesso!")
-
-html("</div>")
-html(RODAPE)
+rodape()

@@ -1,0 +1,583 @@
+/*
+ * Estilo do app: o que o tema de .streamlit/config.toml não cobre.
+ *
+ * Seletores permitidos, para sobreviver às atualizações do Streamlit:
+ * - data-testid dos elementos (stHeader, stMetric, stTable...);
+ * - classes st-key-CHAVE, criadas por st.container(key=...) em componentes.py;
+ * - classes próprias, usadas no HTML gerado pelo app.
+ * Nunca as classes geradas automaticamente (st-emotion-cache-...).
+ *
+ * Atenção: nada de sinal de menor neste arquivo, nem em comentários. O
+ * Streamlit descarta o bloco de estilo inteiro se encontrar algo parecido
+ * com uma tag HTML.
+ */
+
+/* Tokens: tema claro -------------------------------------------------------------- */
+
+:root {
+    /* Cores Sicoob */
+    --verde-escuro: #003641;
+    --turquesa: #00ae9d;
+    --turquesa-escuro: #007a6e;   /* hover dos botões: branco sobre ele tem 5,2:1 */
+    --verde-claro: #7db61c;
+    --verde-limao: #c9d200;
+    --roxo: #49479d;
+    --vermelho: #c8323f;
+
+    /* Neutros derivados do verde-escuro */
+    --texto: var(--verde-escuro);
+    --texto-secundario: #557076;  /* 4,8:1 sobre o fundo */
+    --fundo: #f3f6f6;
+    --superficie: rgb(255 255 255 / 92%);
+    --superficie-solida: #fff;
+    --superficie-suave: #e8efef;
+    --zebra: rgb(232 239 239 / 45%);
+    --borda: #dce5e6;
+    --cabecalho: rgb(255 255 255 / 94%);
+    --vidro: rgb(255 255 255 / 72%);
+    --vidro-borda: rgb(255 255 255 / 55%);
+    --brilho: rgb(0 174 157 / 14%);
+    --brilho-foco: rgb(0 174 157 / 30%);
+
+    /* Forma, sombra e espaço (escala de 8px) */
+    --raio-card: 16px;
+    --sombra: 0 1px 2px rgb(0 54 65 / 6%), 0 4px 16px rgb(0 54 65 / 8%);
+    --sombra-elevada: 0 2px 4px rgb(0 54 65 / 8%), 0 8px 24px rgb(0 54 65 / 12%);
+    --sombra-vidro: 0 8px 32px rgb(0 54 65 / 18%);
+    --espaco-1: 8px;
+    --espaco-2: 16px;
+    --espaco-3: 24px;
+    --espaco-4: 32px;
+    --espaco-5: 40px;
+    --transicao: 180ms ease;
+}
+
+/* Tokens: tema escuro. A página marca o modo com um elemento .tema-escuro
+   (componentes.aplicar_identidade_visual), e :has troca os tokens. */
+:root:has(.tema-escuro) {
+    --texto: #e6f0f0;
+    --texto-secundario: #a3b9bd;
+    --fundo: #0b1f24;
+    --superficie: rgb(19 44 51 / 92%);
+    --superficie-solida: #132c33;
+    --superficie-suave: #16323a;
+    --zebra: rgb(255 255 255 / 3%);
+    --borda: #27474f;
+    --cabecalho: rgb(11 31 36 / 94%);
+    --vidro: rgb(11 31 36 / 55%);
+    --vidro-borda: rgb(255 255 255 / 14%);
+    --brilho: rgb(0 174 157 / 20%);
+    --brilho-foco: rgb(0 174 157 / 40%);
+    --sombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 35%);
+    --sombra-elevada: 0 2px 4px rgb(0 0 0 / 35%), 0 8px 24px rgb(0 0 0 / 45%);
+    --sombra-vidro: 0 8px 32px rgb(0 0 0 / 45%);
+}
+
+/* Textos ---------------------------------------------------------------------------- */
+
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] p {
+    color: var(--texto-secundario);
+    font-size: 15px;
+    font-weight: 400;
+}
+
+/* "Press Enter to submit form" e o contador de caracteres: o Streamlit não
+   traduz, e o botão de cada formulário já indica a ação. */
+[data-testid="InputInstructions"] {
+    display: none;
+}
+
+/* O Edge mostra um botão nativo de revelar senha ao lado do botão do
+   Streamlit, e o campo ficava com dois ícones de olho. */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
+
+/* Cabeçalho: mais alto, com logo e navegação maiores ------------------------------- */
+
+[data-testid="stHeader"] {
+    height: 72px;
+    background: var(--cabecalho);
+    box-shadow: inset 0 -2px 0 var(--turquesa), 0 1px 8px rgb(0 54 65 / 6%);
+    backdrop-filter: blur(8px);
+}
+
+[data-testid="stHeaderLogo"] {
+    height: 44px;
+    max-width: 220px;
+}
+
+/* No modo escuro, o SICOOB da logo (verde-escuro) sumiria: a logo ganha um
+   fundo claro, sem mudar as cores dela. */
+:root:has(.tema-escuro) [data-testid="stHeaderLogo"] {
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: #f3f6f6;
+    box-sizing: content-box;
+    height: 36px;
+    width: auto;
+}
+
+[data-testid="stTopNavLink"] {
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color var(--transicao), box-shadow var(--transicao);
+}
+
+[data-testid="stTopNavLink"]:hover {
+    box-shadow: 0 0 0 4px var(--brilho);
+}
+
+/* Interruptor de tema, preso ao canto direito do cabeçalho. Ele é desenhado
+   num iframe (alternador_de_tema.html), que recebe este mesmo arquivo. */
+.st-key-tema {
+    position: fixed;
+    top: 8px;
+    right: var(--espaco-3);
+    z-index: 1000001;
+    width: auto;
+}
+
+.corpo-alternador {
+    margin: 0;
+    padding: 6px;
+    background: transparent;
+    overflow: hidden;
+}
+
+.alternador {
+    --curso: 44px;
+    --deslocamento: 0px;
+    position: relative;
+    display: block;
+    width: 88px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    touch-action: none;
+    background: #eef3f3;
+    box-shadow:
+        inset 2px 2px 5px rgb(0 54 65 / 16%),
+        inset -2px -2px 5px rgb(255 255 255 / 90%),
+        0 0 0 1px #dce5e6;
+    transition: background-color 250ms ease, box-shadow 250ms ease;
+}
+
+.alternador:focus-visible {
+    outline: 3px solid #00ae9d;
+    outline-offset: 2px;
+}
+
+.alternador[aria-checked="true"] {
+    --deslocamento: var(--curso);
+    background: #0b1f24;
+    box-shadow:
+        inset 2px 2px 6px rgb(0 0 0 / 60%),
+        inset -1px -1px 4px rgb(255 255 255 / 6%),
+        0 0 0 1px #27474f;
+}
+
+/* O círculo que desliza */
+.alternador-botao {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 6px rgb(0 54 65 / 25%), inset 0 -2px 3px rgb(0 54 65 / 6%);
+    transform: translateX(var(--deslocamento));
+    transition:
+        transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 250ms ease;
+}
+
+.alternador[aria-checked="true"] .alternador-botao {
+    background: #27474f;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 55%), inset 0 1px 2px rgb(255 255 255 / 8%);
+}
+
+/* Enquanto a pessoa arrasta, o círculo segue o dedo sem atraso. */
+.alternador.arrastando .alternador-botao {
+    transition: none;
+}
+
+.alternador svg {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: opacity 250ms ease;
+}
+
+/* Sol à direita no modo claro; lua e estrelas à esquerda no escuro */
+.alternador-sol {
+    right: 9px;
+    width: 24px;
+    height: 24px;
+    color: #557076;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+}
+
+.alternador-sol circle {
+    fill: currentcolor;
+    stroke: none;
+}
+
+.alternador-lua {
+    left: 6px;
+    width: 32px;
+    height: 26px;
+    fill: #a3b9bd;
+    opacity: 0;
+}
+
+.alternador-lua .estrela {
+    fill: #e6f0f0;
+}
+
+.alternador[aria-checked="true"] .alternador-lua {
+    opacity: 1;
+}
+
+.alternador[aria-checked="true"] .alternador-sol {
+    opacity: 0;
+}
+
+/* Herói: faixa com o gradiente da marca no topo de cada página -------------------- */
+
+.st-key-heroi {
+    padding: var(--espaco-4) var(--espaco-3) var(--espaco-3);
+    border-radius: var(--raio-card);
+    background:
+        radial-gradient(circle at 92% 88%, rgb(0 174 157 / 70%), transparent 42%),
+        radial-gradient(circle at 6% 100%, rgb(201 210 0 / 22%), transparent 36%),
+        linear-gradient(135deg, var(--verde-escuro) 0%, #00505a 60%, #00675f 100%);
+    box-shadow: var(--sombra);
+}
+
+.st-key-heroi [data-testid="stHeading"] h1 {
+    color: #fff;
+    padding: 0;
+}
+
+.heroi-subtitulo {
+    margin: 0;
+    color: rgb(255 255 255 / 86%);
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+/* No modo escuro, título e subtítulo em verde-menta em vez de branco */
+:root:has(.tema-escuro) .st-key-heroi [data-testid="stHeading"] h1 {
+    color: #b4f0e2;
+}
+
+:root:has(.tema-escuro) .heroi-subtitulo {
+    color: #93d8cb;
+}
+
+/* Botão Sair, sobre o gradiente */
+.st-key-heroi [data-testid="stBaseButton-secondary"] {
+    background: transparent;
+    color: #fff;
+    border-color: rgb(255 255 255 / 55%);
+}
+
+.st-key-heroi [data-testid="stBaseButton-secondary"]:hover {
+    background: rgb(255 255 255 / 12%);
+    color: #fff;
+    border-color: #fff;
+}
+
+/* Card principal de vidro, dentro do herói */
+.st-key-vidro {
+    margin-top: var(--espaco-2);
+    padding: var(--espaco-4);
+    border-radius: var(--raio-card);
+    background: var(--vidro);
+    border: 1px solid var(--vidro-borda);
+    box-shadow: var(--sombra-vidro);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Sobre o vidro, o cinza das legendas perde contraste: usa o texto principal. */
+.st-key-vidro [data-testid="stCaptionContainer"],
+.st-key-vidro [data-testid="stCaptionContainer"] p {
+    color: var(--texto);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .st-key-vidro {
+        background: var(--superficie-solida);
+    }
+}
+
+/* Cards ------------------------------------------------------------------------------ */
+
+[class*="st-key-cartao_"] {
+    padding: var(--espaco-4);
+    border-radius: var(--raio-card);
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    box-shadow: var(--sombra);
+}
+
+/* Métricas: rótulo pequeno, número grande e faixa turquesa à esquerda */
+[data-testid="stMetric"] {
+    padding: 20px var(--espaco-3);
+    border-radius: 14px;
+    background: var(--superficie-solida);
+    border: 1px solid var(--borda);
+    border-left: 4px solid var(--turquesa);
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--texto-secundario);
+    font-size: 15px;
+}
+
+/* Campos: brilho turquesa suave no hover e mais forte com o foco ------------------- */
+
+[data-testid="stTextInputRootElement"] {
+    min-height: 48px;
+    transition: box-shadow var(--transicao), border-color var(--transicao);
+}
+
+[data-testid="stTextInputRootElement"]:hover {
+    box-shadow: 0 0 0 4px var(--brilho);
+}
+
+[data-testid="stTextInputRootElement"]:focus-within {
+    border-color: var(--turquesa);
+    box-shadow: 0 0 0 4px var(--brilho-foco), 0 0 18px var(--brilho-foco);
+}
+
+/* Tabelas ---------------------------------------------------------------------------- */
+
+[data-testid="stTableStyledTable"] th {
+    background: var(--superficie-suave);
+    color: var(--texto-secundario);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+[data-testid="stTableStyledTable"] th,
+[data-testid="stTableStyledTable"] td {
+    padding: 14px var(--espaco-2);
+}
+
+[data-testid="stTableStyledTable"] tbody tr:nth-child(even) {
+    background: var(--zebra);
+}
+
+/* Valores em reais na última coluna */
+[data-testid="stTableStyledTable"] th:last-child,
+[data-testid="stTableStyledTable"] td:last-child {
+    text-align: right !important;  /* a tabela alinha cada célula no próprio elemento */
+    font-variant-numeric: tabular-nums;
+}
+
+/* Botões ----------------------------------------------------------------------------- */
+
+[data-testid^="stBaseButton-"] {
+    min-height: 48px;
+    font-size: 16px;
+    transition:
+        background-color var(--transicao),
+        color var(--transicao),
+        box-shadow var(--transicao),
+        transform var(--transicao);
+}
+
+[data-testid^="stBaseButton-"]:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-elevada);
+}
+
+[data-testid^="stBaseButton-"]:active {
+    transform: translateY(0);
+}
+
+/* Primário: turquesa com texto verde-escuro (4,7:1); no hover, turquesa
+   escuro com texto branco (5,2:1). Texto branco no turquesa ficaria 2,8:1. */
+[data-testid="stBaseButton-primary"],
+[data-testid="stBaseButton-primaryFormSubmit"] {
+    color: var(--verde-escuro);
+    font-weight: 600;
+    border: none;
+}
+
+[data-testid="stBaseButton-primary"]:hover,
+[data-testid="stBaseButton-primaryFormSubmit"]:hover {
+    background: var(--turquesa-escuro);
+    color: #fff;
+}
+
+/* Depois do clique o botão fica com foco, e o estilo de foco do Streamlit
+   volta a pintar o texto de branco. */
+[data-testid="stBaseButton-primary"]:is(:focus, :focus-visible, :active):not(:hover),
+[data-testid="stBaseButton-primaryFormSubmit"]:is(:focus, :focus-visible, :active):not(:hover) {
+    color: var(--verde-escuro) !important;
+}
+
+/* O rótulo fica num elemento interno com cor própria: herda a do botão. */
+[data-testid="stBaseButton-primary"] *,
+[data-testid="stBaseButton-primaryFormSubmit"] * {
+    color: inherit;
+}
+
+/* Secundário: contorno */
+[data-testid="stBaseButton-secondary"] {
+    background: var(--superficie-solida);
+    color: var(--texto);
+    border: 1px solid var(--turquesa);
+    font-weight: 500;
+}
+
+[data-testid="stBaseButton-secondary"]:hover {
+    background: var(--superficie-suave);
+    color: var(--texto);
+    border-color: var(--turquesa);
+}
+
+/* Etapas de um processamento: concluída, em andamento e pendente ------------------- */
+
+.etapas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.etapas li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--texto-secundario);
+    font-size: 16px;
+    transition: color var(--transicao);
+}
+
+.etapas li::before {
+    content: "";
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--borda);
+    box-sizing: border-box;
+}
+
+.etapas .atual {
+    color: var(--texto);
+    font-weight: 600;
+}
+
+.etapas .atual::before {
+    border-color: var(--brilho-foco);
+    border-top-color: var(--turquesa);
+    animation: girar 800ms linear infinite;
+}
+
+.etapas .feita {
+    color: var(--texto);
+}
+
+.etapas .feita::before {
+    border-color: var(--turquesa);
+    background:
+        var(--turquesa)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7' fill='none' stroke='%23003641' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+        center / 16px no-repeat;
+}
+
+.etapas .falhou {
+    color: var(--texto);
+}
+
+.etapas .falhou::before {
+    border-color: var(--vermelho);
+    background:
+        var(--vermelho)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6.5 6.5l7 7M13.5 6.5l-7 7' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E")
+        center / 16px no-repeat;
+}
+
+@keyframes girar {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .etapas .atual::before {
+        animation-duration: 2400ms;
+    }
+
+    [data-testid^="stBaseButton-"]:hover {
+        transform: none;
+    }
+}
+
+/* Rodapé ---------------------------------------------------------------------------- */
+
+.rodape {
+    margin-top: var(--espaco-4);
+    padding-top: var(--espaco-2);
+    border-top: 1px solid var(--borda);
+    text-align: center;
+    font-size: 13px;
+    color: var(--texto-secundario);
+}
+
+.rodape a {
+    color: inherit;
+}
+
+/* Telas estreitas ----------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+    [data-testid="stMainBlockContainer"] {
+        padding-left: var(--espaco-2);
+        padding-right: var(--espaco-2);
+    }
+
+    [data-testid="stHeader"] {
+        height: 64px;
+    }
+
+    [data-testid="stHeaderLogo"] {
+        height: 36px;
+        max-width: 160px;
+    }
+
+    /* Interruptor um pouco menor, para caber no cabeçalho mais baixo */
+    .st-key-tema {
+        top: 4px;
+        right: var(--espaco-1);
+        transform: scale(0.85);
+        transform-origin: right top;
+    }
+
+    .st-key-heroi {
+        padding: var(--espaco-3) var(--espaco-2) var(--espaco-2);
+    }
+
+    .st-key-vidro,
+    [class*="st-key-cartao_"] {
+        padding: var(--espaco-2);
+    }
+}

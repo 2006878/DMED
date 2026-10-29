@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import threading
 from collections.abc import Iterator
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
@@ -91,6 +92,15 @@ def assinatura(caminho: Path) -> tuple[str, int, int] | None:
     except FileNotFoundError:
         return None
     return str(caminho), estado.st_mtime_ns, estado.st_size
+
+
+def modificado_em(caminho: Path) -> datetime | None:
+    """Quando o arquivo foi gravado pela última vez, no relógio do servidor."""
+    try:
+        instante = caminho.stat().st_mtime
+    except FileNotFoundError:
+        return None
+    return datetime.fromtimestamp(instante)  # noqa: DTZ006 - mesmo relógio de config.agora()
 
 
 def ler_cache(nome: str, *, como_texto: bool) -> pd.DataFrame:

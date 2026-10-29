@@ -18,6 +18,8 @@ SRC = str(RAIZ / "src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
+from dmed.frontend.componentes import FAVICON, aplicar_identidade_visual  # noqa: E402
+
 PAGINAS = RAIZ / "src" / "dmed" / "frontend" / "paginas"
 
 
@@ -32,10 +34,22 @@ def exportar_ids_do_drive() -> None:
 
 
 exportar_ids_do_drive()
+st.set_page_config(page_title="COSEMI", page_icon=str(FAVICON), layout="centered")
+aplicar_identidade_visual()
 st.navigation(
     [
-        st.Page(PAGINAS / "informe_irpf.py", default=True),
-        st.Page(PAGINAS / "arquivo_dmed.py", url_path="DMED"),
+        st.Page(
+            PAGINAS / "informe_irpf.py",
+            title="Informe IRPF",
+            icon=":material/receipt_long:",
+            default=True,
+        ),
+        st.Page(
+            PAGINAS / "arquivo_dmed.py",
+            title="Arquivo DMED",
+            icon=":material/description:",
+            url_path="DMED",
+        ),
     ],
-    position="hidden",
+    position="top",
 ).run()

@@ -1,6 +1,68 @@
+# Tema com as cores Sicoob, em versão clara e escura. Os mesmos valores estão
+# como variáveis CSS em src/dmed/frontend/estilo.css, que cuida do que o tema
+# não cobre. O botão de tema no cabeçalho alterna entre as duas versões.
+
+[client]
+toolbarMode = "minimal"                  # esconde o menu de desenvolvedor e o botão Deploy
+
+# Comum às duas versões ----------------------------------------------------------
 [theme]
-primaryColor = "#005822"             # Verde escuro
-backgroundColor = "#F0F2F6"          # Cinza claro
-secondaryBackgroundColor = "#D9E3DA" # Verde claro
-textColor = "#000000"                # Preto
-font = "sans serif"
+primaryColor = "#00AE9D"                 # turquesa: botões, foco e destaques
+showWidgetBorder = true
+baseRadius = "12px"
+buttonRadius = "12px"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap, system-ui, sans-serif"
+baseFontSize = 17
+headingFontSizes = ["32px", "22px", "18px"]
+headingFontWeights = [700, 600, 600]
+metricValueFontSize = "32px"
+metricValueFontWeight = 600
+paddingTop = "2.5rem"
+violetColor = "#49479D"
+
+# Claro ----------------------------------------------------------------------------
+[theme.light]
+backgroundColor = "#F3F6F6"              # off-white frio do fundo da tela
+secondaryBackgroundColor = "#EEF3F3"     # fundo dos campos
+textColor = "#003641"                    # verde-escuro: títulos e textos principais
+borderColor = "#D5E0E1"
+linkColor = "#003641"
+grayTextColor = "#557076"                # texto secundário, contraste AA sobre o fundo
+dataframeHeaderBackgroundColor = "#E8EFEF"
+dataframeHeaderTextColor = "#34565E"
+# Mensagens em tons suaves da paleta, com texto escuro (contraste AA)
+blueColor = "#00AE9D"
+blueBackgroundColor = "#E5F6F4"
+blueTextColor = "#00564E"
+greenColor = "#7DB61C"
+greenBackgroundColor = "#EFF6E4"
+greenTextColor = "#3A5A0A"
+yellowColor = "#C9D200"
+yellowBackgroundColor = "#F8F9E1"
+yellowTextColor = "#545800"
+redColor = "#C8323F"
+redBackgroundColor = "#FCEEEE"
+redTextColor = "#9E1F2C"
+
+# Escuro: neutros derivados do verde-escuro ------------------------------------------
+[theme.dark]
+backgroundColor = "#0B1F24"
+secondaryBackgroundColor = "#16323A"
+textColor = "#E6F0F0"
+borderColor = "#27474F"
+linkColor = "#7FE0D5"
+grayTextColor = "#A3B9BD"
+dataframeHeaderBackgroundColor = "#16323A"
+dataframeHeaderTextColor = "#B8CCCF"
+blueColor = "#00AE9D"
+blueBackgroundColor = "#0F3B3A"
+blueTextColor = "#8BE6DB"
+greenColor = "#7DB61C"
+greenBackgroundColor = "#1E3312"
+greenTextColor = "#BFE38A"
+yellowColor = "#C9D200"
+yellowBackgroundColor = "#30320C"
+yellowTextColor = "#E6EA86"
+redColor = "#E05561"
+redBackgroundColor = "#3A1519"
+redTextColor = "#F6A9B0"

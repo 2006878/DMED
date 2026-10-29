@@ -25,7 +25,7 @@ Preencha o `.streamlit/secrets.toml` (não versionado): a senha da página do ar
 uv run streamlit run main.py
 ```
 
-A aplicação abre em <http://localhost:8501>.
+A aplicação abre em <http://localhost:8501>. O tema (cores Sicoob nas versões clara e escura, fonte e mensagens) fica em `.streamlit/config.toml`, e o restante do visual em `src/dmed/frontend/estilo.css`. O interruptor no canto do cabeçalho (clique ou arraste) alterna entre os modos claro e escuro; a escolha fica salva no navegador.
 
 ## Testes e qualidade
 
@@ -57,13 +57,17 @@ src/dmed/
 │   ├── arquivo_dmed.py     arquivo .DEC da DMED
 │   └── informe_pdf.py      informe de IRPF em PDF
 └── frontend/               interface Streamlit
-    ├── componentes.py      menu, logo, cartões e estilos compartilhados
+    ├── componentes.py      cabeçalho, tabelas, downloads e rodapé compartilhados
+    ├── validacao.py        validação do CPF e dos dados do responsável
+    ├── resultado_dmed.py   resultado da geração, guardado entre os downloads
+    ├── estilo.css          tokens de cor Sicoob e o CSS que o tema não cobre
+    ├── alternador_de_tema.html  interruptor de modo claro/escuro do cabeçalho
     ├── paginas/
-    │   ├── informe_irpf.py página inicial (URL /)
-    │   └── arquivo_dmed.py geração do arquivo DMED (URL /DMED)
+    │   ├── informe_irpf.py consulta e informe em PDF (URL /)
+    │   └── arquivo_dmed.py arquivo DMED, pendências e atualização das planilhas (URL /DMED)
     ├── assets/             logo e favicon
     └── conteudo/
-        └── manual_de_regras.md
+        └── manual_de_regras.md  regras de negócio por escrito (não aparece na interface)
 data/                       planilhas de entrada e caches gerados
 tests/                      testes e fixtures fictícias
 graphify-out/               grafo de conhecimento do código (graphify)
@@ -73,7 +77,7 @@ Os arquivos da raiz são configurações que cada ferramenta procura ali: `pypro
 
 ## Dados
 
-- `data/mensalidades/MENSALIDADES.xlsx` e `data/descontos/DESCONTOS.xlsx` vêm do Google Drive. São baixados quando faltam e atualizados pelo botão **Reprocessar dados**, em *Opções avançadas* na página inicial. Não são versionados.
+- `data/mensalidades/MENSALIDADES.xlsx` e `data/descontos/DESCONTOS.xlsx` vêm do Google Drive. São baixados quando faltam e atualizados pelo botão **Atualizar planilhas**, na página do arquivo DMED. Não são versionados.
 - `data/despesas/` e a planilha "ANTIGAS" de `data/descontos/` ainda não estão no Drive e por isso ficam no repositório.
 - `data/cache/` guarda os CSVs gerados pelo processamento. Não são versionados.
 

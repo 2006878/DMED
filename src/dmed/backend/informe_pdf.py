@@ -36,6 +36,12 @@ def valor_para_exibicao(valor_moeda: object) -> str:
         return "Valor inválido"
 
 
+def total_de_mensalidades(mensalidades: pd.DataFrame) -> str:
+    """Soma das mensalidades em reais, como no quadro de totais do informe."""
+    valores = mensalidades["Valor"].map(valor_para_soma)
+    return formatar_moeda(valores[valores != ""].astype(float).sum())
+
+
 def gerar_informe_pdf(
     mensalidades: pd.DataFrame, despesas: pd.DataFrame, descontos: str, cpf: str
 ) -> bytes:
@@ -83,13 +89,11 @@ def gerar_informe_pdf(
     )
     secao("4 - INFORMAÇÕES DESPESAS", _linhas_nome_valor(despesas))
 
-    valores = mensalidades["Valor"].map(valor_para_soma)
-    total_mensalidades = valores[valores != ""].astype(float).sum()
     secao(
         "5 - TOTAIS",
         [
             f"Total de Despesas: {descontos}",
-            f"Total de Mensalidades: {formatar_moeda(total_mensalidades)}",
+            f"Total de Mensalidades: {total_de_mensalidades(mensalidades)}",
         ],
     )
 
